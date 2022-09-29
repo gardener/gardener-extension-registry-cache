@@ -1,0 +1,42 @@
+image:
+  repository: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+  tag: latest
+  pullPolicy: IfNotPresent
+
+leaderElection:
+  resourceLock: leases
+
+replicaCount: 1
+
+resources: {}
+
+vpa:
+  enabled: true
+  # resourcePolicy:
+  #   minAllowed:
+  #     cpu: 100m
+  #     memory: 128Mi
+  updatePolicy:
+    updateMode: "Auto"
+
+controllers:
+  concurrentSyncs: 5
+  ignoreOperationAnnotation: false
+  healthcheck:
+    concurrentSyncs: 5
+
+registryConfig:
+  registries:
+    - ...
+
+disableControllers: []
+
+# imageVectorOverwrite: |
+#   images:
+#     - name: registry
+#       sourceRepository: github.com/distribution/distribution
+#       repository: registry
+#       tag: "2.8.1"
+
+gardener:
+  version: ""

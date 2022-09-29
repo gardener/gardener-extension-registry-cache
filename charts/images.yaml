@@ -1,0 +1,9 @@
+images:
+- name: registry
+  sourceRepository: github.com/distribution/distribution
+  repository: registry
+  tag: "2.8.1"
+- name: cri-config-ensurer
+  sourceRepository: github.com/tianon/docker-bash
+  repository: bash
+  tag: "5.2.0-alpine3.15"

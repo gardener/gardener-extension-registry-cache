@@ -1,0 +1,43 @@
+---
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: extension
+build:
+  artifacts:
+  - image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+    ko:
+      main: ./cmd/gardener-extension-registry-cache
+deploy:
+  helm:
+    releases:
+    - name: gardener-extension-registry-cache-registration
+      chartPath: charts/registration
+      artifactOverrides:
+        values:
+          image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+      imageStrategy:
+        helm: {}
+---
+apiVersion: skaffold/v2beta29
+kind: Config
+metadata:
+  name: admission
+build:
+  artifacts:
+  - image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache-admission
+    ko:
+      main: ./cmd/gardener-extension-registry-cache-admission
+deploy:
+  helm:
+    releases:
+    - name: gardener-extension-registry-cache-admission
+      chartPath: charts/admission
+      namespace: garden
+      artifactOverrides:
+        global:
+          image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache-admission
+      imageStrategy:
+        helm: {}
+      valuesFiles:
+      - example/admission/values.yaml
