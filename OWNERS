@@ -1,0 +1,6 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+reviewers:
+- registry-cache-reviewers
+approvers:
+- registry-cache-approvers

@@ -1,0 +1,17 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
+aliases:
+  registry-cache-reviewers:
+  - Gerrit91
+  - JensAc
+  - MrBatschner
+  - oliver-goetz
+  - rfranzke
+  - timebertt
+  registry-cache-approvers:
+  - Gerrit91
+  - JensAc
+  - MrBatschner
+  - oliver-goetz
+  - rfranzke
+  - timebertt
