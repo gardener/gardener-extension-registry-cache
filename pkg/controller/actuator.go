@@ -23,7 +23,6 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/imagevector"
 
@@ -71,6 +70,10 @@ func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
 
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	if ex.Spec.ProviderConfig == nil {
+		return nil
+	}
+
 	namespace := ex.GetNamespace()
 
 	cluster, err := controller.GetCluster(ctx, a.client, namespace)
@@ -78,11 +81,9 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return err
 	}
 
-	registryConfig := &registry.RegistryConfig{}
-	if ex.Spec.ProviderConfig != nil {
-		if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, registryConfig); err != nil {
-			return fmt.Errorf("failed to decode provider config: %w", err)
-		}
+	registryConfig := &v1alpha1.RegistryConfig{}
+	if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, registryConfig); err != nil {
+		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
 
 	if err := a.createResources(ctx, log, registryConfig, cluster, namespace); err != nil {
@@ -107,7 +108,7 @@ func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, log logr.Logger, registryConfig *registry.RegistryConfig, cluster *controller.Cluster, namespace string) error {
+func (a *actuator) createResources(ctx context.Context, log logr.Logger, registryConfig *v1alpha1.RegistryConfig, cluster *controller.Cluster, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
@@ -234,7 +235,7 @@ func (a *actuator) createManagedResources(ctx context.Context, name, namespace s
 	return nil
 }
 
-func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *registry.RegistryConfig) error {
+func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *v1alpha1.RegistryConfig) error {
 	patch := client.MergeFrom(ex.DeepCopy())
 	// ex.Status.Resources = resources
 	return a.client.Status().Patch(ctx, ex, patch)
