@@ -1,5 +1,5 @@
 image:
-  repository: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+  repository: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
   tag: latest
   pullPolicy: IfNotPresent
 

@@ -5,7 +5,7 @@ metadata:
   name: extension
 build:
   artifacts:
-  - image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+  - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
     ko:
       main: ./cmd/gardener-extension-registry-cache
 deploy:
@@ -15,7 +15,7 @@ deploy:
       chartPath: charts/registration
       artifactOverrides:
         values:
-          image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+          image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
       imageStrategy:
         helm: {}
 ---
@@ -25,7 +25,7 @@ metadata:
   name: admission
 build:
   artifacts:
-  - image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache-admission
+  - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
     ko:
       main: ./cmd/gardener-extension-registry-cache-admission
 deploy:
@@ -36,7 +36,7 @@ deploy:
       namespace: garden
       artifactOverrides:
         global:
-          image: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache-admission
+          image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
       imageStrategy:
         helm: {}
       valuesFiles:
