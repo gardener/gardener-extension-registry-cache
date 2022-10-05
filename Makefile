@@ -15,7 +15,7 @@
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
 ADMISSION_NAME              := $(NAME)-admission
-IMAGE                       := eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache
+IMAGE                       := eu.gcr.io/gardener-project/gardener/extensions/registry-cache
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
@@ -95,8 +95,8 @@ docker-login:
 
 .PHONY: docker-images
 docker-images:
-	@docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME) .
-	@docker build -t $(IMAGE)/admission:$(VERSION) -t $(IMAGE)/admission:latest -f Dockerfile -m 6g --target $(EXTENSION_PREFIX)-$(NAME)-admission .
+	@docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest -f Dockerfile -m 6g --target $(NAME) .
+	@docker build -t $(IMAGE)-admission:$(VERSION) -t $(IMAGE)-admission:latest -f Dockerfile -m 6g --target $(ADMISSION_NAME) .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #

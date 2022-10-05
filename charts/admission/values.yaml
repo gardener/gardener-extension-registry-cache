@@ -4,7 +4,7 @@ global:
     user:
       name: ""
   image:
-    repository: eu.gcr.io/gardener-project/gardener-extension-registry-cache/gardener-extension-registry-cache-admission
+    repository: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
     tag: latest
     pullPolicy: IfNotPresent
   replicaCount: 1
