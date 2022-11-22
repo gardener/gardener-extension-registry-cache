@@ -7,9 +7,10 @@ metadata:
   labels:
     app.kubernetes.io/name: gardener-extension-registry-cache
     helm.sh/chart: gardener-extension-registry-cache
-    app.kubernetes.io/instance: {{ .Release.Name }}d
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    high-availability-config.resources.gardener.cloud/type: controller
 spec:
-  revisionHistoryLimit: 0
+  revisionHistoryLimit: 2
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
