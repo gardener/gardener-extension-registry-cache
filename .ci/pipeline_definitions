@@ -1,0 +1,52 @@
+gardener-extension-registry-cache:
+  template: 'default'
+  base_definition:
+    repo: ~
+    traits:
+      version:
+        preprocess: 'inject-commit-hash'
+      publish:
+        oci-builder: 'docker-buildx'
+        dockerimages:
+          gardener-extension-registry-cache:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/extensions/registry-cache'
+            dockerfile: 'Dockerfile'
+            target: registry-cache
+          gardener-extension-registry-cache-admission:
+            registry: 'gcr-readwrite'
+            image: 'eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission'
+            dockerfile: 'Dockerfile'
+            target: registry-cache-admission
+  jobs:
+    head-update:
+      traits:
+        component_descriptor: ~
+        draft_release: ~
+        options:
+          public_build_logs: true
+    release:
+      steps:
+        verify:
+          image: 'golang:1.19.3'
+      traits:
+        version:
+          preprocess: 'finalize'
+        release:
+          nextversion: 'bump_minor'
+          next_version_callback: '.ci/prepare_release'
+          release_callback: '.ci/prepare_release'
+        slack:
+          default_channel: 'internal_scp_workspace'
+          channel_cfgs:
+            internal_scp_workspace:
+              channel_name: 'C9CEBQPGE' #sap-tech-gardener
+              slack_cfg_name: 'scp_workspace'
+        component_descriptor: ~
+        publish:
+          oci-builder: 'docker-buildx'
+          dockerimages:
+            gardener-extension-registry-cache:
+              tag_as_latest: true
+            gardener-extension-registry-cache-admission:
+              tag_as_latest: true
