@@ -1,4 +1,7 @@
 # [Gardener Extension for Registry Cache](https://gardener.cloud)
+
+[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener/pipelines/gardener-extension-registry-cache-main/jobs/main-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener/pipelines/gardener-extension-registry-cache-main/jobs/main-head-update-job)
+
 Gardener extension controller which deploys pull-through caches for container registries.
 
 ## Learn more!
