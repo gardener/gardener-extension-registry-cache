@@ -5,19 +5,6 @@ gardener-extension-registry-cache:
     traits:
       version:
         preprocess: 'inject-commit-hash'
-      publish:
-        oci-builder: 'docker-buildx'
-        dockerimages:
-          gardener-extension-registry-cache:
-            registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/extensions/registry-cache'
-            dockerfile: 'Dockerfile'
-            target: registry-cache
-          gardener-extension-registry-cache-admission:
-            registry: 'gcr-readwrite'
-            image: 'eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission'
-            dockerfile: 'Dockerfile'
-            target: registry-cache-admission
   jobs:
     head-update:
       traits:
@@ -47,6 +34,14 @@ gardener-extension-registry-cache:
           oci-builder: 'docker-buildx'
           dockerimages:
             gardener-extension-registry-cache:
+              registry: 'gcr-readwrite'
+              image: 'eu.gcr.io/gardener-project/gardener/extensions/registry-cache'
+              dockerfile: 'Dockerfile'
+              target: registry-cache
               tag_as_latest: true
             gardener-extension-registry-cache-admission:
+              registry: 'gcr-readwrite'
+              image: 'eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission'
+              dockerfile: 'Dockerfile'
+              target: registry-cache-admission
               tag_as_latest: true
