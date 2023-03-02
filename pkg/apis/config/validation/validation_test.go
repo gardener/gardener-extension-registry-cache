@@ -29,5 +29,6 @@ var _ = Describe("Validation", func() {
 			err := validation.ValidateConfiguration(&config)
 			Expect(err).To(match)
 		},
+		Entry("config", config.Configuration{}, BeEmpty()),
 	)
 })
