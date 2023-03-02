@@ -138,7 +138,7 @@ generate-in-docker:
 				&& chown -R $(shell id -u):$(shell id -g) ."
 
 .PHONY: format
-format: $(GOIMPORTS)
+format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg
 
 .PHONY: test

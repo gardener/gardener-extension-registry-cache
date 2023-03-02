@@ -15,14 +15,12 @@
 package validation_test
 
 import (
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	// . "github.com/onsi/gomega/gstruct"
 	gomegatypes "github.com/onsi/gomega/types"
+
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
 )
 
 var _ = Describe("Validation", func() {

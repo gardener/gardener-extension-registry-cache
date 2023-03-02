@@ -18,10 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller/healthcheck"
-
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
@@ -30,6 +26,10 @@ import (
 	componentbaseconfig "k8s.io/component-base/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/controller/healthcheck"
 )
 
 // NewServiceControllerCommand creates a new command that is used to start the registry service controller.

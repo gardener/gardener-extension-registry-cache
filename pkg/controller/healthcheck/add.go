@@ -17,9 +17,6 @@ package healthcheck
 import (
 	"time"
 
-	registryv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
-	registrycontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller"
-
 	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	"github.com/gardener/gardener/extensions/pkg/controller/healthcheck/general"
@@ -28,6 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	registryv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	registrycontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller"
 )
 
 var (
