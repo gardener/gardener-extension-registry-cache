@@ -15,9 +15,9 @@
 package cmd
 
 import (
-	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator"
-
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+
+	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator"
 )
 
 // GardenWebhookSwitchOptions are the webhookcmd.SwitchOptions for the admission webhooks.

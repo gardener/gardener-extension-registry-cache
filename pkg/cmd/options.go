@@ -18,20 +18,18 @@ import (
 	"errors"
 	"os"
 
-	configapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
-	healthcheckcontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/healthcheck"
-
 	extensionsapisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
-	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	configapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
 )
 
 var (
@@ -104,7 +102,6 @@ func (c *RegistryServiceConfig) Apply(config *configapi.Configuration) {
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
 		cmd.Switch(controller.ControllerName, controller.AddToManager),
-		cmd.Switch(extensionshealthcheckcontroller.ControllerName, healthcheckcontroller.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
 	)
 }

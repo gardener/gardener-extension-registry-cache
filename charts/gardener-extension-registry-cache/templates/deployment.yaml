@@ -23,6 +23,11 @@ spec:
         {{- if .Values.imageVectorOverwrite }}
         checksum/configmap-extension-imagevector-overwrite: {{ include (print $.Template.BasePath "/configmap-imagevector-overwrite.yaml") . | sha256sum }}
         {{- end }}
+        {{- if .Values.metrics.enableScraping }}
+        prometheus.io/name: "{{ .Release.Name }}"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.metrics.port }}"
+        {{- end }}
       labels:
         app.kubernetes.io/name: gardener-extension-registry-cache
         app.kubernetes.io/instance: {{ .Release.Name }}

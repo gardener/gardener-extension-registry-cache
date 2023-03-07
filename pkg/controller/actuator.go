@@ -19,28 +19,26 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
-
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/imagevector"
-
 	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
-
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/imagevector"
 )
 
 // NewActuator returns an actuator responsible for Extension resources.

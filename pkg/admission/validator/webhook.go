@@ -15,12 +15,12 @@
 package validator
 
 import (
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
-
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
 )
 
 const (

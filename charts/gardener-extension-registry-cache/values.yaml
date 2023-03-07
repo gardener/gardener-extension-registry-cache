@@ -10,6 +10,12 @@ replicaCount: 1
 
 resources: {}
 
+# settings for metrics, e.g. scraping by seed-prometheus
+metrics:
+  enableScraping: true
+  # default metrics endpoint in controller-runtime
+  port: 8080
+
 vpa:
   enabled: true
   # resourcePolicy:

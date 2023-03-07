@@ -17,11 +17,11 @@ package app
 import (
 	"os"
 
-	registrycmd "github.com/gardener/gardener-extension-registry-cache/pkg/cmd"
-	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
-
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
+	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+
+	registrycmd "github.com/gardener/gardener-extension-registry-cache/pkg/cmd"
 )
 
 // ExtensionName is the name of the extension.
