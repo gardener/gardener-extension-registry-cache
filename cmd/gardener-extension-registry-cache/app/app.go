@@ -29,6 +29,7 @@ import (
 
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/controller/healthcheck"
 )
 
 // NewServiceControllerCommand creates a new command that is used to start the registry service controller.
@@ -86,8 +87,10 @@ func (o *Options) run(ctx context.Context) error {
 	}
 
 	ctrlConfig := o.registryOptions.Completed()
+	ctrlConfig.ApplyHealthCheckConfig(&healthcheck.DefaultAddOptions.HealthCheckConfig)
 	ctrlConfig.Apply(&controller.DefaultAddOptions.Config)
 	o.controllerOptions.Completed().Apply(&controller.DefaultAddOptions.ControllerOptions)
+	o.healthOptions.Completed().Apply(&healthcheck.DefaultAddOptions.Controller)
 	o.reconcileOptions.Completed().Apply(&controller.DefaultAddOptions.IgnoreOperationAnnotation)
 	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
 
