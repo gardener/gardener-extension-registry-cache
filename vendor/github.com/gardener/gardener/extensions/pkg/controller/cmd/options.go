@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -73,6 +73,9 @@ const (
 
 	// GardenerVersionFlag is the name of the command line flag containing the Gardener version.
 	GardenerVersionFlag = "gardener-version"
+	// GardenletManagesMCMFlag is the name of the command line flag containing the Gardener version.
+	// TODO(rfranzke): Remove this flag when all provider extensions support the feature, see https://github.com/gardener/gardener/issues/7594.
+	GardenletManagesMCMFlag = "gardenlet-manages-mcm"
 
 	// LogLevelFlag is the name of the command line flag containing the log level.
 	LogLevelFlag = "log-level"
@@ -230,11 +233,11 @@ func (m *ManagerOptions) AddFlags(fs *pflag.FlagSet) {
 
 // Complete implements Completer.Complete.
 func (m *ManagerOptions) Complete() error {
-	if !sets.New[string](logger.AllLogLevels...).Has(m.LogLevel) {
+	if !sets.New(logger.AllLogLevels...).Has(m.LogLevel) {
 		return fmt.Errorf("invalid --%s: %s", LogLevelFlag, m.LogLevel)
 	}
 
-	if !sets.New[string](logger.AllLogFormats...).Has(m.LogFormat) {
+	if !sets.New(logger.AllLogFormats...).Has(m.LogFormat) {
 		return fmt.Errorf("invalid --%s: %s", LogFormatFlag, m.LogFormat)
 	}
 
@@ -491,21 +494,25 @@ type SwitchConfig struct {
 
 // GeneralOptions are command line options that can be set for general configuration.
 type GeneralOptions struct {
-	// GardenerVersion string
+	// GardenerVersion is the version of the Gardener.
 	GardenerVersion string
+	// GardenletManagesMCM specifies whether gardenlet manages the machine-controller-manager.
+	GardenletManagesMCM bool
 
 	config *GeneralConfig
 }
 
 // GeneralConfig is a completed general configuration.
 type GeneralConfig struct {
-	// GardenerVersion string
+	// GardenerVersion is the version of the Gardener.
 	GardenerVersion string
+	// GardenletManagesMCM specifies whether gardenlet manages the machine-controller-manager.
+	GardenletManagesMCM bool
 }
 
 // Complete implements Complete.
 func (r *GeneralOptions) Complete() error {
-	r.config = &GeneralConfig{r.GardenerVersion}
+	r.config = &GeneralConfig{r.GardenerVersion, r.GardenletManagesMCM}
 	return nil
 }
 
@@ -517,4 +524,5 @@ func (r *GeneralOptions) Completed() *GeneralConfig {
 // AddFlags implements Flagger.AddFlags.
 func (r *GeneralOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&r.GardenerVersion, GardenerVersionFlag, "", "Version of the gardenlet.")
+	fs.BoolVar(&r.GardenletManagesMCM, GardenletManagesMCMFlag, false, "Specifies whether gardenlet manages the machine-controller-manager.")
 }

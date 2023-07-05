@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -104,6 +104,12 @@ const (
 	// DeploymentNameKubeControllerManager is a constant for the name of a Kubernetes deployment object that contains
 	// the kube-controller-manager pod.
 	DeploymentNameKubeControllerManager = "kube-controller-manager"
+	// DeploymentNameDependencyWatchdogProber is a constant for the name of a Kubernetes deployment object that contains
+	// the dependency-watchdog-prober pod.
+	DeploymentNameDependencyWatchdogProber = "dependency-watchdog-prober"
+	// DeploymentNameDependencyWatchdogWeeder is a constant for the name of a Kubernetes deployment object that contains
+	// the dependency-watchdog-weeder pod.
+	DeploymentNameDependencyWatchdogWeeder = "dependency-watchdog-weeder"
 	// DeploymentNameGardenlet is a constant for the name of a Kubernetes deployment object that contains
 	// the Gardenlet pod.
 	DeploymentNameGardenlet = "gardenlet"
@@ -118,17 +124,19 @@ const (
 	// DeploymentNameGardenerResourceManager is a constant for the name of a Kubernetes deployment object that contains
 	// the gardener-resource-manager pod.
 	DeploymentNameGardenerResourceManager = "gardener-resource-manager"
-	// DeploymentNameGrafanaOperators is a constant for the name of a Kubernetes deployment object that contains
-	// the grafana-operators pod.
-	DeploymentNameGrafanaOperators = "grafana-operators"
-	// DeploymentNameGrafanaUsers is a constant for the name of a Kubernetes deployment object that contains
-	// the grafana-users pod.
-	DeploymentNameGrafanaUsers = "grafana-users"
 	// DeploymentNameGrafana is a constant for the name of a Kubernetes deployment object that contains the grafana pod.
 	DeploymentNameGrafana = "grafana"
+	// DeploymentNamePlutono is a constant for the name of a Kubernetes deployment object that contains the plutono pod.
+	DeploymentNamePlutono = "plutono"
 	// DeploymentNameEventLogger is a constant for the name of a Kubernetes deployment object that contains
 	// the event-logger pod.
 	DeploymentNameEventLogger = "event-logger"
+	// DeploymentNameFluentOperator is a constant for the name of a Kubernetes deployment object that contains
+	// the fluent-operator pod.
+	DeploymentNameFluentOperator = "fluent-operator"
+	// DaemonSetNameFluentBit is a constant for the name of a Kubernetes Daemonset object that contains
+	// the fluent-bit pod.
+	DaemonSetNameFluentBit = "fluent-bit"
 	// DeploymentNameKubeStateMetrics is a constant for the name of a Kubernetes deployment object that contains
 	// the kube-state-metrics pod.
 	DeploymentNameKubeStateMetrics = "kube-state-metrics"
@@ -167,6 +175,9 @@ const (
 	// StatefulSetNameLoki is a constant for the name of a Kubernetes stateful set object that contains
 	// the loki pod.
 	StatefulSetNameLoki = "loki"
+	// StatefulSetNameVali is a constant for the name of a Kubernetes stateful set object that contains
+	// the vali pod.
+	StatefulSetNameVali = "vali"
 	// StatefulSetNamePrometheus is a constant for the name of a Kubernetes stateful set object that contains
 	// the prometheus pod.
 	StatefulSetNamePrometheus = "prometheus"
@@ -241,6 +252,8 @@ const (
 	GardenRoleKubeconfig = "kubeconfig"
 	// GardenRoleCACluster is the value of the GardenRole key indicating type 'ca-cluster'.
 	GardenRoleCACluster = "ca-cluster"
+	// GardenRoleCAClient is the value of the GardenRole key indicating type 'ca-client'.
+	GardenRoleCAClient = "ca-client"
 	// GardenRoleSSHKeyPair is the value of the GardenRole key indicating type 'ssh-keypair'.
 	GardenRoleSSHKeyPair = "ssh-keypair"
 	// GardenRoleDefaultDomain is the value of the GardenRole key indicating type 'default-domain'.
@@ -263,10 +276,6 @@ const (
 	// GardenRoleExposureClassHandler is the value of the GardenRole key indicating type 'exposureclass-handler'.
 	GardenRoleExposureClassHandler = "exposureclass-handler"
 
-	// ShootControlPlaneEnforceZone is an annotation key which is used to pin or schedule all control-plane pods
-	// to the very same availability zone.
-	// Deprecated: Only kept for removal of the label.
-	ShootControlPlaneEnforceZone = "control-plane.shoot.gardener.cloud/enforce-zone"
 	// ShootUID is an annotation key for the shoot namespace in the seed cluster,
 	// which value will be the value of `shoot.status.uid`
 	ShootUID = "shoot.gardener.cloud/uid"
@@ -295,7 +304,6 @@ const (
 	// automatic scale-down shall be disabled for the etcd, kube-apiserver, kube-controller-manager.
 	// Note that this annotation is alpha and can be removed anytime without further notice. Only use it if you know
 	// what you do.
-	// TODO(shreyas-s-rao): Deprecate HA annotation with the stable release of zonal clusters feature.
 	ShootAlphaControlPlaneScaleDownDisabled = "alpha.control-plane.scaling.shoot.gardener.cloud/scale-down-disabled"
 
 	// ShootAlphaControlPlaneHAVPN is a constant for an annotation on the Shoot resource to enforce
@@ -375,6 +383,9 @@ const (
 	// OperationRotateETCDEncryptionKeyComplete is a constant for an annotation on a Shoot indicating that the
 	// rotation of the ETCD encryption key shall be completed.
 	OperationRotateETCDEncryptionKeyComplete = "rotate-etcd-encryption-key-complete"
+	// SeedOperationRenewGardenAccessSecrets is a constant for an annotation on a Seed indicating that the
+	// all garden access secrets on the seed shall be renewed.
+	SeedOperationRenewGardenAccessSecrets = "renew-garden-access-secrets"
 
 	// SeedResourceManagerClass is the resource-class managed by the Gardener-Resource-Manager
 	// instance in the garden namespace on the seeds.
@@ -398,6 +409,11 @@ const (
 	LabelLogging = "logging"
 	// LabelMonitoring is a constant for a label for monitoring stack configurations
 	LabelMonitoring = "monitoring"
+	// LabelKeyCustomLoggingResource is the key of the label which is used from the operator to select the CustomResources which will be imported in the FluentBit configuration.
+	// TODO(nickytd): the label key has to be migrated to "fluentbit.gardener.cloud/type".
+	LabelKeyCustomLoggingResource = "fluentbit.gardener/type"
+	// LabelValueCustomLoggingResource is the value of the label which is used from the operator to select the CustomResources which will be imported in the FluentBit configuration.
+	LabelValueCustomLoggingResource = "seed"
 
 	// LabelSecretBindingReference is used to identify secrets which are referred by a SecretBinding (not necessarily in the same namespace).
 	LabelSecretBindingReference = "reference.gardener.cloud/secretbinding"
@@ -435,19 +451,8 @@ const (
 	// LabelNetworkPolicyToRuntimeAPIServer allows Egress from pods labeled with 'networking.gardener.cloud/to-runtime-apiserver=allowed' to runtime Kubernetes
 	// API Server.
 	LabelNetworkPolicyToRuntimeAPIServer = "networking.gardener.cloud/to-runtime-apiserver"
-	// LabelNetworkPolicyToShootAPIServer allows Egress from pods labeled with 'networking.gardener.cloud/to-shoot-apiserver=allowed' to talk to Shoot's
-	// Kubernetes API Server.
-	// Deprecated. Use `networking.resources.gardener.cloud/to-kube-apiserver-tcp-443=allowed` instead.
-	LabelNetworkPolicyToShootAPIServer = "networking.gardener.cloud/to-shoot-apiserver"
 	// LabelNetworkPolicyToShootNetworks allows Egress from pods labeled with 'networking.gardener.cloud/to-shoot-networks=allowed' to IPv4 blocks belonging to the Shoot network.
 	LabelNetworkPolicyToShootNetworks = "networking.gardener.cloud/to-shoot-networks"
-	// LabelNetworkPolicyToAllShootAPIServers allows Egress from pods labeled with 'networking.gardener.cloud/to-all-shoot-apiservers=allowed' to talk to all
-	// Shoots' Kubernetes API Servers.
-	LabelNetworkPolicyToAllShootAPIServers = "networking.gardener.cloud/to-all-shoot-apiservers"
-	// LabelNetworkPolicyFromShootAPIServer allows Egress from Shoot's Kubernetes API Server to talk to pods labeled with
-	// 'networking.gardener.cloud/from-shoot-apiserver=allowed'.
-	// Deprecated. Label `kube-apiserver` pods with `networking.resources.gardener.cloud/to-<service-name>-tcp-<container-port>=allowed` instead.
-	LabelNetworkPolicyFromShootAPIServer = "networking.gardener.cloud/from-shoot-apiserver"
 	// LabelNetworkPolicyFromPrometheus allows Ingress from Prometheus to pods labeled with 'networking.gardener.cloud/from-prometheus=allowed' and ports
 	// named 'metrics' in the PodSpecification.
 	// Deprecated: This label is deprecated and will be removed in a future version. Components in shoot namespaces
@@ -455,10 +460,6 @@ const (
 	//  `networking.resources.gardener.cloud/from-policy-pod-label-selector=all-scrape-targets` and
 	//  `networking.resources.gardener.cloud/from-policy-allowed-ports=[{"protocol":<protocol>,"port":<port>}]`.
 	LabelNetworkPolicyFromPrometheus = "networking.gardener.cloud/from-prometheus"
-	// LabelNetworkPolicyToAggregatePrometheus allows Egress traffic to the aggregate Prometheus.
-	LabelNetworkPolicyToAggregatePrometheus = "networking.gardener.cloud/to-aggregate-prometheus"
-	// LabelNetworkPolicyToSeedPrometheus allows Egress traffic to the seed Prometheus.
-	LabelNetworkPolicyToSeedPrometheus = "networking.gardener.cloud/to-seed-prometheus"
 	// LabelNetworkPolicyShootFromSeed allows Ingress traffic from the seed cluster (where the shoot's kube-apiserver
 	// runs).
 	LabelNetworkPolicyShootFromSeed = "networking.gardener.cloud/from-seed"
@@ -472,9 +473,27 @@ const (
 	// which should be scraped by Prometheus.
 	// See https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md#overwriting-the-pod-selector-label.
 	LabelNetworkPolicyScrapeTargets = "all-scrape-targets"
+	// LabelNetworkPolicySeedScrapeTargets is a constant for pod selector label which can be used on Services for
+	// seed system components or extensions which should be scraped by Prometheus.
+	// See https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md#overwriting-the-pod-selector-label.
+	LabelNetworkPolicySeedScrapeTargets = "all-seed-scrape-targets"
+	// LabelNetworkPolicyWebhookTargets is a constant for pod selector label which can be used on Services for
+	// garden or shoot components which serve a webhook endpoint that must be reachable by the kube-apiserver.
+	// See https://github.com/gardener/gardener/blob/master/docs/concepts/resource-manager.md#overwriting-the-pod-selector-label.
+	LabelNetworkPolicyWebhookTargets = "all-webhook-targets"
 	// LabelNetworkPolicyShootNamespaceAlias is a constant for the alias for shoot namespaces used in NetworkPolicy
 	// labels.
 	LabelNetworkPolicyShootNamespaceAlias = "all-shoots"
+	// LabelNetworkPolicyExtensionsNamespaceAlias is a constant for the alias for extension namespaces used in
+	// NetworkPolicy labels.
+	LabelNetworkPolicyExtensionsNamespaceAlias = "extensions"
+	// LabelNetworkPolicyIstioIngressNamespaceAlias is a constant for the alias for shoot namespaces used in
+	// NetworkPolicy labels.
+	LabelNetworkPolicyIstioIngressNamespaceAlias = "all-istio-ingresses"
+	// LabelNetworkPolicyAccessTargetAPIServer is a constant for the alias for a namespace which runs components that
+	// need to initiate the communication with a target API server (e.g., shoot API server or virtual garden API
+	// server).
+	LabelNetworkPolicyAccessTargetAPIServer = "networking.gardener.cloud/access-target-apiserver"
 
 	// LabelApp is a constant for a label key.
 	LabelApp = "app"
@@ -495,9 +514,13 @@ const (
 
 	// LabelAPIServerExposure is a constant for label key which gardener can add to various objects related
 	// to kube-apiserver exposure.
+	// Deprecated: This label key is deprecated and will be removed after Gardener v1.80 has been released.
+	// TODO(rfranzke): Drop this after v1.80 has been released.
 	LabelAPIServerExposure = "core.gardener.cloud/apiserver-exposure"
 	// LabelAPIServerExposureGardenerManaged is a constant for label value which gardener sets on the label key
 	// "core.gardener.cloud/apiserver-exposure" to indicate that it's responsible for apiserver exposure (via SNI).
+	// Deprecated: This label key is deprecated and will be removed after Gardener v1.80 has been released.
+	// TODO(rfranzke): Drop this after v1.80 has been released.
 	LabelAPIServerExposureGardenerManaged = "gardener-managed"
 	// LabelExposureClassHandlerName is the label key for exposure class handler names.
 	LabelExposureClassHandlerName = "handler.exposureclass.gardener.cloud/name"
@@ -543,11 +566,6 @@ const (
 	// Kubernetes resources' step. Concretely, after the specified seconds, all the finalizers of the affected resources
 	// are forcefully removed.
 	AnnotationShootCleanupKubernetesResourcesFinalizeGracePeriodSeconds = "shoot.gardener.cloud/cleanup-kubernetes-resources-finalize-grace-period-seconds"
-	// AnnotationShootCleanupNamespaceResourcesFinalizeGracePeriodSeconds is a key for an annotation on a Shoot
-	// resource that declares the grace period in seconds for finalizing the resources handled in the 'cleanup shoot
-	// namespaces' step. Concretely, after the specified seconds, all the finalizers of the affected resources are
-	// forcefully removed.
-	AnnotationShootCleanupNamespaceResourcesFinalizeGracePeriodSeconds = "shoot.gardener.cloud/cleanup-namespaces-finalize-grace-period-seconds"
 	// AnnotationShootInfrastructureCleanupWaitPeriodSeconds is a key for an annotation on a Shoot
 	// resource that declares the wait period in seconds for infrastructure resources cleanup. Concretely,
 	// Gardener will wait for the specified time after the Infrastructure extension object has been deleted to allow
@@ -562,25 +580,20 @@ const (
 	// Note that changing this value only applies to new nodes. Existing nodes which already computed their individual
 	// delays will not recompute it.
 	AnnotationShootCloudConfigExecutionMaxDelaySeconds = "shoot.gardener.cloud/cloud-config-execution-max-delay-seconds"
-	// AnnotationShootForceRestore is a key for an annotation on a Shoot or BackupEntry resource to trigger a forceful restoration to a different seed.
-	AnnotationShootForceRestore = "shoot.gardener.cloud/force-restore"
 	// AnnotationNodeLocalDNS enables a per node dns cache on the shoot cluster.
+	// Deprecated: This annotation is deprecated and will be removed in a future version.
+	// Use field `.spec.systemComponents.nodeLocalDNS.enabled` in Shoot instead.
 	AnnotationNodeLocalDNS = "alpha.featuregates.shoot.gardener.cloud/node-local-dns"
 	// AnnotationNodeLocalDNSForceTcpToClusterDns enforces upgrade to tcp connections for communication between node local and cluster dns.
+	// Deprecated: This annotation is deprecated and will be removed in a future version.
+	// Use field `.spec.systemComponents.nodeLocalDNS.forceTCPToClusterDNS` in Shoot instead.
 	AnnotationNodeLocalDNSForceTcpToClusterDns = "alpha.featuregates.shoot.gardener.cloud/node-local-dns-force-tcp-to-cluster-dns"
 	// AnnotationNodeLocalDNSForceTcpToUpstreamDns enforces upgrade to tcp connections for communication between node local and upstream dns.
+	// Deprecated: This annotation is deprecated and will be removed in a future version.
+	// Use field `.spec.systemComponents.nodeLocalDNS.forceTCPToUpstreamDNS` in Shoot instead.
 	AnnotationNodeLocalDNSForceTcpToUpstreamDns = "alpha.featuregates.shoot.gardener.cloud/node-local-dns-force-tcp-to-upstream-dns"
 	// AnnotationCoreDNSRewritingDisabled disables core dns query rewriting even if the corresponding feature gate is enabled.
 	AnnotationCoreDNSRewritingDisabled = "alpha.featuregates.shoot.gardener.cloud/core-dns-rewriting-disabled"
-
-	// AnnotationShootAPIServerSNIPodInjector is the key for an annotation of a Shoot cluster whose value indicates
-	// if pod injection of 'KUBERNETES_SERVICE_HOST' environment variable should happen for clusters where APIServerSNI
-	// featuregate is enabled.
-	// Any value than 'disable' enables this feature.
-	AnnotationShootAPIServerSNIPodInjector = "alpha.featuregates.shoot.gardener.cloud/apiserver-sni-pod-injector"
-	// AnnotationShootAPIServerSNIPodInjectorDisableValue is the value of the
-	// `alpha.featuregates.shoot.gardener.cloud/apiserver-sni-pod-injector` annotation that disables the pod injection.
-	AnnotationShootAPIServerSNIPodInjectorDisableValue = "disable"
 
 	// AnnotationSeccompDefaultProfile is the key for an annotation applied to a PodSecurityPolicy which specifies
 	// which is the default seccomp profile to apply to containers.
@@ -590,7 +603,6 @@ const (
 	AnnotationSeccompAllowedProfiles = "seccomp.security.alpha.kubernetes.io/allowedProfileNames"
 	// AnnotationSeccompAllowedProfilesRuntimeDefaultValue is the value for the default container runtime profile.
 	AnnotationSeccompAllowedProfilesRuntimeDefaultValue = "runtime/default"
-
 	// OperatingSystemConfigUnitNameKubeletService is a constant for a unit in the operating system config that contains the kubelet service.
 	OperatingSystemConfigUnitNameKubeletService = "kubelet.service"
 	// OperatingSystemConfigUnitNameDockerService is a constant for a unit in the operating system config that contains the docker service.
@@ -601,10 +613,10 @@ const (
 	OperatingSystemConfigFilePathKernelSettings = "/etc/sysctl.d/99-k8s-general.conf"
 	// OperatingSystemConfigFilePathKubeletConfig is a constant for a path to a file in the operating system config that contains the kubelet configuration.
 	OperatingSystemConfigFilePathKubeletConfig = "/var/lib/kubelet/config/kubelet"
-	// OperatingSystemConfigUnitNamePromtailService is a constant for a unit in the operating system config that contains the promtail service.
-	OperatingSystemConfigUnitNamePromtailService = "promtail.service"
-	// OperatingSystemConfigFilePathPromtailConfig is a constant for a path to a file in the operating system config that contains the kubelet configuration.
-	OperatingSystemConfigFilePathPromtailConfig = "/var/lib/promtail/config/config"
+	// OperatingSystemConfigUnitNameValitailService is a constant for a unit in the operating system config that contains the valitail service.
+	OperatingSystemConfigUnitNameValitailService = "valitail.service"
+	// OperatingSystemConfigFilePathValitailConfig is a constant for a path to a file in the operating system config that contains the kubelet configuration.
+	OperatingSystemConfigFilePathValitailConfig = "/var/lib/valitail/config/config"
 	// OperatingSystemConfigFilePathBinaries is a constant for a path to a directory in the operating system config that contains the binaries.
 	OperatingSystemConfigFilePathBinaries = "/opt/bin"
 
@@ -616,10 +628,10 @@ const (
 	PrometheusConfigMapAlertingRules = "alerting_rules"
 	// PrometheusConfigMapScrapeConfig is a constant for the Prometheus scrape config tag in provider-specific monitoring configuration
 	PrometheusConfigMapScrapeConfig = "scrape_config"
-	// GrafanaConfigMapUserDashboard is a constant for the Grafana user dashboard tag in provider-specific monitoring configuration
-	GrafanaConfigMapUserDashboard = "dashboard_users"
-	// GrafanaConfigMapOperatorDashboard is a constant for the Grafana operator dashboard tag in provider-specific monitoring configuration
-	GrafanaConfigMapOperatorDashboard = "dashboard_operators"
+	// PlutonoConfigMapUserDashboard is a constant for the Plutono user dashboard tag in provider-specific monitoring configuration
+	PlutonoConfigMapUserDashboard = "dashboard_users"
+	// PlutonoConfigMapOperatorDashboard is a constant for the Plutono operator dashboard tag in provider-specific monitoring configuration
+	PlutonoConfigMapOperatorDashboard = "dashboard_operators"
 
 	// LabelControllerRegistrationName is the key of a label on extension namespaces that indicates the controller registration name.
 	LabelControllerRegistrationName = "controllerregistration.core.gardener.cloud/name"
@@ -654,13 +666,11 @@ const (
 	ClusterIdentityOriginShoot = "shoot"
 
 	// SeedNginxIngressClass defines the ingress class for the seed nginx ingress controller
-	SeedNginxIngressClass = "nginx-gardener"
-	// SeedNginxIngressClass122 defines the ingress class for the seed nginx ingress controller for K8s >= 1.22
-	SeedNginxIngressClass122 = "nginx-ingress-gardener"
+	SeedNginxIngressClass = "nginx-ingress-gardener"
+	// ShootNginxIngressClass defines the ingress class for the shoot nginx ingress controller addon.
+	ShootNginxIngressClass = "nginx"
 	// IngressKindNginx defines nginx as kind as managed Seed ingress
 	IngressKindNginx = "nginx"
-	// NginxIngressClass defines the ingress class for the seed nginx ingress controller if the seed cluster is a non Gardener managed cluster.
-	NginxIngressClass = "nginx"
 
 	// SeedsGroup is the identity group for gardenlets when authenticating to the API server.
 	SeedsGroup = "gardener.cloud:system:seeds"
@@ -701,8 +711,6 @@ const (
 	DNSRecordInternalName = "internal"
 	// DNSRecordExternalName is a constant for DNSRecord objects used for the external domain name.
 	DNSRecordExternalName = "external"
-	// DNSRecordOwnerName is a constant for DNSRecord objects used for the owner domain name.
-	DNSRecordOwnerName = "owner"
 
 	// ArchitectureAMD64 is a constant for the 'amd64' architecture.
 	ArchitectureAMD64 = "amd64"
@@ -802,4 +810,7 @@ const (
 	TaintNodeCriticalComponentsNotReady = "node.gardener.cloud/critical-components-not-ready"
 	// LabelNodeCriticalComponent is the label key for marking node-critical component pods.
 	LabelNodeCriticalComponent = "node.gardener.cloud/critical-component"
+	// AnnotationWaitForCSINode is the annotation key for csi-driver-node pods,
+	// indicating they use the driver specified in the value.
+	AnnotationPrefixWaitForCSINode = "node.gardener.cloud/wait-for-csi-node-"
 )

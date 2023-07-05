@@ -1,4 +1,4 @@
-// Copyright (c) 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2018 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,7 +85,8 @@ type ShootSpec struct {
 	// Kubernetes contains the version and configuration settings of the control plane components.
 	Kubernetes Kubernetes `json:"kubernetes" protobuf:"bytes,6,opt,name=kubernetes"`
 	// Networking contains information about cluster networking such as CNI Plugin type, CIDRs, ...etc.
-	Networking Networking `json:"networking" protobuf:"bytes,7,opt,name=networking"`
+	// +optional
+	Networking *Networking `json:"networking,omitempty" protobuf:"bytes,7,opt,name=networking"`
 	// Maintenance contains information about the time window for maintenance operations and which
 	// operations should be performed.
 	// +optional
@@ -103,9 +104,9 @@ type ShootSpec struct {
 	// SecretBindingName is the name of the a SecretBinding that has a reference to the provider secret.
 	// The credentials inside the provider secret will be used to create the shoot in the respective account.
 	// This field is immutable.
-	SecretBindingName string `json:"secretBindingName" protobuf:"bytes,13,opt,name=secretBindingName"`
+	// +optional
+	SecretBindingName *string `json:"secretBindingName,omitempty" protobuf:"bytes,13,opt,name=secretBindingName"`
 	// SeedName is the name of the seed cluster that runs the control plane of the Shoot.
-	// This field is immutable when the SeedChange feature gate is disabled.
 	// +optional
 	SeedName *string `json:"seedName,omitempty" protobuf:"bytes,14,opt,name=seedName"`
 	// SeedSelector is an optional selector which must match a seed's labels for the shoot to be scheduled on that seed.
@@ -235,10 +236,10 @@ type ShootCredentialsRotation struct {
 	Observability *ShootObservabilityRotation `json:"observability,omitempty" protobuf:"bytes,4,opt,name=observability"`
 	// ServiceAccountKey contains information about the service account key credential rotation.
 	// +optional
-	ServiceAccountKey *ShootServiceAccountKeyRotation `json:"serviceAccountKey,omitempty" protobuf:"bytes,5,opt,name=serviceAccountKey"`
+	ServiceAccountKey *ServiceAccountKeyRotation `json:"serviceAccountKey,omitempty" protobuf:"bytes,5,opt,name=serviceAccountKey"`
 	// ETCDEncryptionKey contains information about the ETCD encryption key credential rotation.
 	// +optional
-	ETCDEncryptionKey *ShootETCDEncryptionKeyRotation `json:"etcdEncryptionKey,omitempty" protobuf:"bytes,6,opt,name=etcdEncryptionKey"`
+	ETCDEncryptionKey *ETCDEncryptionKeyRotation `json:"etcdEncryptionKey,omitempty" protobuf:"bytes,6,opt,name=etcdEncryptionKey"`
 }
 
 // CARotation contains information about the certificate authority credential rotation.
@@ -292,8 +293,8 @@ type ShootObservabilityRotation struct {
 	LastCompletionTime *metav1.Time `json:"lastCompletionTime,omitempty" protobuf:"bytes,2,opt,name=lastCompletionTime"`
 }
 
-// ShootServiceAccountKeyRotation contains information about the service account key credential rotation.
-type ShootServiceAccountKeyRotation struct {
+// ServiceAccountKeyRotation contains information about the service account key credential rotation.
+type ServiceAccountKeyRotation struct {
 	// Phase describes the phase of the service account key credential rotation.
 	Phase CredentialsRotationPhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
 	// LastCompletionTime is the most recent time when the service account key credential rotation was successfully
@@ -313,8 +314,8 @@ type ShootServiceAccountKeyRotation struct {
 	LastCompletionTriggeredTime *metav1.Time `json:"lastCompletionTriggeredTime,omitempty" protobuf:"bytes,5,opt,name=lastCompletionTriggeredTime"`
 }
 
-// ShootETCDEncryptionKeyRotation contains information about the ETCD encryption key credential rotation.
-type ShootETCDEncryptionKeyRotation struct {
+// ETCDEncryptionKeyRotation contains information about the ETCD encryption key credential rotation.
+type ETCDEncryptionKeyRotation struct {
 	// Phase describes the phase of the ETCD encryption key credential rotation.
 	Phase CredentialsRotationPhase `json:"phase" protobuf:"bytes,1,opt,name=phase"`
 	// LastCompletionTime is the most recent time when the ETCD encryption key credential rotation was successfully
@@ -382,9 +383,6 @@ type KubernetesDashboard struct {
 }
 
 const (
-	// KubernetesDashboardAuthModeBasic uses basic authentication mode for auth.
-	// Deprecated: basic authentication has been removed in Kubernetes v1.19+.
-	KubernetesDashboardAuthModeBasic = "basic"
 	// KubernetesDashboardAuthModeToken uses token-based mode for auth.
 	KubernetesDashboardAuthModeToken = "token"
 )
@@ -503,7 +501,7 @@ type HibernationSchedule struct {
 	// End is a Cron spec at which time a Shoot will be woken up.
 	// +optional
 	End *string `json:"end,omitempty" protobuf:"bytes,2,opt,name=end"`
-	// Location is the time location in which both start and and shall be evaluated.
+	// Location is the time location in which both start and shall be evaluated.
 	// +optional
 	Location *string `json:"location,omitempty" protobuf:"bytes,3,opt,name=location"`
 }
@@ -675,11 +673,10 @@ type KubeAPIServerConfig struct {
 	// AuditConfig contains configuration settings for the audit of the kube-apiserver.
 	// +optional
 	AuditConfig *AuditConfig `json:"auditConfig,omitempty" protobuf:"bytes,4,opt,name=auditConfig"`
-	// EnableBasicAuthentication defines whether basic authentication should be enabled for this cluster or not.
-	// +optional
-	// Defaults to false.
-	// Deprecated: basic authentication has been removed in Kubernetes v1.19+. This field will be removed in a future version.
-	EnableBasicAuthentication *bool `json:"enableBasicAuthentication,omitempty" protobuf:"varint,5,opt,name=enableBasicAuthentication"`
+
+	// EnableBasicAuthentication is tombstoned to show why 5 is reserved protobuf tag.
+	// EnableBasicAuthentication *bool `json:"enableBasicAuthentication,omitempty" protobuf:"varint,5,opt,name=enableBasicAuthentication"`
+
 	// OIDCConfig contains configuration settings for the OIDC provider.
 	// +optional
 	OIDCConfig *OIDCConfig `json:"oidcConfig,omitempty" protobuf:"bytes,6,opt,name=oidcConfig"`
@@ -777,7 +774,6 @@ type ServiceAccountConfig struct {
 	// AcceptedIssuers is an additional set of issuers that are used to determine which service account tokens are accepted.
 	// These values are not used to generate new service account tokens. Only useful when service account tokens are also
 	// issued by another external system or a change of the current issuer that is used for generating tokens is being performed.
-	// This field is only available for Kubernetes v1.22 or later.
 	// +optional
 	AcceptedIssuers []string `json:"acceptedIssuers,omitempty" protobuf:"bytes,5,opt,name=acceptedIssuers"`
 }
@@ -853,6 +849,9 @@ type AdmissionPlugin struct {
 	// Disabled specifies whether this plugin should be disabled.
 	// +optional
 	Disabled *bool `json:"disabled,omitempty" protobuf:"varint,3,opt,name=disabled"`
+	// KubeconfigSecretName specifies the name of a secret containing the kubeconfig for this admission plugin.
+	// +optional
+	KubeconfigSecretName *string `json:"kubeconfigSecretName,omitempty" protobuf:"bytes,4,opt,name=kubeconfigSecretName"`
 }
 
 // WatchCacheSizes contains configuration of the API server's watch cache sizes.
@@ -1113,6 +1112,9 @@ type KubeletConfig struct {
 	//  "5m" for Kubernetes >= v1.26.
 	// +optional
 	StreamingConnectionIdleTimeout *metav1.Duration `json:"streamingConnectionIdleTimeout,omitempty" protobuf:"bytes,25,opt,name=streamingConnectionIdleTimeout"`
+	// MemorySwap configures swap memory available to container workloads.
+	// +optional
+	MemorySwap *MemorySwapConfiguration `json:"memorySwap,omitempty" protobuf:"bytes,26,opt,name=memorySwap"`
 }
 
 // KubeletConfigEviction contains kubelet eviction thresholds supporting either a resource.Quantity or a percentage based value.
@@ -1188,10 +1190,32 @@ type KubeletConfigReserved struct {
 	PID *resource.Quantity `json:"pid,omitempty" protobuf:"bytes,4,opt,name=pid"`
 }
 
+// SwapBehavior configures swap memory available to container workloads
+type SwapBehavior string
+
+const (
+	// LimitedSwap is a constant for the kubelet's swap behavior limitting the amount of swap usable for Kubernetes workloads. Workloads on the node not managed by Kubernetes can still swap.
+	// - cgroupsv1 host: Kubernetes workloads can use any combination of memory and swap, up to the pod's memory limit
+	// - cgroupsv2 host: swap is managed independently from memory. Kubernetes workloads cannot use swap memory.
+	LimitedSwap SwapBehavior = "LimitedSwap"
+	// UnlimitedSwap is a constant for the kubelet's swap behavior enabling Kubernetes workloads to use as much swap memory as required, up to the system limit (not limited by pod or container memory limits).
+	UnlimitedSwap SwapBehavior = "UnlimitedSwap"
+)
+
+// MemorySwapConfiguration contains kubelet swap configuration
+// For more information, please see KEP: 2400-node-swap
+type MemorySwapConfiguration struct {
+	// SwapBehavior configures swap memory available to container workloads. May be one of {"LimitedSwap", "UnlimitedSwap"}
+	// defaults to: LimitedSwap
+	// +optional
+	SwapBehavior *SwapBehavior `json:"swapBehavior,omitempty" protobuf:"bytes,1,opt,name=swapBehavior"`
+}
+
 // Networking defines networking parameters for the shoot cluster.
 type Networking struct {
 	// Type identifies the type of the networking plugin. This field is immutable.
-	Type string `json:"type" protobuf:"bytes,1,opt,name=type"`
+	// +optional
+	Type *string `json:"type,omitempty" protobuf:"bytes,1,opt,name=type"`
 	// ProviderConfig is the configuration passed to network resource.
 	// +optional
 	ProviderConfig *runtime.RawExtension `json:"providerConfig,omitempty" protobuf:"bytes,2,opt,name=providerConfig"`
@@ -1247,7 +1271,8 @@ type MaintenanceAutoUpdate struct {
 	// KubernetesVersion indicates whether the patch Kubernetes version may be automatically updated (default: true).
 	KubernetesVersion bool `json:"kubernetesVersion" protobuf:"varint,1,opt,name=kubernetesVersion"`
 	// MachineImageVersion indicates whether the machine image version may be automatically updated (default: true).
-	MachineImageVersion bool `json:"machineImageVersion" protobuf:"varint,2,opt,name=machineImageVersion"`
+	// +optional
+	MachineImageVersion *bool `json:"machineImageVersion,omitempty" protobuf:"varint,2,opt,name=machineImageVersion"`
 }
 
 // MaintenanceTimeWindow contains information about the time window for maintenance operations.
@@ -1294,7 +1319,8 @@ type Provider struct {
 	// Workers is a list of worker groups.
 	// +patchMergeKey=name
 	// +patchStrategy=merge
-	Workers []Worker `json:"workers" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,4,rep,name=workers"`
+	// +optional
+	Workers []Worker `json:"workers,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,4,rep,name=workers"`
 	// WorkersSettings contains settings for all workers.
 	// +optional
 	WorkersSettings *WorkersSettings `json:"workersSettings,omitempty" protobuf:"bytes,5,opt,name=workersSettings"`
@@ -1309,7 +1335,7 @@ type Worker struct {
 	// +optional
 	CABundle *string `json:"caBundle,omitempty" protobuf:"bytes,2,opt,name=caBundle"`
 	// CRI contains configurations of CRI support of every machine in the worker pool.
-	// Defaults to a CRI with name `containerd` when the Kubernetes version of the `Shoot` is >= 1.22.
+	// Defaults to a CRI with name `containerd`.
 	// +optional
 	CRI *CRI `json:"cri,omitempty" protobuf:"bytes,3,opt,name=cri"`
 	// Kubernetes contains configuration for Kubernetes components related to this worker pool.
@@ -1322,14 +1348,18 @@ type Worker struct {
 	Name string `json:"name" protobuf:"bytes,6,opt,name=name"`
 	// Machine contains information about the machine type and image.
 	Machine Machine `json:"machine" protobuf:"bytes,7,opt,name=machine"`
-	// Maximum is the maximum number of VMs to create.
+	// Maximum is the maximum number of machines to create.
+	// This value is divided by the number of configured zones for a fair distribution.
 	Maximum int32 `json:"maximum" protobuf:"varint,8,opt,name=maximum"`
-	// Minimum is the minimum number of VMs to create.
+	// Minimum is the minimum number of machines to create.
+	// This value is divided by the number of configured zones for a fair distribution.
 	Minimum int32 `json:"minimum" protobuf:"varint,9,opt,name=minimum"`
-	// MaxSurge is maximum number of VMs that are created during an update.
+	// MaxSurge is maximum number of machines that are created during an update.
+	// This value is divided by the number of configured zones for a fair distribution.
 	// +optional
 	MaxSurge *intstr.IntOrString `json:"maxSurge,omitempty" protobuf:"bytes,10,opt,name=maxSurge"`
-	// MaxUnavailable is the maximum number of VMs that can be unavailable during an update.
+	// MaxUnavailable is the maximum number of machines that can be unavailable during an update.
+	// This value is divided by the number of configured zones for a fair distribution.
 	// +optional
 	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty" protobuf:"bytes,11,opt,name=maxUnavailable"`
 	// ProviderConfig is the provider-specific configuration for this worker pool.
@@ -1357,6 +1387,9 @@ type Worker struct {
 	// MachineControllerManagerSettings contains configurations for different worker-pools. Eg. MachineDrainTimeout, MachineHealthTimeout.
 	// +optional
 	MachineControllerManagerSettings *MachineControllerManagerSettings `json:"machineControllerManager,omitempty" protobuf:"bytes,19,opt,name=machineControllerManager"`
+	// Sysctls is a map of kernel settings to apply on all machines in this worker pool.
+	// +optional
+	Sysctls map[string]string `json:"sysctls,omitempty" protobuf:"bytes,20,rep,name=sysctls"`
 }
 
 // MachineControllerManagerSettings contains configurations for different worker-pools. Eg. MachineDrainTimeout, MachineHealthTimeout.
