@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
+func addDefaultingFuncs(_ *runtime.Scheme) error {
 	return nil
 	// return RegisterDefaults(scheme)
 }

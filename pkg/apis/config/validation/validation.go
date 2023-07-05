@@ -21,7 +21,7 @@ import (
 )
 
 // ValidateConfiguration validates the passed configuration instance.
-func ValidateConfiguration(config *config.Configuration) field.ErrorList {
+func ValidateConfiguration(_ *config.Configuration) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	return allErrs

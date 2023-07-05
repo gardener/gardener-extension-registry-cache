@@ -53,7 +53,7 @@ func (s *shoot) InjectClient(client client.Client) error {
 }
 
 // Validate validates the given shoot object
-func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
+func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
 	shoot, ok := new.(*core.Shoot)
 	if !ok {
 		return fmt.Errorf("wrong object type %T", new)
@@ -74,7 +74,7 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 
 	for _, worker := range shoot.Spec.Provider.Workers {
 		if worker.CRI.Name != "containerd" {
-			return fmt.Errorf("Containerruntime needs to be containerd when container registry cache is used")
+			return fmt.Errorf("containerruntime needs to be containerd when container registry cache is used")
 		}
 	}
 

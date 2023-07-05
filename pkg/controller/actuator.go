@@ -84,11 +84,7 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
 
-	if err := a.createResources(ctx, log, registryConfig, cluster, namespace); err != nil {
-		return err
-	}
-
-	return nil
+	return a.createResources(ctx, log, registryConfig, cluster, namespace)
 }
 
 // Delete the Extension resource.
@@ -102,7 +98,7 @@ func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv
 }
 
 // Migrate the Extension resource.
-func (a *actuator) Migrate(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Migrate(_ context.Context, _ logr.Logger, _ *extensionsv1alpha1.Extension) error {
 	return nil
 }
 
