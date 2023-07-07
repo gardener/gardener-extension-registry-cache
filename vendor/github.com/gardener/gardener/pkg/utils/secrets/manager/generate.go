@@ -1,4 +1,4 @@
-// Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,11 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
-	apiserverconfigv1 "k8s.io/apiserver/pkg/apis/config/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -136,66 +131,6 @@ func (m *manager) generateAndCreate(ctx context.Context, config secretsutils.Con
 }
 
 func (m *manager) keepExistingSecretsIfNeeded(ctx context.Context, configName string, newData map[string][]byte) (map[string][]byte, error) {
-	existingSecret := &corev1.Secret{}
-
-	// For backwards-compatibility, we need to keep some of the existing secrets (cluster-admin token, basic auth
-	// password, etc.).
-	// TODO(rfranzke): Remove this switch statement in the future.
-	switch configName {
-	case "kube-apiserver-etcd-encryption-key":
-		if err := m.client.Get(ctx, kubernetesutils.Key(m.namespace, "etcd-encryption-secret"), existingSecret); err != nil {
-			if !apierrors.IsNotFound(err) {
-				return nil, err
-			}
-			return newData, nil
-		}
-
-		scheme := runtime.NewScheme()
-		if err := apiserverconfigv1.AddToScheme(scheme); err != nil {
-			return nil, err
-		}
-
-		ser := json.NewSerializerWithOptions(json.DefaultMetaFactory, scheme, scheme, json.SerializerOptions{Yaml: true, Pretty: false, Strict: false})
-		versions := schema.GroupVersions([]schema.GroupVersion{apiserverconfigv1.SchemeGroupVersion})
-		codec := serializer.NewCodecFactory(scheme).CodecForVersions(ser, ser, versions, versions)
-
-		encryptionConfiguration := &apiserverconfigv1.EncryptionConfiguration{}
-		if _, _, err := codec.Decode(existingSecret.Data["encryption-configuration.yaml"], nil, encryptionConfiguration); err != nil {
-			return nil, err
-		}
-
-		var existingEncryptionKey, existingEncryptionSecret []byte
-
-		if len(encryptionConfiguration.Resources) != 0 {
-			for _, provider := range encryptionConfiguration.Resources[0].Providers {
-				if provider.AESCBC != nil && len(provider.AESCBC.Keys) != 0 {
-					existingEncryptionKey = []byte(provider.AESCBC.Keys[0].Name)
-					existingEncryptionSecret = []byte(provider.AESCBC.Keys[0].Secret)
-					break
-				}
-			}
-		}
-
-		if existingEncryptionKey == nil || existingEncryptionSecret == nil {
-			return nil, fmt.Errorf("old etcd encryption key or secret was not found")
-		}
-
-		return map[string][]byte{
-			secretsutils.DataKeyEncryptionKeyName: existingEncryptionKey,
-			secretsutils.DataKeyEncryptionSecret:  existingEncryptionSecret,
-		}, nil
-
-	case "service-account-key":
-		if err := m.client.Get(ctx, kubernetesutils.Key(m.namespace, "service-account-key"), existingSecret); err != nil {
-			if !apierrors.IsNotFound(err) {
-				return nil, err
-			}
-			return newData, nil
-		}
-
-		return existingSecret.Data, nil
-	}
-
 	existingSecrets := &corev1.SecretList{}
 	if err := m.client.List(ctx, existingSecrets, client.InNamespace(m.namespace), client.MatchingLabels{LabelKeyUseDataForName: configName}); err != nil {
 		return nil, err

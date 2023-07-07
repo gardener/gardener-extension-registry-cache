@@ -1,4 +1,4 @@
-// Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright 2019 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -241,6 +241,8 @@ const ContainerDRuntimeContainersBinFolder = "/var/bin/containerruntimes"
 type FileCodecID string
 
 const (
+	// PlainFileCodecID is the plain file codec id.
+	PlainFileCodecID FileCodecID = ""
 	// B64FileCodecID is the base64 file codec id.
 	B64FileCodecID FileCodecID = "b64"
 	// GZIPFileCodecID is the gzip file codec id.
