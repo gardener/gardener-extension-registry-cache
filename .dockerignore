@@ -3,7 +3,8 @@
 
 # Exclude folders relevant for build
 !.dockerignore
-!charts/
+!charts/images.go
+!charts/images.yaml
 !cmd/
 !hack/
 !pkg/

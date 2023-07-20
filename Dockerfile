@@ -12,7 +12,7 @@ WORKDIR /
 ############# gardener-extension-registry-cache
 FROM base AS registry-cache
 
-COPY charts /charts
+COPY charts/images.yaml /charts/
 COPY --from=builder /go/bin/gardener-extension-registry-cache /gardener-extension-registry-cache
 ENTRYPOINT ["/gardener-extension-registry-cache"]
 
