@@ -23,6 +23,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
@@ -143,7 +144,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 	}
 
 	// create ManagedResource for the registryCache
-	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, resources, nil)
+	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, resources)
 	if err != nil {
 		return err
 	}
@@ -190,7 +191,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		return err
 	}
 
-	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, resources, nil)
+	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, resources)
 	if err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 }
 
 func (a *actuator) deleteResources(ctx context.Context, log logr.Logger, namespace string) error {
-	log.Info("deleting managed resource for registry cache")
+	log.Info("Deleting managed resource for registry cache")
 
 	if err := managedresources.Delete(ctx, a.client, namespace, v1alpha1.RegistryResourceName, false); err != nil {
 		return err
@@ -210,12 +211,17 @@ func (a *actuator) deleteResources(ctx context.Context, log logr.Logger, namespa
 	return managedresources.WaitUntilDeleted(timeoutCtx, a.client, namespace, v1alpha1.RegistryResourceName)
 }
 
-func (a *actuator) createManagedResources(ctx context.Context, name, namespace string, resources map[string][]byte, injectedLabels map[string]string) error {
+func (a *actuator) createManagedResources(ctx context.Context, name, namespace string, resources map[string][]byte) error {
 	var (
+		injectedLabels = map[string]string{v1beta1constants.ShootNoCleanup: "true"}
+		labels         = map[string]string{managedresources.LabelKeyOrigin: "registry-cache"}
+
 		secretName, secret = managedresources.NewSecret(a.client, namespace, name, resources, false)
-		managedResource    = managedresources.New(a.client, namespace, name, "", pointer.Bool(false), nil, injectedLabels, pointer.Bool(false)).
-					WithSecretRef(secretName).
-					DeletePersistentVolumeClaims(true)
+		// TODO(ialidzhikov): Use the managedresources.NewForShoot func when https://github.com/gardener/gardener/pull/8260
+		// is adopted in the extension.
+		managedResource = managedresources.New(a.client, namespace, name, "", pointer.Bool(false), labels, injectedLabels, pointer.Bool(false)).
+				WithSecretRef(secretName).
+				DeletePersistentVolumeClaims(true)
 	)
 
 	if err := secret.Reconcile(ctx); err != nil {
