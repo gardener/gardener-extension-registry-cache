@@ -131,7 +131,7 @@ func (c *criEnsurer) Ensure() ([]client.Object, error) {
 					Containers: []corev1.Container{
 						{
 							Name:  criEnsurerName,
-							Image: c.CRIEnsurerImage.Repository,
+							Image: c.CRIEnsurerImage.String(),
 							Command: []string{
 								"bash",
 								"-c",

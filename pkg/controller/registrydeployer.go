@@ -109,7 +109,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 						Containers: []v1.Container{
 							{
 								Name:            registryCacheInternalName,
-								Image:           c.RegistryImage.Repository,
+								Image:           c.RegistryImage.String(),
 								ImagePullPolicy: v1.PullIfNotPresent,
 								Ports: []v1.ContainerPort{
 									{
