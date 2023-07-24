@@ -21,7 +21,6 @@ import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -36,20 +35,11 @@ type shoot struct {
 }
 
 // NewShootValidator returns a new instance of a shoot validator.
-func NewShootValidator() extensionswebhook.Validator {
-	return &shoot{}
-}
-
-// InjectScheme injects the given scheme into the validator.
-func (s *shoot) InjectScheme(scheme *runtime.Scheme) error {
-	s.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
-	return nil
-}
-
-// InjectClient injects the given client into the validator.
-func (s *shoot) InjectClient(client client.Client) error {
-	s.client = client
-	return nil
+func NewShootValidator(client client.Client, decoder runtime.Decoder) extensionswebhook.Validator {
+	return &shoot{
+		client:  client,
+		decoder: decoder,
+	}
 }
 
 // Validate validates the given shoot object
