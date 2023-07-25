@@ -2,16 +2,13 @@
 
 aliases:
   registry-cache-reviewers:
-  - Gerrit91
-  - JensAc
-  - MrBatschner
+  - ialidzhikov
+  - dimitar-kostadinov
+  - Kostov6
   - oliver-goetz
   - rfranzke
   - timebertt
   registry-cache-approvers:
-  - Gerrit91
-  - JensAc
-  - MrBatschner
-  - oliver-goetz
-  - rfranzke
-  - timebertt
+  - ialidzhikov
+  - dimitar-kostadinov
+  - Kostov6
