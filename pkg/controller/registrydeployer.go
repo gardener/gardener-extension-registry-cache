@@ -21,7 +21,7 @@ import (
 
 	"github.com/gardener/gardener/pkg/utils/imagevector"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -46,6 +46,8 @@ const (
 	registryCacheInternalName  = "registry-cache"
 	registryCacheVolumeName    = "cache-volume"
 	registryVolumeMountPath    = "/var/lib/registry"
+	// registryCachePort is the port on which the pull through cache serves requests.
+	registryCachePort = 5000
 
 	environmentVarialbleNameRegistryURL    = "REGISTRY_PROXY_REMOTEURL"
 	environmentVarialbleNameRegistryDelete = "REGISTRY_STORAGE_DELETE_ENABLED"
@@ -71,21 +73,21 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 	upstreamURL = fmt.Sprintf("https://%s", upstreamURL)
 
 	var (
-		service = &v1.Service{
+		service = &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      c.Name,
 				Namespace: registryCacheNamespaceName,
 				Labels:    c.Labels,
 			},
-			Spec: v1.ServiceSpec{
+			Spec: corev1.ServiceSpec{
 				Selector: c.Labels,
-				Ports: []v1.ServicePort{{
+				Ports: []corev1.ServicePort{{
 					Name:       registryCacheInternalName,
-					Port:       5000,
-					Protocol:   v1.ProtocolTCP,
+					Port:       registryCachePort,
+					Protocol:   corev1.ProtocolTCP,
 					TargetPort: intstr.FromString(registryCacheInternalName),
 				}},
-				Type: v1.ServiceTypeClusterIP,
+				Type: corev1.ServiceTypeClusterIP,
 			},
 		}
 
@@ -101,23 +103,23 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 					MatchLabels: c.Labels,
 				},
 				Replicas: pointer.Int32(1),
-				Template: v1.PodTemplateSpec{
+				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: c.Labels,
 					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
 							{
 								Name:            registryCacheInternalName,
 								Image:           c.RegistryImage.String(),
-								ImagePullPolicy: v1.PullIfNotPresent,
-								Ports: []v1.ContainerPort{
+								ImagePullPolicy: corev1.PullIfNotPresent,
+								Ports: []corev1.ContainerPort{
 									{
-										ContainerPort: 5000,
+										ContainerPort: registryCachePort,
 										Name:          registryCacheInternalName,
 									},
 								},
-								Env: []v1.EnvVar{
+								Env: []corev1.EnvVar{
 									{
 										Name:  environmentVarialbleNameRegistryURL,
 										Value: upstreamURL,
@@ -127,7 +129,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 										Value: strconv.FormatBool(c.GarbageCollectionEnabled),
 									},
 								},
-								VolumeMounts: []v1.VolumeMount{
+								VolumeMounts: []corev1.VolumeMount{
 									{
 										Name:      registryCacheVolumeName,
 										ReadOnly:  false,
@@ -138,17 +140,17 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 						},
 					},
 				},
-				VolumeClaimTemplates: []v1.PersistentVolumeClaim{
+				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:   registryCacheVolumeName,
 							Labels: c.Labels,
 						},
-						Spec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-							Resources: v1.ResourceRequirements{
-								Requests: v1.ResourceList{
-									v1.ResourceStorage: c.VolumeSize,
+						Spec: corev1.PersistentVolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: c.VolumeSize,
 								},
 							},
 						},

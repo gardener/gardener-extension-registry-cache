@@ -40,6 +40,7 @@ var (
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&RegistryConfig{},
+		&RegistryStatus{},
 	)
 
 	return nil

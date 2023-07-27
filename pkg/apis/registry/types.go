@@ -21,20 +21,39 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RegistryConfig configuration resource
+// RegistryConfig contains information about registry caches to deploy.
 type RegistryConfig struct {
 	metav1.TypeMeta
 
-	// Caches is a slice of registry cache to deploy
+	// Caches is a slice of registry caches to deploy.
 	Caches []RegistryCache
 }
 
-// RegistryCache defines a registry cache to deploy
+// RegistryCache represents a registry cache to deploy.
 type RegistryCache struct {
-	// Upstream is the remote registry host (and optionally port) to cache
+	// Upstream is the remote registry host (and optionally port) to cache.
 	Upstream string
-	// Size is the size of the registry cache
+	// Size is the size of the registry cache.
 	Size *resource.Quantity
-	// GarbageCollectionEnabled enables/disables cache garbage collection
+	// GarbageCollectionEnabled enables/disables cache garbage collection.
 	GarbageCollectionEnabled *bool
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// RegistryStatus contains information about deployed registry caches.
+type RegistryStatus struct {
+	metav1.TypeMeta
+
+	// Caches is a slice of deployed registry caches.
+	Caches []RegistryCacheStatus
+}
+
+// RegistryCacheStatus represents a deployed registry cache.
+type RegistryCacheStatus struct {
+	// Upstream is the remote registry host (and optionally port).
+	Upstream string
+	// Endpoint is the registry cache endpoint.
+	// Example: "http://10.4.246.205:5000"
+	Endpoint string
 }
