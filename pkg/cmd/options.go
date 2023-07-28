@@ -22,6 +22,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
+	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -32,6 +33,7 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
 	healthcheckcontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/healthcheck"
+	oscwebhook "github.com/gardener/gardener-extension-registry-cache/pkg/webhook/operatingsystemconfig"
 )
 
 var (
@@ -114,4 +116,13 @@ func (c *RegistryServiceConfig) ApplyHealthCheckConfig(config *extensionsapiscon
 	if c.config.HealthCheckConfig != nil {
 		*config = *c.config.HealthCheckConfig
 	}
+}
+
+const webhookName = "registry-cache"
+
+// WebhookSwitchOptions are the webhookcmd.SwitchOptions for the registry-cache webhook.
+func WebhookSwitchOptions() *webhookcmd.SwitchOptions {
+	return webhookcmd.NewSwitchOptions(
+		webhookcmd.Switch(webhookName, oscwebhook.New),
+	)
 }
