@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,9 +42,11 @@ import (
 )
 
 // NewActuator returns an actuator responsible for Extension resources.
-func NewActuator(config config.Configuration) extension.Actuator {
+func NewActuator(client client.Client, decoder runtime.Decoder, config config.Configuration) extension.Actuator {
 	return &actuator{
-		config: config,
+		client:  client,
+		decoder: decoder,
+		config:  config,
 	}
 }
 
@@ -53,18 +54,6 @@ type actuator struct {
 	client  client.Client
 	decoder runtime.Decoder
 	config  config.Configuration
-}
-
-// InjectClient injects the controller runtime client into the reconciler.
-func (a *actuator) InjectClient(client client.Client) error {
-	a.client = client
-	return nil
-}
-
-// InjectScheme injects the given scheme into the reconciler.
-func (a *actuator) InjectScheme(scheme *runtime.Scheme) error {
-	a.decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
-	return nil
 }
 
 // Reconcile the Extension resource.
