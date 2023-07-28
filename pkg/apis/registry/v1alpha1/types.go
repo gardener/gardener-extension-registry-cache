@@ -22,9 +22,6 @@ import (
 // RegistryResourceName is the name for registry resources in the shoot.
 const RegistryResourceName = "extension-registry-cache"
 
-// RegistryEnsurerResourceName is the name for registry cri ensurer resources in the shoot.
-const RegistryEnsurerResourceName = "extension-registry-cache-cri-ensurer"
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RegistryConfig contains information about registry caches to deploy.
