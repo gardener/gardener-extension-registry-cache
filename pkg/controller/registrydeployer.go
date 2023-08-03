@@ -19,7 +19,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gardener/gardener/pkg/utils/imagevector"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
 type registryCache struct {
@@ -38,7 +39,7 @@ type registryCache struct {
 	VolumeSize               resource.Quantity
 	GarbageCollectionEnabled bool
 
-	RegistryImage *imagevector.Image
+	RegistryImage string
 }
 
 const (
@@ -66,11 +67,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 
 	c.Labels[registryCacheServiceUpstreamLabel] = c.Upstream
 
-	upstreamURL := c.Upstream
-	if upstreamURL == "docker.io" {
-		upstreamURL = "registry-1.docker.io"
-	}
-	upstreamURL = fmt.Sprintf("https://%s", upstreamURL)
+	upstreamURL := fmt.Sprintf("https://%s", registryutils.GetUpstreamServer(c.Upstream))
 
 	var (
 		service = &corev1.Service{
@@ -111,7 +108,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 						Containers: []corev1.Container{
 							{
 								Name:            registryCacheInternalName,
-								Image:           c.RegistryImage.String(),
+								Image:           c.RegistryImage,
 								ImagePullPolicy: corev1.PullIfNotPresent,
 								Ports: []corev1.ContainerPort{
 									{

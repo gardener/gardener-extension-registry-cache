@@ -126,7 +126,7 @@ func (a *actuator) createResources(ctx context.Context, registryConfig *v1alpha1
 			Upstream:                 cache.Upstream,
 			VolumeSize:               *cache.Size,
 			GarbageCollectionEnabled: *cache.GarbageCollectionEnabled,
-			RegistryImage:            registryImage,
+			RegistryImage:            registryImage.String(),
 		}
 
 		os, err := c.Ensure()

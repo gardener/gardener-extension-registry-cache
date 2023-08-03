@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
 const hostsTOMLTemplate = `server = "%s"
@@ -99,10 +100,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 	}
 
 	for _, cache := range registryStatus.Caches {
-		upstreamServer := cache.Upstream
-		if upstreamServer == "docker.io" {
-			upstreamServer = "registry-1.docker.io"
-		}
+		upstreamServer := registryutils.GetUpstreamServer(cache.Upstream)
 
 		appendUniqueFile(new, extensionsv1alpha1.File{
 			Path:        filepath.Join(containerdRegistryHostsDirectory, cache.Upstream, "hosts.toml"),
