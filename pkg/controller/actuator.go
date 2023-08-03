@@ -23,7 +23,6 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
@@ -33,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
@@ -202,15 +200,13 @@ func (a *actuator) deleteResources(ctx context.Context, log logr.Logger, namespa
 
 func (a *actuator) createManagedResources(ctx context.Context, name, namespace string, resources map[string][]byte) error {
 	var (
-		injectedLabels = map[string]string{v1beta1constants.ShootNoCleanup: "true"}
-		labels         = map[string]string{managedresources.LabelKeyOrigin: "registry-cache"}
+		origin      = "registry-cache"
+		keepObjects = false
 
 		secretName, secret = managedresources.NewSecret(a.client, namespace, name, resources, false)
-		// TODO(ialidzhikov): Use the managedresources.NewForShoot func when https://github.com/gardener/gardener/pull/8260
-		// is adopted in the extension.
-		managedResource = managedresources.New(a.client, namespace, name, "", pointer.Bool(false), labels, injectedLabels, pointer.Bool(false)).
-				WithSecretRef(secretName).
-				DeletePersistentVolumeClaims(true)
+		managedResource    = managedresources.NewForShoot(a.client, namespace, name, origin, keepObjects).
+					WithSecretRef(secretName).
+					DeletePersistentVolumeClaims(true)
 	)
 
 	if err := secret.Reconcile(ctx); err != nil {
