@@ -19,6 +19,7 @@ import (
 
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
+	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	registrycmd "github.com/gardener/gardener-extension-registry-cache/pkg/cmd"
@@ -38,11 +39,26 @@ type Options struct {
 	heartbeatOptions   *heartbeatcmd.Options
 	controllerSwitches *controllercmd.SwitchOptions
 	reconcileOptions   *controllercmd.ReconcilerOptions
+	webhookOptions     *webhookcmd.AddToManagerOptions
 	optionAggregator   controllercmd.OptionAggregator
 }
 
 // NewOptions creates a new Options instance.
 func NewOptions() *Options {
+	// options for the webhook server
+	webhookServerOptions := &webhookcmd.ServerOptions{
+		Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
+	}
+
+	webhookSwitches := registrycmd.WebhookSwitchOptions()
+	webhookOptions := webhookcmd.NewAddToManagerOptions(
+		"registry-cache",
+		"",
+		nil,
+		webhookServerOptions,
+		webhookSwitches,
+	)
+
 	options := &Options{
 		generalOptions:  &controllercmd.GeneralOptions{},
 		registryOptions: &registrycmd.RegistryOptions{},
@@ -70,6 +86,7 @@ func NewOptions() *Options {
 		},
 		controllerSwitches: registrycmd.ControllerSwitches(),
 		reconcileOptions:   &controllercmd.ReconcilerOptions{},
+		webhookOptions:     webhookOptions,
 	}
 
 	options.optionAggregator = controllercmd.NewOptionAggregator(
@@ -82,6 +99,7 @@ func NewOptions() *Options {
 		controllercmd.PrefixOption("heartbeat-", options.heartbeatOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,
+		options.webhookOptions,
 	)
 
 	return options

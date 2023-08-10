@@ -11,6 +11,7 @@ spec:
   cloudProfileName: local
   secretBindingName: local # dummy, doesn't contain any credentials
   region: local
+  purpose: testing
   extensions:
   - type: registry-cache
     providerConfig:
@@ -43,7 +44,7 @@ spec:
       maxSurge: 1
       maxUnavailable: 0
   kubernetes:
-    version: 1.25.0
+    version: 1.27.1
     kubelet:
       serializeImagePulls: false
       registryPullQPS: 10

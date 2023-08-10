@@ -17,7 +17,7 @@ Resource Types:
 <a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig</a>)
 </p>
 <p>
-<p>RegistryCache defines a registry cache to deploy</p>
+<p>RegistryCache represents a registry cache to deploy.</p>
 </p>
 <table>
 <thead>
@@ -35,7 +35,7 @@ string
 </em>
 </td>
 <td>
-<p>Upstream is the remote registry host (and optionally port) to cache</p>
+<p>Upstream is the remote registry host (and optionally port) to cache.</p>
 </td>
 </tr>
 <tr>
@@ -47,7 +47,8 @@ k8s.io/apimachinery/pkg/api/resource.Quantity
 </td>
 <td>
 <em>(Optional)</em>
-<p>Size is the size of the registry cache, defaults to 10Gi.</p>
+<p>Size is the size of the registry cache.
+Defaults to 10Gi.</p>
 </td>
 </tr>
 <tr>
@@ -59,7 +60,50 @@ bool
 </td>
 <td>
 <em>(Optional)</em>
-<p>GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.</p>
+<p>GarbageCollectionEnabled enables/disables cache garbage collection.
+Defaults to true.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryCacheStatus">RegistryCacheStatus
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryStatus">RegistryStatus</a>)
+</p>
+<p>
+<p>RegistryCacheStatus represents a deployed registry cache.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>upstream</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Upstream is the remote registry host (and optionally port).</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>endpoint</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>Endpoint is the registry cache endpoint.
+Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:5000&rdquo;</a></p>
 </td>
 </tr>
 </tbody>
@@ -67,7 +111,7 @@ bool
 <h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig
 </h3>
 <p>
-<p>RegistryConfig configuration resource</p>
+<p>RegistryConfig contains information about registry caches to deploy.</p>
 </p>
 <table>
 <thead>
@@ -87,7 +131,35 @@ bool
 </em>
 </td>
 <td>
-<p>Caches is a slice of registry cache to deploy</p>
+<p>Caches is a slice of registry caches to deploy.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryStatus">RegistryStatus
+</h3>
+<p>
+<p>RegistryStatus contains information about deployed registry caches.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>caches</code></br>
+<em>
+<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryCacheStatus">
+[]RegistryCacheStatus
+</a>
+</em>
+</td>
+<td>
+<p>Caches is a slice of deployed registry caches.</p>
 </td>
 </tr>
 </tbody>

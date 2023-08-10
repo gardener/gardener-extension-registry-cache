@@ -23,6 +23,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
+	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
@@ -55,16 +56,9 @@ type actuator struct {
 }
 
 // Reconcile the Extension resource.
-func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extensionsv1alpha1.Extension) error {
+func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	if ex.Spec.ProviderConfig == nil {
 		return nil
-	}
-
-	namespace := ex.GetNamespace()
-
-	cluster, err := controller.GetCluster(ctx, a.client, namespace)
-	if err != nil {
-		return err
 	}
 
 	registryConfig := &v1alpha1.RegistryConfig{}
@@ -72,7 +66,29 @@ func (a *actuator) Reconcile(ctx context.Context, log logr.Logger, ex *extension
 		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
 
-	return a.createResources(ctx, log, registryConfig, cluster, namespace)
+	namespace := ex.GetNamespace()
+	if err := a.createResources(ctx, registryConfig, namespace); err != nil {
+		return fmt.Errorf("failed to create resources: %w", err)
+	}
+
+	cluster, err := controller.GetCluster(ctx, a.client, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster: %w", err)
+	}
+
+	// If the hibernation is enabled, don't try to fetch the registry cache endpoints from the Shoot cluster.
+	if !v1beta1helper.HibernationIsEnabled(cluster.Shoot) {
+		registryStatus, err := a.computeProviderStatus(ctx, registryConfig, namespace)
+		if err != nil {
+			return fmt.Errorf("failed to compute provider status: %w", err)
+		}
+
+		if err := a.updateProviderStatus(ctx, ex, registryStatus); err != nil {
+			return fmt.Errorf("failed to update Extension status: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Delete the Extension resource.
@@ -90,14 +106,10 @@ func (a *actuator) Migrate(_ context.Context, _ logr.Logger, _ *extensionsv1alph
 	return nil
 }
 
-func (a *actuator) createResources(ctx context.Context, log logr.Logger, registryConfig *v1alpha1.RegistryConfig, cluster *controller.Cluster, namespace string) error {
+func (a *actuator) createResources(ctx context.Context, registryConfig *v1alpha1.RegistryConfig, namespace string) error {
 	registryImage, err := imagevector.ImageVector().FindImage("registry")
 	if err != nil {
 		return fmt.Errorf("failed to find registry image: %w", err)
-	}
-	ensurerImage, err := imagevector.ImageVector().FindImage("cri-config-ensurer")
-	if err != nil {
-		return fmt.Errorf("failed to find ensurer image: %w", err)
 	}
 
 	objects := []client.Object{
@@ -114,7 +126,7 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 			Upstream:                 cache.Upstream,
 			VolumeSize:               *cache.Size,
 			GarbageCollectionEnabled: *cache.GarbageCollectionEnabled,
-			RegistryImage:            registryImage,
+			RegistryImage:            registryImage.String(),
 		}
 
 		os, err := c.Ensure()
@@ -125,60 +137,13 @@ func (a *actuator) createResources(ctx context.Context, log logr.Logger, registr
 		objects = append(objects, os...)
 	}
 
-	resources, err := managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer).AddAllAndSerialize(objects...)
+	resources, err := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer).AddAllAndSerialize(objects...)
 	if err != nil {
 		return err
 	}
 
 	// create ManagedResource for the registryCache
 	err = a.createManagedResources(ctx, v1alpha1.RegistryResourceName, namespace, resources)
-	if err != nil {
-		return err
-	}
-
-	// get service IPs from shoot
-	_, shootClient, err := util.NewClientForShoot(ctx, a.client, cluster.ObjectMeta.Name, client.Options{}, extensionsconfig.RESTOptions{})
-	if err != nil {
-		return fmt.Errorf("shoot client cannot be crated: %w", err)
-	}
-
-	selector := labels.NewSelector()
-	r, err := labels.NewRequirement(registryCacheServiceUpstreamLabel, selection.Exists, nil)
-	if err != nil {
-		return err
-	}
-	selector = selector.Add(*r)
-
-	// get all registry cache services
-	services := &corev1.ServiceList{}
-	if err := shootClient.List(ctx, services, client.InNamespace(registryCacheNamespaceName), client.MatchingLabelsSelector{Selector: selector}); err != nil {
-		log.Error(err, "could not read services from shoot")
-		return err
-	}
-
-	if len(services.Items) != len(registryConfig.Caches) {
-		return fmt.Errorf("not all services for all configured caches exist")
-	}
-
-	e := criEnsurer{
-		Namespace:          registryCacheNamespaceName,
-		CRIEnsurerImage:    ensurerImage,
-		ReferencedServices: services,
-	}
-
-	os, err := e.Ensure()
-	if err != nil {
-		return err
-	}
-	objects = []client.Object{}
-	objects = append(objects, os...)
-
-	resources, err = managedresources.NewRegistry(kubernetes.SeedScheme, kubernetes.SeedCodec, kubernetes.SeedSerializer).AddAllAndSerialize(objects...)
-	if err != nil {
-		return err
-	}
-
-	err = a.createManagedResources(ctx, v1alpha1.RegistryEnsurerResourceName, namespace, resources)
 	if err != nil {
 		return err
 	}
@@ -210,18 +175,59 @@ func (a *actuator) createManagedResources(ctx context.Context, name, namespace s
 	)
 
 	if err := secret.Reconcile(ctx); err != nil {
-		return fmt.Errorf("could not create or update secret of managed resources: %w", err)
+		return fmt.Errorf("failed to create or update secret of managed resources: %w", err)
 	}
 
 	if err := managedResource.Reconcile(ctx); err != nil {
-		return fmt.Errorf("could not create or update managed resource: %w", err)
+		return fmt.Errorf("failed to not create or update managed resource: %w", err)
 	}
 
 	return nil
 }
 
-func (a *actuator) updateStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, _ *v1alpha1.RegistryConfig) error {
+func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *v1alpha1.RegistryConfig, namespace string) (*v1alpha1.RegistryStatus, error) {
+	// get service IPs from shoot
+	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfig.RESTOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create shoot client: %w", err)
+	}
+
+	selector := labels.NewSelector()
+	r, err := labels.NewRequirement(registryCacheServiceUpstreamLabel, selection.Exists, nil)
+	if err != nil {
+		return nil, err
+	}
+	selector = selector.Add(*r)
+
+	// get all registry cache services
+	services := &corev1.ServiceList{}
+	if err := shootClient.List(ctx, services, client.InNamespace(registryCacheNamespaceName), client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		return nil, fmt.Errorf("failed to read services from shoot: %w", err)
+	}
+
+	if len(services.Items) != len(registryConfig.Caches) {
+		return nil, fmt.Errorf("not all services for all configured caches exist")
+	}
+
+	caches := []v1alpha1.RegistryCacheStatus{}
+	for _, service := range services.Items {
+		caches = append(caches, v1alpha1.RegistryCacheStatus{
+			Upstream: service.Labels[registryCacheServiceUpstreamLabel],
+			Endpoint: fmt.Sprintf("http://%s:%d", service.Spec.ClusterIP, registryCachePort),
+		})
+	}
+
+	return &v1alpha1.RegistryStatus{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			Kind:       "RegistryStatus",
+		},
+		Caches: caches,
+	}, nil
+}
+
+func (a *actuator) updateProviderStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, registryStatus *v1alpha1.RegistryStatus) error {
 	patch := client.MergeFrom(ex.DeepCopy())
-	// ex.Status.Resources = resources
+	ex.Status.ProviderStatus = &runtime.RawExtension{Object: registryStatus}
 	return a.client.Status().Patch(ctx, ex, patch)
 }

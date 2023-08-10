@@ -3,7 +3,3 @@ images:
   sourceRepository: github.com/distribution/distribution
   repository: eu.gcr.io/gardener-project/3rd/registry
   tag: "2.8.1"
-- name: cri-config-ensurer
-  sourceRepository: github.com/tianon/docker-bash
-  repository: eu.gcr.io/gardener-project/3rd/bash
-  tag: "5.2.0-alpine3.15"

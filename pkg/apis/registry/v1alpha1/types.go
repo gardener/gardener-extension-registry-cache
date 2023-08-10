@@ -22,27 +22,45 @@ import (
 // RegistryResourceName is the name for registry resources in the shoot.
 const RegistryResourceName = "extension-registry-cache"
 
-// RegistryEnsurerResourceName is the name for registry cri ensurer resources in the shoot.
-const RegistryEnsurerResourceName = "extension-registry-cache-cri-ensurer"
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RegistryConfig configuration resource
+// RegistryConfig contains information about registry caches to deploy.
 type RegistryConfig struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// Caches is a slice of registry cache to deploy
+	// Caches is a slice of registry caches to deploy.
 	Caches []RegistryCache `json:"caches"`
 }
 
-// RegistryCache defines a registry cache to deploy
+// RegistryCache represents a registry cache to deploy.
 type RegistryCache struct {
-	// Upstream is the remote registry host (and optionally port) to cache
+	// Upstream is the remote registry host (and optionally port) to cache.
 	Upstream string `json:"upstream"`
-	// Size is the size of the registry cache, defaults to 10Gi.
+	// Size is the size of the registry cache.
+	// Defaults to 10Gi.
 	// +optional
 	Size *resource.Quantity `json:"size,omitempty"`
-	// GarbageCollectionEnabled enables/disables cache garbage collection, defaults to true.
+	// GarbageCollectionEnabled enables/disables cache garbage collection.
+	// Defaults to true.
 	// +optional
 	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// RegistryStatus contains information about deployed registry caches.
+type RegistryStatus struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// Caches is a slice of deployed registry caches.
+	Caches []RegistryCacheStatus `json:"caches"`
+}
+
+// RegistryCacheStatus represents a deployed registry cache.
+type RegistryCacheStatus struct {
+	// Upstream is the remote registry host (and optionally port).
+	Upstream string `json:"upstream"`
+	// Endpoint is the registry cache endpoint.
+	// Example: "http://10.4.246.205:5000"
+	Endpoint string `json:"endpoint"`
 }

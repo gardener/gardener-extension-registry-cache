@@ -33,6 +33,10 @@ controllers:
   heartbeat: 
     renewIntervalSeconds: 30 
 
+webhookConfig:
+  servicePort: 443
+  serverPort: 10251
+
 registryConfig:
   registries:
     - ...
