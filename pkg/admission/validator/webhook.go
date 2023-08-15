@@ -27,8 +27,6 @@ import (
 const (
 	// Name is a name for a validation webhook.
 	Name = "validator"
-	// SecretsValidatorName is the name of the secrets validator.
-	SecretsValidatorName = "secrets." + Name
 )
 
 var logger = log.Log.WithName("registry-cache-validator-webhook")
@@ -44,7 +42,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Name:     Name,
 		Path:     "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewShootValidator(mgr.GetClient(), decoder): {{Obj: &core.Shoot{}}},
+			NewShootValidator(decoder): {{Obj: &core.Shoot{}}},
 		},
 	})
 }
