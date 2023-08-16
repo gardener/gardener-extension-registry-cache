@@ -14,11 +14,11 @@
 
 package registry
 
-// GetUpstreamServer returns the upstream server by given upstream.
-func GetUpstreamServer(upstream string) string {
+// GetUpstreamURL returns the upstream URL by given upstream.
+func GetUpstreamURL(upstream string) string {
 	if upstream == "docker.io" {
-		return "registry-1.docker.io"
+		return "https://registry-1.docker.io"
 	}
 
-	return upstream
+	return "https://" + upstream
 }

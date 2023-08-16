@@ -67,8 +67,6 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 
 	c.Labels[registryCacheServiceUpstreamLabel] = c.Upstream
 
-	upstreamURL := fmt.Sprintf("https://%s", registryutils.GetUpstreamServer(c.Upstream))
-
 	var (
 		service = &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
@@ -119,7 +117,7 @@ func (c *registryCache) Ensure() ([]client.Object, error) {
 								Env: []corev1.EnvVar{
 									{
 										Name:  environmentVarialbleNameRegistryURL,
-										Value: upstreamURL,
+										Value: registryutils.GetUpstreamURL(c.Upstream),
 									},
 									{
 										Name:  environmentVarialbleNameRegistryDelete,

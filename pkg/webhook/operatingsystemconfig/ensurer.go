@@ -100,14 +100,14 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 	}
 
 	for _, cache := range registryStatus.Caches {
-		upstreamServer := registryutils.GetUpstreamServer(cache.Upstream)
+		upstreamURL := registryutils.GetUpstreamURL(cache.Upstream)
 
 		appendUniqueFile(new, extensionsv1alpha1.File{
 			Path:        filepath.Join(containerdRegistryHostsDirectory, cache.Upstream, "hosts.toml"),
 			Permissions: pointer.Int32(0644),
 			Content: extensionsv1alpha1.FileContent{
 				Inline: &extensionsv1alpha1.FileContentInline{
-					Data: fmt.Sprintf(hostsTOMLTemplate, upstreamServer, cache.Endpoint),
+					Data: fmt.Sprintf(hostsTOMLTemplate, upstreamURL, cache.Endpoint),
 				},
 			},
 		})
