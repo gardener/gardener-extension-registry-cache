@@ -25,12 +25,6 @@ spec:
         garbageCollectionEnabled: false
   networking:
     type: calico
-    providerConfig:
-      apiVersion: calico.networking.extensions.gardener.cloud/v1alpha1
-      kind: NetworkConfig
-      backend: none
-      typha:
-        enabled: false
   provider:
     type: local
     workers:
