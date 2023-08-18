@@ -53,6 +53,9 @@ spec:
         - --webhook-config-namespace={{ .Release.Namespace }}
         - --webhook-config-service-port={{ .Values.webhookConfig.servicePort }}
         - --webhook-config-server-port={{ .Values.webhookConfig.serverPort }}
+        {{- if .Values.metrics.port }}
+        - --metrics-bind-address=:{{ .Values.metrics.port }}
+        {{- end }}
         - --health-bind-address=:{{ .Values.healthPort }}
         - --gardener-version={{ .Values.gardener.version }}
         env:
