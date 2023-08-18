@@ -28,8 +28,6 @@ vpa:
 controllers:
   concurrentSyncs: 5
   ignoreOperationAnnotation: false
-  healthcheck:
-    concurrentSyncs: 5
   heartbeat: 
     renewIntervalSeconds: 30 
 

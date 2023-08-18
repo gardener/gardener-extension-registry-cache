@@ -18,9 +18,7 @@ import (
 	"errors"
 	"os"
 
-	extensionsapisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
-	extensionshealthcheckcontroller "github.com/gardener/gardener/extensions/pkg/controller/healthcheck"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	"github.com/spf13/pflag"
@@ -32,7 +30,6 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
-	healthcheckcontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/healthcheck"
 	oscwebhook "github.com/gardener/gardener-extension-registry-cache/pkg/webhook/operatingsystemconfig"
 )
 
@@ -106,16 +103,8 @@ func (c *RegistryServiceConfig) Apply(config *configapi.Configuration) {
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
 		cmd.Switch(controller.ControllerName, controller.AddToManager),
-		cmd.Switch(extensionshealthcheckcontroller.ControllerName, healthcheckcontroller.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
 	)
-}
-
-// ApplyHealthCheckConfig applies the HealthCheckConfig.
-func (c *RegistryServiceConfig) ApplyHealthCheckConfig(config *extensionsapisconfig.HealthCheckConfig) {
-	if c.config.HealthCheckConfig != nil {
-		*config = *c.config.HealthCheckConfig
-	}
 }
 
 const webhookName = "registry-cache"

@@ -23,18 +23,6 @@ Resource Types:
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>
-<code>healthCheckConfig</code></br>
-<em>
-github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1.HealthCheckConfig
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>HealthCheckConfig is the config for the health check controller.</p>
-</td>
-</tr>
 </tbody>
 </table>
 <hr/>

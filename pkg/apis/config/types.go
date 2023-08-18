@@ -15,7 +15,6 @@
 package config
 
 import (
-	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,7 +23,4 @@ import (
 // Configuration contains information about the registry service configuration.
 type Configuration struct {
 	metav1.TypeMeta
-
-	// HealthCheckConfig is the config for the health check controller.
-	HealthCheckConfig *apisconfig.HealthCheckConfig
 }

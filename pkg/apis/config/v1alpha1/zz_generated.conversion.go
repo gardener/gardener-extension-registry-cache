@@ -22,11 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	unsafe "unsafe"
-
 	config "github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
-	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
-	configv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -52,7 +48,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 }
 
 func autoConvert_v1alpha1_Configuration_To_config_Configuration(in *Configuration, out *config.Configuration, s conversion.Scope) error {
-	out.HealthCheckConfig = (*apisconfig.HealthCheckConfig)(unsafe.Pointer(in.HealthCheckConfig))
 	return nil
 }
 
@@ -62,7 +57,6 @@ func Convert_v1alpha1_Configuration_To_config_Configuration(in *Configuration, o
 }
 
 func autoConvert_config_Configuration_To_v1alpha1_Configuration(in *config.Configuration, out *Configuration, s conversion.Scope) error {
-	out.HealthCheckConfig = (*configv1alpha1.HealthCheckConfig)(unsafe.Pointer(in.HealthCheckConfig))
 	return nil
 }
 
