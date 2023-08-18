@@ -25,6 +25,8 @@ vpa:
   updatePolicy:
     updateMode: "Auto"
 
+healthPort: 8081
+
 controllers:
   concurrentSyncs: 5
   ignoreOperationAnnotation: false
