@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
 )
@@ -62,17 +63,19 @@ func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
 
 	for _, worker := range shoot.Spec.Provider.Workers {
 		if worker.CRI.Name != "containerd" {
-			return fmt.Errorf("containerruntime needs to be containerd when container registry cache is used")
+			return fmt.Errorf("container runtime needs to be containerd when the registry-cache extension is enabled")
 		}
 	}
 
 	providerConfigPath := fldPath.Child("providerConfig")
+	if ext.ProviderConfig == nil {
+		return field.Required(providerConfigPath, "providerConfig is required for the registry-cache extension")
+	}
 
-	registryConfig, err := decodeRegistryConfig(s.decoder, ext.ProviderConfig, providerConfigPath)
-	if err != nil {
-		return err
+	registryConfig := &api.RegistryConfig{}
+	if err := runtime.DecodeInto(s.decoder, ext.ProviderConfig.Raw, registryConfig); err != nil {
+		return fmt.Errorf("failed to decode providerConfig: %w", err)
 	}
 
 	return validation.ValidateRegistryConfig(registryConfig, providerConfigPath).ToAggregate()
-
 }
