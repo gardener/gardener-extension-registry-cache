@@ -17,6 +17,7 @@ package validation
 import (
 	"strings"
 
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -25,6 +26,10 @@ import (
 // ValidateRegistryConfig validates the passed configuration instance.
 func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+
+	if len(config.Caches) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("caches"), "at least one cache must be provided"))
+	}
 
 	for i, cache := range config.Caches {
 		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
@@ -37,8 +42,8 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
-	if size := cache.Size; size != nil && size.Sign() != 1 {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("size"), size, "size must be a quantity greater than zero"))
+	if cache.Size != nil {
+		allErrs = append(allErrs, validatePositiveQuantity(*cache.Size, fldPath.Child("size"))...)
 	}
 
 	return allErrs
@@ -57,4 +62,13 @@ func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	}
 
 	return allErrors
+}
+
+// validatePositiveQuantity validates that a Quantity is positive.
+func validatePositiveQuantity(value resource.Quantity, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if value.Cmp(resource.Quantity{}) <= 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath, value.String(), "must be greater than 0"))
+	}
+	return allErrs
 }
