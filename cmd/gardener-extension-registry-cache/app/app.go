@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	"github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
+	heartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
+	extensioncontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/extension"
 )
 
 // NewServiceControllerCommand creates a new command that is used to start the registry service controller.
@@ -86,10 +86,10 @@ func (o *Options) run(ctx context.Context) error {
 	}
 
 	ctrlConfig := o.registryOptions.Completed()
-	ctrlConfig.Apply(&controller.DefaultAddOptions.Config)
-	o.controllerOptions.Completed().Apply(&controller.DefaultAddOptions.ControllerOptions)
-	o.reconcileOptions.Completed().Apply(&controller.DefaultAddOptions.IgnoreOperationAnnotation)
-	o.heartbeatOptions.Completed().Apply(&heartbeat.DefaultAddOptions)
+	ctrlConfig.Apply(&extensioncontroller.DefaultAddOptions.Config)
+	o.controllerOptions.Completed().Apply(&extensioncontroller.DefaultAddOptions.ControllerOptions)
+	o.reconcileOptions.Completed().Apply(&extensioncontroller.DefaultAddOptions.IgnoreOperationAnnotation)
+	o.heartbeatOptions.Completed().Apply(&heartbeatcontroller.DefaultAddOptions)
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("could not add controllers to manager: %w", err)

@@ -19,9 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// RegistryResourceName is the name for registry resources in the shoot.
-const RegistryResourceName = "extension-registry-cache"
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RegistryConfig contains information about registry caches to deploy.

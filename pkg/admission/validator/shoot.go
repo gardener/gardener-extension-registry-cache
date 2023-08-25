@@ -26,7 +26,7 @@ import (
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 // shoot validates shoots
@@ -51,7 +51,7 @@ func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
 	var ext *core.Extension
 	var fldPath *field.Path
 	for i, ex := range shoot.Spec.Extensions {
-		if ex.Type == controller.Type {
+		if ex.Type == constants.ExtensionType {
 			ext = ex.DeepCopy()
 			fldPath = field.NewPath("spec", "extensions").Index(i)
 			break

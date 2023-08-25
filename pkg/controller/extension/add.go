@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package extension
 
 import (
 	"context"
@@ -29,7 +29,7 @@ const (
 	// Type is the type of Extension resource.
 	Type = "registry-cache"
 	// ControllerName is the name of the registry cache service controller.
-	ControllerName = "registry-cache"
+	ControllerName = "extension-controller"
 	// FinalizerSuffix is the finalizer suffix for the registry cache service controller.
 	FinalizerSuffix = "registry-cache"
 )
