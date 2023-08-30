@@ -22,6 +22,7 @@ VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 LD_FLAGS                    := "-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(IMAGE_TAG)"
 LEADER_ELECTION             := false
 IGNORE_OPERATION_ANNOTATION := true
+PARALLEL_E2E_TESTS          := 2
 
 
 WEBHOOK_CONFIG_PORT	:= 8444
@@ -122,7 +123,7 @@ check-generate:
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/...
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/check-charts.sh ./charts
 
 .PHONY: generate
@@ -139,7 +140,7 @@ generate-in-docker:
 
 .PHONY: format
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
-	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg
+	@$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/format.sh ./cmd ./pkg ./test
 
 .PHONY: test
 test:
@@ -159,6 +160,12 @@ verify: check format test
 .PHONY: verify-extended
 verify-extended: check-generate check format test-cov test-clean
 
+test-e2e-local: $(GINKGO)
+	./hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) ./test/e2e/...
+
+ci-e2e-kind:
+	./hack/ci-e2e-kind.sh
+
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
@@ -169,4 +176,17 @@ extension-dev: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
 
 extension-down: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) delete
+
+# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
+admission-up admission-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=admission-local
+admission-%: export SKAFFOLD_FILENAME = skaffold-admission.yaml
+
+admission-up: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) run
+
+admission-dev: $(SKAFFOLD) $(HELM)
+	$(SKAFFOLD) dev --cleanup=false --trigger=manual
+
+admission-down: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) delete

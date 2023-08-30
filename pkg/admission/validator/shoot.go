@@ -30,14 +30,12 @@ import (
 
 // shoot validates shoots
 type shoot struct {
-	client  client.Client
 	decoder runtime.Decoder
 }
 
 // NewShootValidator returns a new instance of a shoot validator.
-func NewShootValidator(client client.Client, decoder runtime.Decoder) extensionswebhook.Validator {
+func NewShootValidator(decoder runtime.Decoder) extensionswebhook.Validator {
 	return &shoot{
-		client:  client,
 		decoder: decoder,
 	}
 }

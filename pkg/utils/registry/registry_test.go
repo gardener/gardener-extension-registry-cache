@@ -30,12 +30,12 @@ func TestRegistryUtils(t *testing.T) {
 
 var _ = Describe("Registry utils", func() {
 
-	DescribeTable("#GetUpstreamServer",
+	DescribeTable("#GetUpstreamURL",
 		func(upstream, expected string) {
-			Expect(registryutils.GetUpstreamServer(upstream)).To(Equal(expected))
+			Expect(registryutils.GetUpstreamURL(upstream)).To(Equal(expected))
 		},
-		Entry("upstream is docker.io", "docker.io", "registry-1.docker.io"),
-		Entry("upstream is eu.gcr.io", "eu.gcr.io", "eu.gcr.io"),
-		Entry("upstream is quay.io", "quay.io", "quay.io"),
+		Entry("upstream is docker.io", "docker.io", "https://registry-1.docker.io"),
+		Entry("upstream is eu.gcr.io", "eu.gcr.io", "https://eu.gcr.io"),
+		Entry("upstream is quay.io", "quay.io", "https://quay.io"),
 	)
 })

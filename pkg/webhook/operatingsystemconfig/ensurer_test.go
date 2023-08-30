@@ -231,8 +231,8 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(oldFile,
-				hostsTOMLFile("docker.io", "registry-1.docker.io", "http://10.0.0.1:5000"),
-				hostsTOMLFile("eu.gcr.io", "eu.gcr.io", "http://10.0.0.2:5000"),
+				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
+				hostsTOMLFile("eu.gcr.io", "https://eu.gcr.io", "http://10.0.0.2:5000"),
 			))
 		})
 
@@ -278,8 +278,8 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(oldFile,
-				hostsTOMLFile("docker.io", "registry-1.docker.io", "http://10.0.0.1:5000"),
-				hostsTOMLFile("eu.gcr.io", "eu.gcr.io", "http://10.0.0.2:5000"),
+				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
+				hostsTOMLFile("eu.gcr.io", "https://eu.gcr.io", "http://10.0.0.2:5000"),
 			))
 		})
 	})
