@@ -35,7 +35,6 @@ type Options struct {
 	restOptions        *controllercmd.RESTOptions
 	managerOptions     *controllercmd.ManagerOptions
 	controllerOptions  *controllercmd.ControllerOptions
-	healthOptions      *controllercmd.ControllerOptions
 	heartbeatOptions   *heartbeatcmd.Options
 	controllerSwitches *controllercmd.SwitchOptions
 	reconcileOptions   *controllercmd.ReconcilerOptions
@@ -74,10 +73,6 @@ func NewOptions() *Options {
 			// This is a default value.
 			MaxConcurrentReconciles: 5,
 		},
-		healthOptions: &controllercmd.ControllerOptions{
-			// This is a default value.
-			MaxConcurrentReconciles: 5,
-		},
 		heartbeatOptions: &heartbeatcmd.Options{
 			// This is a default value.
 			ExtensionName:        ExtensionName,
@@ -95,7 +90,6 @@ func NewOptions() *Options {
 		options.managerOptions,
 		options.controllerOptions,
 		options.registryOptions,
-		controllercmd.PrefixOption("healthcheck-", options.healthOptions),
 		controllercmd.PrefixOption("heartbeat-", options.heartbeatOptions),
 		options.controllerSwitches,
 		options.reconcileOptions,

@@ -22,7 +22,6 @@ limitations under the License.
 package config
 
 import (
-	apisconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -30,11 +29,6 @@ import (
 func (in *Configuration) DeepCopyInto(out *Configuration) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	if in.HealthCheckConfig != nil {
-		in, out := &in.HealthCheckConfig, &out.HealthCheckConfig
-		*out = new(apisconfig.HealthCheckConfig)
-		(*in).DeepCopyInto(*out)
-	}
 	return
 }
 
