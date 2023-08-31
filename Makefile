@@ -169,7 +169,7 @@ ci-e2e-kind:
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
-extension-up: $(SKAFFOLD) $(HELM)
+extension-up: $(SKAFFOLD) $(KIND) $(HELM)
 	$(SKAFFOLD) run
 
 extension-dev: $(SKAFFOLD) $(HELM)
@@ -182,7 +182,7 @@ extension-down: $(SKAFFOLD) $(HELM)
 admission-up admission-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=admission-local
 admission-%: export SKAFFOLD_FILENAME = skaffold-admission.yaml
 
-admission-up: $(SKAFFOLD) $(HELM)
+admission-up: $(SKAFFOLD) $(KIND) $(HELM)
 	$(SKAFFOLD) run
 
 admission-dev: $(SKAFFOLD) $(HELM)
