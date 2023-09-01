@@ -1,0 +1,25 @@
+apiVersion: testmachinery.sapcloud.io
+kind: TestDefinition
+metadata:
+  name: registry-cache-beta-serial-test-suite
+spec:
+  owner: gardener-oq@listserv.sap.com
+  description: registry-cache extension test suite that includes all serial beta tests
+
+  activeDeadlineSeconds: 7200
+  labels: ["shoot", "beta"]
+  behavior:
+  - serial
+
+  command: [bash, -c]
+  args:
+    - >-
+      go test -timeout=0 -mod=vendor ./test/testmachinery/shoot
+      --v -ginkgo.v -ginkgo.show-node-events -ginkgo.no-color
+      -kubecfg=$TM_KUBECONFIG_PATH/gardener.config
+      -project-namespace=$PROJECT_NAMESPACE
+      -shoot-name=$SHOOT_NAME
+      -ginkgo.focus="\[BETA\].*\[SERIAL\]"
+      -ginkgo.skip="\[DISRUPTIVE\]"
+
+  image: golang:1.21.1
