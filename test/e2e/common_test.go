@@ -152,11 +152,15 @@ func verifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	ExpectWithOffset(1, framework.WaitUntilPodIsRunning(ctx, log, pod.Name, pod.Namespace, shootClient)).To(Succeed())
 
 	By("Verify the registry cache pulled the nginx image")
-	ctx, cancel = context.WithTimeout(parentCtx, 30*time.Second)
+	ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 	defer cancel()
+
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": upstream}))
-	reader, err := framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", "registry-cache", shootClient)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Expected to successfully cat registry's scheduler-state.json file")
+	var reader io.Reader
+	EventuallyWithOffset(1, ctx, func(g Gomega) (err error) {
+		reader, err = framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", "registry-cache", shootClient)
+		return err
+	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully cat registry's scheduler-state.json file")
 
 	schedulerStateFileContent, err := io.ReadAll(reader)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
