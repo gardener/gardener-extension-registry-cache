@@ -177,16 +177,3 @@ extension-dev: $(SKAFFOLD) $(HELM)
 
 extension-down: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) delete
-
-# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-admission-up admission-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=admission-local
-admission-%: export SKAFFOLD_FILENAME = skaffold-admission.yaml
-
-admission-up: $(SKAFFOLD) $(KIND) $(HELM)
-	$(SKAFFOLD) run
-
-admission-dev: $(SKAFFOLD) $(HELM)
-	$(SKAFFOLD) dev --cleanup=false --trigger=manual
-
-admission-down: $(SKAFFOLD) $(HELM)
-	$(SKAFFOLD) delete

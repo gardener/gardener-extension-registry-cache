@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta3
 kind: Config
 metadata:
   name: extension
@@ -8,13 +8,35 @@ build:
   - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
     ko:
       main: ./cmd/gardener-extension-registry-cache
+resourceSelector:
+  allow:
+  # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
+  - groupKind: ControllerDeployment.core.gardener.cloud
+    image: [".*"]
+manifests:
+  rawYaml:
+  - example/controller-registration.yaml
+deploy:
+  kubectl: {}
+---
+apiVersion: skaffold/v4beta3
+kind: Config
+metadata:
+  name: admission
+build:
+  artifacts:
+  - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
+    ko:
+      main: ./cmd/gardener-extension-registry-cache-admission
 deploy:
   helm:
     releases:
-    - name: gardener-extension-registry-cache-registration
-      chartPath: charts/registration
-      artifactOverrides:
-        values:
-          image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
-      imageStrategy:
-        helm: {}
+    - name: gardener-extension-registry-cache-admission
+      namespace: garden
+      wait: true
+      chartPath: charts/admission
+      valuesFiles:
+      - example/admission/values.yaml
+      setValueTemplates:
+        runtime.image.repository: '{{.IMAGE_REPO_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
+        runtime.image.tag: '{{.IMAGE_TAG_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'

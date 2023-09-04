@@ -1,7 +1,5 @@
-image:
-  repository: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
-  tag: latest
-  pullPolicy: IfNotPresent
+image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache:latest
+imagePullPolicy: IfNotPresent
 
 leaderElection:
   resourceLock: leases
