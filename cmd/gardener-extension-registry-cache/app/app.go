@@ -21,10 +21,12 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
+	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	componentbaseconfig "k8s.io/component-base/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
@@ -97,6 +99,18 @@ func (o *Options) run(ctx context.Context) error {
 
 	if _, err := o.webhookOptions.Completed().AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("could not add the mutating webhook to manager: %s", err)
+	}
+
+	if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
+		return fmt.Errorf("could not add ready check for informers: %w", err)
+	}
+
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		return fmt.Errorf("could not add health check to manager: %w", err)
+	}
+
+	if err := mgr.AddReadyzCheck("webhook-server", mgr.GetWebhookServer().StartedChecker()); err != nil {
+		return fmt.Errorf("could not add ready check for webhook server to manager: %w", err)
 	}
 
 	if err := mgr.Start(ctx); err != nil {

@@ -79,15 +79,15 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 			}
 
 			if err := mgr.AddReadyzCheck("informer-sync", gardenerhealthz.NewCacheSyncHealthz(mgr.GetCache())); err != nil {
-				return fmt.Errorf("could not add readycheck for informers: %w", err)
+				return fmt.Errorf("could not add ready check for informers: %w", err)
 			}
 
 			if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
-				return fmt.Errorf("could not add healthcheck: %w", err)
+				return fmt.Errorf("could not add health check to manager: %w", err)
 			}
 
 			if err := mgr.AddReadyzCheck("webhook-server", mgr.GetWebhookServer().StartedChecker()); err != nil {
-				return fmt.Errorf("could not add readycheck of webhook to manager: %w", err)
+				return fmt.Errorf("could not add ready check for webhook server to manager: %w", err)
 			}
 
 			return mgr.Start(ctx)
