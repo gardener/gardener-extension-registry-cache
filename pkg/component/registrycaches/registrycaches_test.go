@@ -44,7 +44,6 @@ import (
 )
 
 var _ = Describe("RegistryCaches", func() {
-
 	const (
 		managedResourceName = "extension-registry-cache"
 

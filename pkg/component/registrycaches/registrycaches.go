@@ -152,9 +152,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 		return nil, fmt.Errorf("registry cache garbageCollectionEnabled is required")
 	}
 
-	const (
-		registryCacheVolumeName = "cache-volume"
-	)
+	const registryCacheVolumeName = "cache-volume"
 
 	var (
 		name   = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
