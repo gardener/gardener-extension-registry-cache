@@ -1,3 +1,0 @@
----
-apiVersion: config.registry.extensions.gardener.cloud/v1alpha1
-kind: Configuration
