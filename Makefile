@@ -41,6 +41,10 @@ endif
 #########################################
 
 TOOLS_DIR := hack/tools
+# goimports-reviser@v3.4.5 contains the fix for https://github.com/incu6us/goimports-reviser/issues/129.
+#
+# TODO(ialidzhikov): Drop this version overwrite when the registry-cache extension vendors https://github.com/gardener/gardener/pull/8450.
+GOIMPORTSREVISER_VERSION := v3.4.5
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 #########################################
