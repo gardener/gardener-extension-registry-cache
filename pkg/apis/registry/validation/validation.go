@@ -17,11 +17,13 @@ package validation
 import (
 	"strings"
 
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 )
 
 // ValidateRegistryConfig validates the passed configuration instance.
@@ -40,6 +42,21 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 			allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("upstream"), cache.Upstream))
 		} else {
 			upstreams.Insert(cache.Upstream)
+		}
+	}
+
+	return allErrs
+}
+
+// ValidateRegistryConfigUpdate validates the passed configuration update.
+func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	for i, newCache := range newConfig.Caches {
+		if ok, oldCache := helper.FindCacheByUpstream(oldConfig.Caches, newCache.Upstream); ok {
+			if !apiequality.Semantic.DeepEqual(oldCache.Size, newCache.Size) {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("size"), newCache.Size.String(), "field is immutable"))
+			}
 		}
 	}
 

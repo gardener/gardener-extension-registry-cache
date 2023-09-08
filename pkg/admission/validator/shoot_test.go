@@ -87,74 +87,130 @@ var _ = Describe("Shoot validator", func() {
 			}
 		})
 
-		It("should return err when new is not a Shoot", func() {
-			err := shootValidator.Validate(ctx, &corev1.Pod{}, nil)
-			Expect(err).To(MatchError("wrong object type *v1.Pod"))
-		})
+		Context("Shoot creation (old is nil)", func() {
+			It("should return err when new is not a Shoot", func() {
+				err := shootValidator.Validate(ctx, &corev1.Pod{}, nil)
+				Expect(err).To(MatchError("wrong object type *v1.Pod"))
+			})
 
-		It("should do nothing when the Shoot does no specify a registry-cache extension", func() {
-			shoot.Spec.Extensions[0].Type = "foo"
+			It("should do nothing when the Shoot does no specify a registry-cache extension", func() {
+				shoot.Spec.Extensions[0].Type = "foo"
 
-			Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
-		})
+				Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
+			})
 
-		It("should return err when there is contrainer runtime that is not containerd", func() {
-			worker := core.Worker{
-				CRI: &core.CRI{
-					Name: "docker",
-				},
-			}
-			shoot.Spec.Provider.Workers = append(shoot.Spec.Provider.Workers, worker)
-
-			err := shootValidator.Validate(ctx, shoot, nil)
-			Expect(err).To(MatchError("container runtime needs to be containerd when the registry-cache extension is enabled"))
-		})
-
-		It("should return err when registry-cache's providerConfig is nil", func() {
-			shoot.Spec.Extensions[0].ProviderConfig = nil
-
-			err := shootValidator.Validate(ctx, shoot, nil)
-			Expect(err).To(PointTo(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(field.ErrorTypeRequired),
-				"Field":  Equal("spec.extensions[0].providerConfig"),
-				"Detail": Equal("providerConfig is required for the registry-cache extension"),
-			})))
-		})
-
-		It("should return err when registry-cache's providerConfig cannot be decoded", func() {
-			shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-				Raw: []byte(`{"bar": "baz"}`),
-			}
-
-			err := shootValidator.Validate(ctx, shoot, nil)
-			Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig")))
-		})
-
-		It("should return err when registry-cache's providerConfig is invalid", func() {
-			shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-				Raw: encode(&v1alpha1.RegistryConfig{
-					TypeMeta: metav1.TypeMeta{
-						APIVersion: v1alpha1.SchemeGroupVersion.String(),
-						Kind:       "RegistryConfig",
+			It("should return err when there is contrainer runtime that is not containerd", func() {
+				worker := core.Worker{
+					CRI: &core.CRI{
+						Name: "docker",
 					},
-					Caches: []v1alpha1.RegistryCache{
-						{
-							Upstream: "https://registry.example.com",
+				}
+				shoot.Spec.Provider.Workers = append(shoot.Spec.Provider.Workers, worker)
+
+				err := shootValidator.Validate(ctx, shoot, nil)
+				Expect(err).To(MatchError("container runtime needs to be containerd when the registry-cache extension is enabled"))
+			})
+
+			It("should return err when registry-cache providerConfig is nil", func() {
+				shoot.Spec.Extensions[0].ProviderConfig = nil
+
+				err := shootValidator.Validate(ctx, shoot, nil)
+				Expect(err).To(PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeRequired),
+					"Field":  Equal("spec.extensions[0].providerConfig"),
+					"Detail": Equal("providerConfig is required for the registry-cache extension"),
+				})))
+			})
+
+			It("should return err when registry-cache providerConfig cannot be decoded", func() {
+				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: []byte(`{"bar": "baz"}`),
+				}
+
+				err := shootValidator.Validate(ctx, shoot, nil)
+				Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig")))
+			})
+
+			It("should return err when registry-cache providerConfig is invalid", func() {
+				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: encode(&v1alpha1.RegistryConfig{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							Kind:       "RegistryConfig",
 						},
-					},
-				}),
-			}
+						Caches: []v1alpha1.RegistryCache{
+							{
+								Upstream: "https://registry.example.com",
+							},
+						},
+					}),
+				}
 
-			err := shootValidator.Validate(ctx, shoot, nil)
-			Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-				"Type":   Equal(field.ErrorTypeInvalid),
-				"Field":  Equal("spec.extensions[0].providerConfig.caches[0].upstream"),
-				"Detail": ContainSubstring("upstream must not include a scheme"),
-			}))))
+				err := shootValidator.Validate(ctx, shoot, nil)
+				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("spec.extensions[0].providerConfig.caches[0].upstream"),
+					"Detail": ContainSubstring("upstream must not include a scheme"),
+				}))))
+			})
+
+			It("should succeed for valid Shoot", func() {
+				Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
+			})
 		})
 
-		It("should succeed for valid Shoot", func() {
-			Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
+		Context("Shoot update (old is set)", func() {
+			var oldShoot *core.Shoot
+
+			BeforeEach(func() {
+				oldShoot = shoot.DeepCopy()
+			})
+
+			It("should return err when old is not a Shoot", func() {
+				err := shootValidator.Validate(ctx, shoot, &corev1.Pod{})
+				Expect(err).To(MatchError("wrong object type *v1.Pod for old object"))
+			})
+
+			It("should return err when old Shoot registry-cache providerConfig is nil", func() {
+				oldShoot.Spec.Extensions[0].ProviderConfig = nil
+
+				err := shootValidator.Validate(ctx, shoot, oldShoot)
+				Expect(err).To(MatchError(ContainSubstring("providerConfig is not available on old Shoot")))
+			})
+
+			It("should return err when old Shoot registry-cache providerConfig cannot be decoded", func() {
+				oldShoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: []byte(`{"bar": "baz"}`),
+				}
+
+				err := shootValidator.Validate(ctx, shoot, oldShoot)
+				Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig")))
+			})
+
+			It("should return err when registry-cache providerConfig update is invalid", func() {
+				newSize := resource.MustParse("42Gi")
+				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: encode(&v1alpha1.RegistryConfig{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							Kind:       "RegistryConfig",
+						},
+						Caches: []v1alpha1.RegistryCache{
+							{
+								Upstream: "docker.io",
+								Size:     &newSize,
+							},
+						},
+					}),
+				}
+
+				err := shootValidator.Validate(ctx, shoot, oldShoot)
+				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("spec.extensions[0].providerConfig.caches[0].size"),
+					"Detail": Equal("field is immutable"),
+				}))))
+			})
 		})
 	})
 })
