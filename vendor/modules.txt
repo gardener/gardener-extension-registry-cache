@@ -145,6 +145,7 @@ github.com/gardener/gardener/pkg/gardenlet/apis/config
 github.com/gardener/gardener/pkg/gardenlet/apis/config/v1alpha1
 github.com/gardener/gardener/pkg/healthz
 github.com/gardener/gardener/pkg/logger
+github.com/gardener/gardener/pkg/mock/controller-runtime/client
 github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references
 github.com/gardener/gardener/pkg/utils
 github.com/gardener/gardener/pkg/utils/chart
@@ -159,8 +160,11 @@ github.com/gardener/gardener/pkg/utils/kubernetes/unstructured
 github.com/gardener/gardener/pkg/utils/managedresources
 github.com/gardener/gardener/pkg/utils/managedresources/builder
 github.com/gardener/gardener/pkg/utils/retry
+github.com/gardener/gardener/pkg/utils/retry/fake
 github.com/gardener/gardener/pkg/utils/secrets
 github.com/gardener/gardener/pkg/utils/secrets/manager
+github.com/gardener/gardener/pkg/utils/test
+github.com/gardener/gardener/pkg/utils/test/matchers
 github.com/gardener/gardener/pkg/utils/timewindow
 github.com/gardener/gardener/pkg/utils/validation/kubernetesversion
 github.com/gardener/gardener/pkg/utils/version
@@ -439,6 +443,7 @@ github.com/xi2/xz
 go.uber.org/atomic
 # go.uber.org/mock v0.2.0
 ## explicit; go 1.19
+go.uber.org/mock/gomock
 go.uber.org/mock/mockgen
 go.uber.org/mock/mockgen/model
 # go.uber.org/multierr v1.7.0

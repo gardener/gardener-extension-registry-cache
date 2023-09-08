@@ -49,14 +49,33 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(BeEmpty())
 		})
 
-		It("should require upstream", func() {
-			registryConfig.Caches[0].Upstream = ""
-
-			path := fldPath.Child("caches").Index(0).Child("upstream").String()
+		It("should deny configuration without a cache", func() {
+			registryConfig = &api.RegistryConfig{Caches: nil}
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeRequired),
-					"Field":  Equal(path),
+					"Field":  Equal("providerConfig.caches"),
+					"Detail": ContainSubstring("at least one cache must be provided"),
+				})),
+			))
+
+			registryConfig = &api.RegistryConfig{Caches: []api.RegistryCache{}}
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeRequired),
+					"Field":  Equal("providerConfig.caches"),
+					"Detail": ContainSubstring("at least one cache must be provided"),
+				})),
+			))
+		})
+
+		It("should require upstream", func() {
+			registryConfig.Caches[0].Upstream = ""
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeRequired),
+					"Field":  Equal("providerConfig.caches[0].upstream"),
 					"Detail": ContainSubstring("upstream must be provided"),
 				})),
 			))
@@ -70,12 +89,12 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("caches").Index(0).Child("upstream").String()),
+					"Field":  Equal("providerConfig.caches[0].upstream"),
 					"Detail": ContainSubstring("upstream must not include a scheme"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("caches").Index(1).Child("upstream").String()),
+					"Field":  Equal("providerConfig.caches[1].upstream"),
 					"Detail": ContainSubstring("upstream must not include a scheme"),
 				})),
 			))
@@ -91,13 +110,13 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("caches").Index(0).Child("size").String()),
-					"Detail": ContainSubstring("size must be a quantity greater than zero"),
+					"Field":  Equal("providerConfig.caches[0].size"),
+					"Detail": ContainSubstring("must be greater than 0"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal(fldPath.Child("caches").Index(1).Child("size").String()),
-					"Detail": ContainSubstring("size must be a quantity greater than zero"),
+					"Field":  Equal("providerConfig.caches[1].size"),
+					"Detail": ContainSubstring("must be greater than 0"),
 				})),
 			))
 		})

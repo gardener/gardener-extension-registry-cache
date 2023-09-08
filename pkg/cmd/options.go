@@ -29,7 +29,7 @@ import (
 	configapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
+	extensioncontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/extension"
 	oscwebhook "github.com/gardener/gardener-extension-registry-cache/pkg/webhook/operatingsystemconfig"
 )
 
@@ -102,7 +102,7 @@ func (c *RegistryServiceConfig) Apply(config *configapi.Configuration) {
 // ControllerSwitches are the cmd.SwitchOptions for the provider controllers.
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
-		cmd.Switch(controller.ControllerName, controller.AddToManager),
+		cmd.Switch(extensioncontroller.ControllerName, extensioncontroller.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
 	)
 }

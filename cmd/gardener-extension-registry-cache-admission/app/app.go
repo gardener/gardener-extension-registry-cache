@@ -30,7 +30,7 @@ import (
 
 	admissioncmd "github.com/gardener/gardener-extension-registry-cache/pkg/admission/cmd"
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/controller"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 var log = logf.Log.WithName("gardener-extension-registry-cache-admission")
@@ -56,7 +56,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use: fmt.Sprintf("gardener-extension-%s-admission", controller.Type),
+		Use: fmt.Sprintf("gardener-extension-%s-admission", constants.ExtensionType),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			verflag.PrintAndExitIfRequested()
