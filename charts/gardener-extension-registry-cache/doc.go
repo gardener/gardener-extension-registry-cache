@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate sh -c "../../vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh extension-registry-cache . $(cat ../../VERSION) ../../example/registration/controller-registration.yaml Extension:registry-cache"
-//go:generate cp ../../example/registration/controller-registration.yaml ../../charts/registration/templates/controller-registration.yaml
-//go:generate sh -c "sed -i 's/    image:/{{ toYaml .Values.values | indent 4 }}/g' ../../charts/registration/templates/controller-registration.yaml"
-//go:generate sh -c "sed -i 's/      tag: .*//g' ../../charts/registration/templates/controller-registration.yaml"
+//go:generate sh -c "../../vendor/github.com/gardener/gardener/hack/generate-controller-registration.sh extension-registry-cache . $(cat ../../VERSION) ../../example/controller-registration.yaml Extension:registry-cache"
 
 // Package chart enables go:generate support for generating the correct controller registration.
 package chart

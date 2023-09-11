@@ -46,6 +46,5 @@ trap '{
 make -C "$REPO_ROOT/gardener" gardener-up
 make extension-up
 make test-e2e-local
-# TODO: make extension-down currently fails. When we fix it, we can execute it during the tear down.
-# make extension-down
+make extension-down
 make -C "$REPO_ROOT/gardener" gardener-down

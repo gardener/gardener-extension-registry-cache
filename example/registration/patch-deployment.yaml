@@ -1,9 +1,0 @@
-apiVersion: core.gardener.cloud/v1beta1
-kind: ControllerDeployment
-metadata:
-  name: extension-registry-cache
-type: helm
-providerConfig:
-  values:
-    image:
-      tag: latest

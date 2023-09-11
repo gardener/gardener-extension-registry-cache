@@ -20,21 +20,8 @@ REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_
 HACK_DIR                    := $(REPO_ROOT)/hack
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
 LD_FLAGS                    := "-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(IMAGE_TAG)"
-LEADER_ELECTION             := false
-IGNORE_OPERATION_ANNOTATION := true
 PARALLEL_E2E_TESTS          := 2
 
-
-WEBHOOK_CONFIG_PORT	:= 8444
-WEBHOOK_CONFIG_MODE	:= url
-WEBHOOK_CONFIG_URL	:= host.docker.internal:${WEBHOOK_CONFIG_PORT}
-WEBHOOK_CERT_DIR    := ./example/admission
-EXTENSION_NAMESPACE	:=
-
-WEBHOOK_PARAM := --webhook-config-url=${WEBHOOK_CONFIG_URL}
-ifeq (${WEBHOOK_CONFIG_MODE}, service)
-  WEBHOOK_PARAM := --webhook-config-namespace=${EXTENSION_NAMESPACE}
-endif
 
 #########################################
 # Tools                                 #
@@ -42,44 +29,6 @@ endif
 
 TOOLS_DIR := hack/tools
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
-
-#########################################
-# Rules for local development scenarios #
-#########################################
-
-.PHONY: start
-start:
-	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
-		-mod=vendor \
-		-ldflags $(LD_FLAGS) \
-		./cmd/$(EXTENSION_PREFIX)-$(NAME) \
-		--ignore-operation-annotation=$(IGNORE_OPERATION_ANNOTATION) \
-		--leader-election=$(LEADER_ELECTION) \
-		--config=./example/00-config.yaml \
-		--gardener-version="v1.39.0"
-
-
-.PHONY: start-admission
-start-admission:
-	@LEADER_ELECTION_NAMESPACE=garden GO111MODULE=on go run \
-		-mod=vendor \
-		-ldflags ${LD_FLAGS} \
-		./cmd/${EXTENSION_PREFIX}-${ADMISSION_NAME} \
-		--kubeconfig=dev/garden-kubeconfig.yaml \
-		--webhook-config-server-host=0.0.0.0 \
-		--webhook-config-server-port=9443 \
-		--webhook-config-cert-dir=${WEBHOOK_CERT_DIR}
-
-.PHONY: debug-admission
-debug-admission:
-	LEADER_ELECTION_NAMESPACE=garden dlv debug \
-		./cmd/${EXTENSION_PREFIX}-${ADMISSION_NAME} -- \
-		--leader-election=${LEADER_ELECTION} \
-		--kubeconfig=dev/garden-kubeconfig.yaml \
-		--webhook-config-server-host=0.0.0.0 \
-		--webhook-config-server-port=9443 \
-		--health-bind-address=:8085 \
-		--webhook-config-cert-dir=${WEBHOOK_CERT_DIR}
 
 #################################################################
 # Rules related to binary build, Docker image build and release #
@@ -176,17 +125,4 @@ extension-dev: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
 
 extension-down: $(SKAFFOLD) $(HELM)
-	$(SKAFFOLD) delete
-
-# use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-admission-up admission-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=admission-local
-admission-%: export SKAFFOLD_FILENAME = skaffold-admission.yaml
-
-admission-up: $(SKAFFOLD) $(KIND) $(HELM)
-	$(SKAFFOLD) run
-
-admission-dev: $(SKAFFOLD) $(HELM)
-	$(SKAFFOLD) dev --cleanup=false --trigger=manual
-
-admission-down: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) delete

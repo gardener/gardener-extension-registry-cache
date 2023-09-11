@@ -1,7 +1,0 @@
-apiVersion: core.gardener.cloud/v1beta1
-kind: ControllerRegistration
-metadata:
-  name: extension-registry-cache
-spec:
-  deployment:
-    policy: Always
