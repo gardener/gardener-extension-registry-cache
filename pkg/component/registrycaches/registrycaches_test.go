@@ -172,6 +172,7 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/registry
           name: cache-volume
+      priorityClassName: system-cluster-critical
   updateStrategy: {}
   volumeClaimTemplates:
   - metadata:
