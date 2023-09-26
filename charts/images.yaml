@@ -2,4 +2,4 @@ images:
 - name: registry
   sourceRepository: github.com/distribution/distribution
   repository: eu.gcr.io/gardener-project/3rd/registry
-  tag: "2.8.1"
+  tag: "2.8.2"
