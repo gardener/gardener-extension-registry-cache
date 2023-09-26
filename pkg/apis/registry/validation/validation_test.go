@@ -82,9 +82,12 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny upstream with scheme", func() {
-			registryConfig.Caches = append(registryConfig.Caches, *registryConfig.Caches[0].DeepCopy())
+			cache := api.RegistryCache{
+				Upstream: "http://docker.io",
+			}
+			registryConfig.Caches = append(registryConfig.Caches, cache)
+
 			registryConfig.Caches[0].Upstream = "https://docker.io"
-			registryConfig.Caches[1].Upstream = "http://docker.io"
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
@@ -101,11 +104,15 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny non-positive cache size", func() {
-			registryConfig.Caches = append(registryConfig.Caches, *registryConfig.Caches[0].DeepCopy())
-			zeroSize := resource.MustParse("0")
 			negativeSize := resource.MustParse("-1Gi")
+			cache := api.RegistryCache{
+				Upstream: "quay.io",
+				Size:     &negativeSize,
+			}
+			registryConfig.Caches = append(registryConfig.Caches, cache)
+
+			zeroSize := resource.MustParse("0")
 			registryConfig.Caches[0].Size = &zeroSize
-			registryConfig.Caches[1].Size = &negativeSize
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
@@ -117,6 +124,17 @@ var _ = Describe("Validation", func() {
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[1].size"),
 					"Detail": ContainSubstring("must be greater than 0"),
+				})),
+			))
+		})
+
+		It("should deny duplicate cache upstreams", func() {
+			registryConfig.Caches = append(registryConfig.Caches, *registryConfig.Caches[0].DeepCopy())
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":  Equal(field.ErrorTypeDuplicate),
+					"Field": Equal("providerConfig.caches[1].upstream"),
 				})),
 			))
 		})

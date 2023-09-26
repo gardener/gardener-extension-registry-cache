@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -31,8 +32,15 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 		allErrs = append(allErrs, field.Required(fldPath.Child("caches"), "at least one cache must be provided"))
 	}
 
+	upstreams := sets.New[string]()
 	for i, cache := range config.Caches {
 		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
+
+		if upstreams.Has(cache.Upstream) {
+			allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("upstream"), cache.Upstream))
+		} else {
+			upstreams.Insert(cache.Upstream)
+		}
 	}
 
 	return allErrs
