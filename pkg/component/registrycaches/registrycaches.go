@@ -271,6 +271,10 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 									corev1.ResourceStorage: *cache.Size,
 								},
 							},
+							// TODO(ialidzhikov): Currently the PVC and StorageClass creation is racy. If PVC gets created before the StorageClass, then it hangs in Pending state with reason "no persistent volumes available for this claim and no storage class is set".
+							// There is a K8s feature called RetroactiveDefaultStorageClass that aims to fix the above-described behaviour. See https://kubernetes.io/docs/concepts/storage/persistent-volumes/#retroactive-default-storageclass-assignment.
+							// Consider dropping this when the extension no longer supports a K8s version where the RetroactiveDefaultStorageClass feature gate is not enabled by default (K8s < 1.26).
+							StorageClassName: pointer.String("default"),
 						},
 					},
 				},

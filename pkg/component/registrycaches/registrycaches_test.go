@@ -203,6 +203,7 @@ spec:
       resources:
         requests:
           storage: ` + size + `
+      storageClassName: default
     status: {}
 status:
   availableReplicas: 0
