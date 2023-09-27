@@ -139,7 +139,7 @@ func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *v1
 
 	// get all registry cache services
 	services := &corev1.ServiceList{}
-	if err := shootClient.List(ctx, services, client.InNamespace(constants.NamespaceRegistryCache), client.MatchingLabelsSelector{Selector: selector}); err != nil {
+	if err := shootClient.List(ctx, services, client.InNamespace(metav1.NamespaceSystem), client.MatchingLabelsSelector{Selector: selector}); err != nil {
 		return nil, fmt.Errorf("failed to read services from shoot: %w", err)
 	}
 
