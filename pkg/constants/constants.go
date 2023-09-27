@@ -18,8 +18,6 @@ const (
 	// ExtensionType is the name of the extension type.
 	ExtensionType = "registry-cache"
 
-	// NamespaceRegistryCache is the namespace where the registry cache resources are deployed.
-	NamespaceRegistryCache = "registry-cache"
 	// UpstreamHostLabel is a label on registry cache resources (Service, StatefulSet) which denotes the upstream host.
 	UpstreamHostLabel = "upstream-host"
 	// RegistryCachePort is the port on which the pull through cache serves requests.

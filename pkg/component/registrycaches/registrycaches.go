@@ -122,13 +122,7 @@ func (r *registryCaches) WaitCleanup(ctx context.Context) error {
 }
 
 func (r *registryCaches) computeResourcesData() (map[string][]byte, error) {
-	objects := []client.Object{
-		&corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: constants.NamespaceRegistryCache,
-			},
-		},
-	}
+	var objects []client.Object
 
 	for _, cache := range r.values.Caches {
 		cacheObjects, err := computeResourcesDataForRegistryCache(&cache, r.values.Image)
@@ -164,7 +158,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 		service = &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
-				Namespace: constants.NamespaceRegistryCache,
+				Namespace: metav1.NamespaceSystem,
 				Labels:    labels,
 			},
 			Spec: corev1.ServiceSpec{
@@ -182,7 +176,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 		statefulSet = &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
-				Namespace: constants.NamespaceRegistryCache,
+				Namespace: metav1.NamespaceSystem,
 				Labels:    labels,
 			},
 			Spec: appsv1.StatefulSetSpec{

@@ -99,14 +99,6 @@ var _ = Describe("RegistryCaches", func() {
 
 	Describe("#Deploy", func() {
 		var (
-			namespaceYAML = `apiVersion: v1
-kind: Namespace
-metadata:
-  creationTimestamp: null
-  name: registry-cache
-spec: {}
-status: {}
-`
 			serviceYAMLFor = func(name, upstream string) string {
 				return `apiVersion: v1
 kind: Service
@@ -116,7 +108,7 @@ metadata:
     app: ` + name + `
     upstream-host: ` + upstream + `
   name: ` + name + `
-  namespace: registry-cache
+  namespace: kube-system
 spec:
   ports:
   - name: registry-cache
@@ -141,7 +133,7 @@ metadata:
     app: ` + name + `
     upstream-host: ` + upstream + `
   name: ` + name + `
-  namespace: registry-cache
+  namespace: kube-system
 spec:
   replicas: 1
   selector:
@@ -258,12 +250,11 @@ status:
 			Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 			Expect(managedResourceSecret.Immutable).To(Equal(pointer.Bool(true)))
 			Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-			Expect(managedResourceSecret.Data).To(HaveLen(5))
-			Expect(string(managedResourceSecret.Data["namespace____registry-cache.yaml"])).To(Equal(namespaceYAML))
-			Expect(string(managedResourceSecret.Data["service__registry-cache__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-			Expect(string(managedResourceSecret.Data["statefulset__registry-cache__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", true)))
-			Expect(string(managedResourceSecret.Data["service__registry-cache__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-			Expect(string(managedResourceSecret.Data["statefulset__registry-cache__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", false)))
+			Expect(managedResourceSecret.Data).To(HaveLen(4))
+			Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
+			Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", true)))
+			Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
+			Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", false)))
 		})
 	})
 

@@ -158,7 +158,7 @@ func verifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": upstream}))
 	var reader io.Reader
 	EventuallyWithOffset(1, ctx, func(g Gomega) (err error) {
-		reader, err = framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", "registry-cache", shootClient)
+		reader, err = framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", metav1.NamespaceSystem, shootClient)
 		return err
 	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully cat registry's scheduler-state.json file")
 
