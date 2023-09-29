@@ -20,7 +20,6 @@ import (
 	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	heartbeatcmd "github.com/gardener/gardener/extensions/pkg/controller/heartbeat/cmd"
 	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
-	"k8s.io/client-go/tools/leaderelection/resourcelock"
 
 	registrycmd "github.com/gardener/gardener-extension-registry-cache/pkg/cmd"
 )
@@ -64,14 +63,13 @@ func NewOptions() *Options {
 		restOptions:     &controllercmd.RESTOptions{},
 		managerOptions: &controllercmd.ManagerOptions{
 			// These are default values.
-			LeaderElection:             true,
-			LeaderElectionID:           controllercmd.LeaderElectionNameID(ExtensionName),
-			LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
-			LeaderElectionNamespace:    os.Getenv("LEADER_ELECTION_NAMESPACE"),
-			WebhookServerPort:          443,
-			WebhookCertDir:             "/tmp/gardener-extensions-cert",
-			MetricsBindAddress:         ":8080",
-			HealthBindAddress:          ":8081",
+			LeaderElection:          true,
+			LeaderElectionID:        controllercmd.LeaderElectionNameID(ExtensionName),
+			LeaderElectionNamespace: os.Getenv("LEADER_ELECTION_NAMESPACE"),
+			WebhookServerPort:       443,
+			WebhookCertDir:          "/tmp/gardener-extensions-cert",
+			MetricsBindAddress:      ":8080",
+			HealthBindAddress:       ":8081",
 		},
 		controllerOptions: &controllercmd.ControllerOptions{
 			// This is a default value.
