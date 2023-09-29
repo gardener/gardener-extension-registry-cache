@@ -13,7 +13,6 @@ require (
 	golang.org/x/tools v0.12.0
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
-	k8s.io/client-go v0.28.2
 	k8s.io/code-generator v0.28.2
 	k8s.io/component-base v0.28.2
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
@@ -116,6 +115,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.28.2 // indirect
 	k8s.io/apiserver v0.28.2 // indirect
 	k8s.io/autoscaler/vertical-pod-autoscaler v0.14.0 // indirect
+	k8s.io/client-go v0.28.2 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/helm v2.16.1+incompatible // indirect
 	k8s.io/klog v1.0.0 // indirect
