@@ -154,12 +154,32 @@ spec:
           value: ` + upstreamURL + `
         - name: REGISTRY_STORAGE_DELETE_ENABLED
           value: "` + strconv.FormatBool(garbageCollectionEnabled) + `"
+        - name: REGISTRY_HTTP_ADDR
+          value: :5000
+        - name: REGISTRY_HTTP_DEBUG_ADDR
+          value: :5001
         image: ` + image + `
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /debug/health
+            port: 5001
+          periodSeconds: 20
+          successThreshold: 1
         name: registry-cache
         ports:
         - containerPort: 5000
           name: registry-cache
+        - containerPort: 5001
+          name: debug
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /debug/health
+            port: 5001
+          periodSeconds: 20
+          successThreshold: 1
         resources: {}
         volumeMounts:
         - mountPath: /var/lib/registry

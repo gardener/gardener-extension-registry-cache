@@ -146,7 +146,10 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 		return nil, fmt.Errorf("registry cache garbageCollectionEnabled is required")
 	}
 
-	const registryCacheVolumeName = "cache-volume"
+	const (
+		registryCacheVolumeName = "cache-volume"
+		debugPort               = 5001
+	)
 
 	var (
 		name   = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
@@ -200,6 +203,10 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 										ContainerPort: constants.RegistryCachePort,
 										Name:          "registry-cache",
 									},
+									{
+										ContainerPort: debugPort,
+										Name:          "debug",
+									},
 								},
 								Env: []corev1.EnvVar{
 									{
@@ -210,6 +217,36 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 										Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
 										Value: strconv.FormatBool(*cache.GarbageCollectionEnabled),
 									},
+									{
+										Name:  "REGISTRY_HTTP_ADDR",
+										Value: fmt.Sprintf(":%d", constants.RegistryCachePort),
+									},
+									{
+										Name:  "REGISTRY_HTTP_DEBUG_ADDR",
+										Value: fmt.Sprintf(":%d", debugPort),
+									},
+								},
+								LivenessProbe: &corev1.Probe{
+									ProbeHandler: corev1.ProbeHandler{
+										HTTPGet: &corev1.HTTPGetAction{
+											Path: "/debug/health",
+											Port: intstr.FromInt(debugPort),
+										},
+									},
+									FailureThreshold: 6,
+									SuccessThreshold: 1,
+									PeriodSeconds:    20,
+								},
+								ReadinessProbe: &corev1.Probe{
+									ProbeHandler: corev1.ProbeHandler{
+										HTTPGet: &corev1.HTTPGetAction{
+											Path: "/debug/health",
+											Port: intstr.FromInt(debugPort),
+										},
+									},
+									FailureThreshold: 3,
+									SuccessThreshold: 1,
+									PeriodSeconds:    20,
 								},
 								VolumeMounts: []corev1.VolumeMount{
 									{
