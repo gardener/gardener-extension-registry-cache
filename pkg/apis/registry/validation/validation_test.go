@@ -20,7 +20,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
@@ -37,9 +36,8 @@ var _ = Describe("Validation", func() {
 		size := resource.MustParse("5Gi")
 		registryConfig = &api.RegistryConfig{
 			Caches: []api.RegistryCache{{
-				Upstream:                 "docker.io",
-				Size:                     &size,
-				GarbageCollectionEnabled: pointer.Bool(true),
+				Upstream: "docker.io",
+				Size:     &size,
 			}},
 		}
 	})

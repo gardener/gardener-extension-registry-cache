@@ -35,8 +35,14 @@ type RegistryCache struct {
 	Upstream string
 	// Size is the size of the registry cache.
 	Size *resource.Quantity
-	// GarbageCollectionEnabled enables/disables cache garbage collection.
-	GarbageCollectionEnabled *bool
+	// GarbageCollection contains settings for the garbage collection of content from the cache.
+	GarbageCollection *GarbageCollection
+}
+
+// GarbageCollection contains settings for the garbage collection of content from the cache.
+type GarbageCollection struct {
+	// Enabled indicates whether the garbage collection is enabled.
+	Enabled bool
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

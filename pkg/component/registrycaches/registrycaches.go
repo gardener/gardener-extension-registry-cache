@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
@@ -142,9 +143,6 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 	if cache.Size == nil {
 		return nil, fmt.Errorf("registry cache size is required")
 	}
-	if cache.GarbageCollectionEnabled == nil {
-		return nil, fmt.Errorf("registry cache garbageCollectionEnabled is required")
-	}
 
 	const registryCacheVolumeName = "cache-volume"
 
@@ -208,7 +206,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 									},
 									{
 										Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
-										Value: strconv.FormatBool(*cache.GarbageCollectionEnabled),
+										Value: strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
 									},
 								},
 								VolumeMounts: []corev1.VolumeMount{
