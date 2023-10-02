@@ -1,9 +1,6 @@
 image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache:latest
 imagePullPolicy: IfNotPresent
 
-leaderElection:
-  resourceLock: leases
-
 replicaCount: 1
 
 resources: {}
