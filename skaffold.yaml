@@ -7,6 +7,25 @@ build:
   artifacts:
   - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
     ko:
+      dependencies:
+        paths:
+        - charts
+        - cmd/gardener-extension-registry-cache/app
+        - pkg/apis/config
+        - pkg/apis/config/v1alpha1
+        - pkg/apis/config/validation
+        - pkg/apis/registry
+        - pkg/apis/registry/install
+        - pkg/apis/registry/v1alpha1
+        - pkg/cmd
+        - pkg/component/registrycaches
+        - pkg/constants
+        - pkg/controller/extension
+        - pkg/imagevector
+        - pkg/utils/registry
+        - pkg/webhook/operatingsystemconfig
+        - vendor
+        - VERSION
       main: ./cmd/gardener-extension-registry-cache
 resourceSelector:
   allow:
@@ -27,6 +46,18 @@ build:
   artifacts:
   - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
     ko:
+      dependencies:
+        paths:
+        - cmd/gardener-extension-registry-cache-admission/app
+        - pkg/admission/cmd
+        - pkg/admission/validator
+        - pkg/apis/registry
+        - pkg/apis/registry/install
+        - pkg/apis/registry/v1alpha1
+        - pkg/apis/registry/validation
+        - pkg/constants
+        - vendor
+        - VERSION
       main: ./cmd/gardener-extension-registry-cache-admission
 deploy:
   helm:
