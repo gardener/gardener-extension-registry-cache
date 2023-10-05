@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 )
 
@@ -33,7 +34,9 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	f := defaultShootCreationFramework()
 	shoot := defaultShoot("e2e-hib")
 	size := resource.MustParse("2Gi")
-	common.AddRegistryCacheExtension(shoot, "docker.io", &size)
+	common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+		{Upstream: "docker.io", Size: &size},
+	})
 	f.Shoot = shoot
 
 	It("should create Shoot with registry-cache extension enabled, hibernate Shoot, reconcile Shoot, delete Shoot", func() {
@@ -43,8 +46,13 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
 
+		By("Wait until the registry configuration is applied")
+		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
+		defer cancel()
+		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
+
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.Nginx1130ImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)

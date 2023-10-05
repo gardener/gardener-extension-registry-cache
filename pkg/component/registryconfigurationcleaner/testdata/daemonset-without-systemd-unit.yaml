@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  creationTimestamp: null
+  name: registry-configuration-cleaner
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: registry-configuration-cleaner
+      app.kubernetes.io/name: registry-configuration-cleaner
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/instance: registry-configuration-cleaner
+        app.kubernetes.io/name: registry-configuration-cleaner
+    spec:
+      containers:
+      - image: pause:some-tag
+        imagePullPolicy: IfNotPresent
+        name: pause
+        resources: {}
+      hostPID: true
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - |
+          if [[ -d /host/etc/containerd/certs.d/docker.io ]]; then
+            rm -rf /host/etc/containerd/certs.d/docker.io
+          fi
+          if [[ -d /host/etc/containerd/certs.d/eu.gcr.io ]]; then
+            rm -rf /host/etc/containerd/certs.d/eu.gcr.io
+          fi
+        image: alpine:some-tag
+        imagePullPolicy: IfNotPresent
+        name: registry-configuration-cleaner
+        resources: {}
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /host
+          mountPropagation: HostToContainer
+          name: host-root-volume
+      volumes:
+      - hostPath:
+          path: /
+        name: host-root-volume
+  updateStrategy: {}
+status:
+  currentNumberScheduled: 0
+  desiredNumberScheduled: 0
+  numberMisscheduled: 0
+  numberReady: 0

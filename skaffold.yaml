@@ -20,6 +20,7 @@ build:
         - pkg/apis/registry/v1alpha1/helper
         - pkg/cmd
         - pkg/component/registrycaches
+        - pkg/component/registryconfigurationcleaner
         - pkg/constants
         - pkg/controller/extension
         - pkg/utils/registry

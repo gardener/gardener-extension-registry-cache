@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"strings"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -29,7 +30,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,27 +39,27 @@ import (
 )
 
 const (
-	// Nginx1130ImageWithDigest corresponds to the nginx:1.13.0 image.
-	Nginx1130ImageWithDigest = "library/nginx@sha256:12d30ce421ad530494d588f87b2328ddc3cae666e77ea1ae5ac3a6661e52cde6"
-	// Nginx1140ImageWithDigest corresponds to the nginx:1.14.0 image.
-	Nginx1140ImageWithDigest = "library/nginx@sha256:8b600a4d029481cc5b459f1380b30ff6cb98e27544fc02370de836e397e34030"
-	// Nginx1150ImageWithDigest corresponds to the nginx:1.15.0 image.
-	Nginx1150ImageWithDigest = "library/nginx@sha256:62a095e5da5f977b9f830adaf64d604c614024bf239d21068e4ca826d0d629a4"
+	// DockerNginx1130ImageWithDigest corresponds to the nginx:1.13.0 image.
+	DockerNginx1130ImageWithDigest = "docker.io/library/nginx@sha256:12d30ce421ad530494d588f87b2328ddc3cae666e77ea1ae5ac3a6661e52cde6"
+	// DockerNginx1140ImageWithDigest corresponds to the nginx:1.14.0 image.
+	DockerNginx1140ImageWithDigest = "docker.io/library/nginx@sha256:8b600a4d029481cc5b459f1380b30ff6cb98e27544fc02370de836e397e34030"
+	// DockerNginx1150ImageWithDigest corresponds to the nginx:1.15.0 image.
+	DockerNginx1150ImageWithDigest = "docker.io/library/nginx@sha256:62a095e5da5f977b9f830adaf64d604c614024bf239d21068e4ca826d0d629a4"
+
+	// EuGcrNginx1176ImageWithDigest corresponds to the eu.gcr.io/gardener-project/3rd/nginx:1.17.6 image.
+	EuGcrNginx1176ImageWithDigest = "eu.gcr.io/gardener-project/3rd/nginx@sha256:3efdd8ec67f2eb4e96c6f49560f20d6888242f1376808b84ed0ceb064dceae11"
+	// RegistryK8sNginx1154ImageWithDigest corresponds to the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
+	RegistryK8sNginx1154ImageWithDigest = "registry.k8s.io/e2e-test-images/nginx@sha256:db048754ae68ae337d8fa96494c96d2a1204c3320f5dcf7e8e71085adec85da6"
 )
 
 // AddRegistryCacheExtension adds registry-cache extension with the given upstream and size to to given Shoot.
-func AddRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, upstream string, size *resource.Quantity) {
+func AddRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []v1alpha1.RegistryCache) {
 	providerConfig := &v1alpha1.RegistryConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 			Kind:       "RegistryConfig",
 		},
-		Caches: []v1alpha1.RegistryCache{
-			{
-				Upstream: upstream,
-				Size:     size,
-			},
-		},
+		Caches: caches,
 	}
 	providerConfigJSON, err := json.Marshal(&providerConfig)
 	utilruntime.Must(err)
@@ -74,11 +74,77 @@ func AddRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, upstream string, 
 	shoot.Spec.Extensions = append(shoot.Spec.Extensions, extension)
 }
 
-// RemoveRegistryCacheExtension removes registry-caches extensions from given Shoot.
+// HasRegistryCacheExtension returns whether the Shoot has an extension of type registry-cache.
+func HasRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) bool {
+	for _, extension := range shoot.Spec.Extensions {
+		if extension.Type == "registry-cache" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// RemoveRegistryCacheExtension removes registry caches extensions from given Shoot.
 func RemoveRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) {
 	shoot.Spec.Extensions = slices.DeleteFunc(shoot.Spec.Extensions, func(extension gardencorev1beta1.Extension) bool {
 		return extension.Type == "registry-cache"
 	})
+}
+
+// WaitUntilRegistryConfigurationsAreApplied waits until the configure-containerd-registries.service systemd unit gets active on the Nodes.
+// The unit will be in activating state until it configures all registry caches.
+func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface) {
+	nodes := &corev1.NodeList{}
+	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
+
+	for _, node := range nodes.Items {
+		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
+
+		EventuallyWithOffset(1, ctx, func(g Gomega) string {
+			command := "systemctl is-active configure-containerd-registries.service &>/dev/null && echo 'active' || echo 'not active'"
+			response, err := rootPodExecutor.Execute(ctx, command)
+			Expect(err).NotTo(HaveOccurred())
+
+			return string(response)
+		}).WithPolling(10*time.Second).Should(Equal("active\n"), fmt.Sprintf("Expected the configure-containerd-registries.service unit to be active on node %s", node.Name))
+
+		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
+	}
+}
+
+// VerifyRegistryConfigurationsAreRemoved verifies that configure-containerd-registries.service systemd unit gets deleted and the hosts.toml files for the given upstreams are removed.
+// The hosts.toml file and the systemd unit are deleted by a DaemonSet by the registry-cache extension.
+//
+// Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io and quay.io.
+// Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
+func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstreams []string) {
+	nodes := &corev1.NodeList{}
+	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
+
+	for _, node := range nodes.Items {
+		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
+
+		EventuallyWithOffset(1, ctx, func(g Gomega) string {
+			command := "systemctl status configure-containerd-registries.service &>/dev/null && echo 'unit found' || echo 'unit not found'"
+			response, err := rootPodExecutor.Execute(ctx, command)
+			Expect(err).NotTo(HaveOccurred())
+
+			return string(response)
+		}).WithPolling(10*time.Second).Should(Equal("unit not found\n"), fmt.Sprintf("Expected the configure-containerd-registries.service systemd unit on node %s to be deleted", node.Name))
+
+		for _, upstream := range upstreams {
+			EventuallyWithOffset(1, ctx, func(g Gomega) string {
+				command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
+				response, err := rootPodExecutor.Execute(ctx, command)
+				Expect(err).NotTo(HaveOccurred())
+
+				return string(response)
+			}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", node.Name, upstream))
+		}
+
+		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
+	}
 }
 
 // VerifyRegistryCache verifies that a registry cache works as expected.
@@ -126,7 +192,8 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	schedulerStateMap := map[string]interface{}{}
 	ExpectWithOffset(1, json.Unmarshal(schedulerStateFileContent, &schedulerStateMap)).To(Succeed())
-	ExpectWithOffset(1, schedulerStateMap).To(HaveKey(nginxImageWithDigest), fmt.Sprintf("Expected to find image %s in the registry's scheduler-state.json file", nginxImageWithDigest))
+	expectedImage := strings.TrimPrefix(nginxImageWithDigest, upstream+"/")
+	ExpectWithOffset(1, schedulerStateMap).To(HaveKey(expectedImage), fmt.Sprintf("Expected to find image %s in the registry's scheduler-state.json file", expectedImage))
 
 	By("Delete nginx Pod")
 	timeout := 5 * time.Minute

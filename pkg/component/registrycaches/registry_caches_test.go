@@ -52,7 +52,7 @@ var _ = Describe("RegistryCaches", func() {
 	)
 
 	var (
-		ctx        = context.TODO()
+		ctx        = context.Background()
 		dockerSize = resource.MustParse("10Gi")
 		gcrSize    = resource.MustParse("20Gi")
 
