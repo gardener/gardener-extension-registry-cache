@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e_test
+package shoot_test
 
 import (
 	"context"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,23 +27,19 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 )
 
-var _ = Describe("Registry Cache Extension Tests", func() {
-	parentCtx := context.Background()
+const (
+	defaultTestTimeout        = 20 * time.Minute
+	defaultTestCleanupTimeout = 10 * time.Minute
+)
 
-	f := defaultShootCreationFramework()
-	f.Shoot = defaultShoot("e2e-default")
+var _ = Describe("Shoot registry cache testing", func() {
+	f := framework.NewShootFramework(nil)
 
-	It("should create Shoot, enable and disable the registry-cache extension, delete Shoot", func() {
-		By("Create Shoot")
-		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
-		defer cancel()
-		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
-		f.Verify()
-
+	f.Serial().Beta().CIt("should enable and disable the registry-cache extension", func(parentCtx context.Context) {
 		By("Enable the registry-cache extension")
-		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
+		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
-		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
 			common.AddRegistryCacheExtension(shoot, "docker.io", &size)
 
@@ -50,20 +47,13 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.Nginx1130ImageWithDigest)
-
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.Nginx1130ImageWithDigest)
+	}, defaultTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		By("Disable the registry-cache extension")
-		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
-		defer cancel()
-		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			common.RemoveRegistryCacheExtension(shoot)
 
 			return nil
 		})).To(Succeed())
-
-		By("Delete Shoot")
-		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
-		defer cancel()
-		Expect(f.DeleteShootAndWaitForDeletion(ctx, f.Shoot)).To(Succeed())
-	})
+	}, defaultTestCleanupTimeout))
 })

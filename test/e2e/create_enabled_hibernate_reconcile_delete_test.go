@@ -23,6 +23,8 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/gardener/gardener-extension-registry-cache/test/common"
 )
 
 var _ = Describe("Registry Cache Extension Tests", func() {
@@ -31,8 +33,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	f := defaultShootCreationFramework()
 	shoot := defaultShoot("e2e-hib")
 	size := resource.MustParse("2Gi")
-	extension := registryCacheExtension("docker.io", &size)
-	shoot.Spec.Extensions = []gardencorev1beta1.Extension{extension}
+	common.AddRegistryCacheExtension(shoot, "docker.io", &size)
 	f.Shoot = shoot
 
 	It("should create Shoot with registry-cache extension enabled, hibernate Shoot, reconcile Shoot, delete Shoot", func() {
@@ -43,7 +44,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		f.Verify()
 
 		By("Verify registry-cache works")
-		verifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", nginxImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.Nginx1130ImageWithDigest)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
