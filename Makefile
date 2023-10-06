@@ -28,6 +28,9 @@ PARALLEL_E2E_TESTS          := 2
 #########################################
 
 TOOLS_DIR := hack/tools
+# TODO(ialidzhikov): Remove this version pin when the skaffold version coming from gardener/gardener is higher than or equal to v2.8.0.
+# skaffold@v2.8.0 contains https://github.com/GoogleContainerTools/skaffold/pull/9094 which fixes skaffold to correctly find the docker socket location.
+SKAFFOLD_VERSION := v2.8.0
 include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 #################################################################
