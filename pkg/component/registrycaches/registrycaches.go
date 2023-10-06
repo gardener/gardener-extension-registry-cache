@@ -190,6 +190,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 						Labels: labels,
 					},
 					Spec: corev1.PodSpec{
+						PriorityClassName: "system-cluster-critical",
 						Containers: []corev1.Container{
 							{
 								Name:            "registry-cache",
