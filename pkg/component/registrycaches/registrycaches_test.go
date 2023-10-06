@@ -70,14 +70,18 @@ var _ = Describe("RegistryCaches", func() {
 			Image: image,
 			Caches: []v1alpha1.RegistryCache{
 				{
-					Upstream:                 "docker.io",
-					Size:                     &dockerSize,
-					GarbageCollectionEnabled: pointer.Bool(true),
+					Upstream: "docker.io",
+					Size:     &dockerSize,
+					GarbageCollection: &v1alpha1.GarbageCollection{
+						Enabled: true,
+					},
 				},
 				{
-					Upstream:                 "eu.gcr.io",
-					Size:                     &gcrSize,
-					GarbageCollectionEnabled: pointer.Bool(false),
+					Upstream: "eu.gcr.io",
+					Size:     &gcrSize,
+					GarbageCollection: &v1alpha1.GarbageCollection{
+						Enabled: false,
+					},
 				},
 			},
 		}
@@ -192,29 +196,13 @@ status:
 				Image: image,
 				Caches: []v1alpha1.RegistryCache{
 					{
-						Upstream:                 "docker.io",
-						GarbageCollectionEnabled: pointer.Bool(true),
+						Upstream: "docker.io",
 					},
 				},
 			}
 			registryCaches = New(c, namespace, values)
 
 			Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("registry cache size is required")))
-		})
-
-		It("should return err when cache garbageCollectionEnabled is nil", func() {
-			values := Values{
-				Image: image,
-				Caches: []v1alpha1.RegistryCache{
-					{
-						Upstream: "docker.io",
-						Size:     &dockerSize,
-					},
-				},
-			}
-			registryCaches = New(c, namespace, values)
-
-			Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("registry cache garbageCollectionEnabled is required")))
 		})
 
 		It("should successfully deploy the resources", func() {

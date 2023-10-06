@@ -10,6 +10,36 @@
 </p>
 Resource Types:
 <ul></ul>
+<h3 id="registry.extensions.gardener.cloud/v1alpha1.GarbageCollection">GarbageCollection
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryCache">RegistryCache</a>)
+</p>
+<p>
+<p>GarbageCollection contains settings for the garbage collection of content from the cache.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>Enabled indicates whether the garbage collection is enabled.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryCache">RegistryCache
 </h3>
 <p>
@@ -53,15 +83,17 @@ Defaults to 10Gi.</p>
 </tr>
 <tr>
 <td>
-<code>garbageCollectionEnabled</code></br>
+<code>garbageCollection</code></br>
 <em>
-bool
+<a href="#registry.extensions.gardener.cloud/v1alpha1.GarbageCollection">
+GarbageCollection
+</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>GarbageCollectionEnabled enables/disables cache garbage collection.
-Defaults to true.</p>
+<p>GarbageCollection contains settings for the garbage collection of content from the cache.
+Defaults to enabled garbage collection.</p>
 </td>
 </tr>
 </tbody>

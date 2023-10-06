@@ -22,7 +22,8 @@ spec:
         size: 500Mi
       - upstream: ghcr.io
       - upstream: quay.io
-        garbageCollectionEnabled: false
+        garbageCollection: 
+          enabled: false
   networking:
     type: calico
   provider:

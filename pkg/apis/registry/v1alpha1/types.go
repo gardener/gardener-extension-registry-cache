@@ -37,10 +37,16 @@ type RegistryCache struct {
 	// Defaults to 10Gi.
 	// +optional
 	Size *resource.Quantity `json:"size,omitempty"`
-	// GarbageCollectionEnabled enables/disables cache garbage collection.
-	// Defaults to true.
+	// GarbageCollection contains settings for the garbage collection of content from the cache.
+	// Defaults to enabled garbage collection.
 	// +optional
-	GarbageCollectionEnabled *bool `json:"garbageCollectionEnabled,omitempty"`
+	GarbageCollection *GarbageCollection `json:"garbageCollection,omitempty"`
+}
+
+// GarbageCollection contains settings for the garbage collection of content from the cache.
+type GarbageCollection struct {
+	// Enabled indicates whether the garbage collection is enabled.
+	Enabled bool `json:"enabled"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
