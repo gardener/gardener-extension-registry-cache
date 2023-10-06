@@ -17,6 +17,7 @@ build:
         - pkg/apis/registry
         - pkg/apis/registry/install
         - pkg/apis/registry/v1alpha1
+        - pkg/apis/registry/v1alpha1/helper
         - pkg/cmd
         - pkg/component/registrycaches
         - pkg/constants
