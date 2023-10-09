@@ -33,11 +33,11 @@ import (
 	"k8s.io/apimachinery/pkg/selection"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/gardener/gardener-extension-registry-cache/imagevector"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/imagevector"
 )
 
 // NewActuator returns an actuator responsible for Extension resources.
