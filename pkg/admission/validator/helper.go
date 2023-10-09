@@ -21,15 +21,14 @@ import (
 )
 
 // FindRegistryCacheExtension finds the registry-cache extension.
-// The first return argument is whether the extension was found.
-// The second return argument is index of the extension in the list. -1 is returned if the extension is not found.
-// The third return arguement is the extension itself. An empty extension is returned if the extension is not found.
-func FindRegistryCacheExtension(extensions []core.Extension) (bool, int, core.Extension) {
+// The first return argument is index of the extension in the list. -1 is returned if the extension is not found.
+// The second return argument is the extension itself. An empty extension is returned if the extension is not found.
+func FindRegistryCacheExtension(extensions []core.Extension) (int, core.Extension) {
 	for i, ext := range extensions {
 		if ext.Type == constants.ExtensionType {
-			return true, i, ext
+			return i, ext
 		}
 	}
 
-	return false, -1, core.Extension{}
+	return -1, core.Extension{}
 }

@@ -20,7 +20,7 @@ import (
 
 // FindCacheByUpstream finds a cache by upstream.
 // The first return argument is whether the extension was found.
-// The third return arguement is the cache itself. An empty cache is returned if the cache is not found.
+// The second return argument is the cache itself. An empty cache is returned if the cache is not found.
 func FindCacheByUpstream(caches []registry.RegistryCache, upstream string) (bool, registry.RegistryCache) {
 	for _, cache := range caches {
 		if cache.Upstream == upstream {

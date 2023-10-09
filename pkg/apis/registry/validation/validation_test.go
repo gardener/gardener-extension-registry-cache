@@ -148,9 +148,11 @@ var _ = Describe("Validation", func() {
 		It("should allow valid configuration update", func() {
 			size := resource.MustParse("5Gi")
 			newCache := api.RegistryCache{
-				Upstream:                 "docker.io",
-				Size:                     &size,
-				GarbageCollectionEnabled: pointer.Bool(true),
+				Upstream: "docker.io",
+				Size:     &size,
+				GarbageCollection: &api.GarbageCollection{
+					Enabled: true,
+				},
 			}
 			registryConfig.Caches = append(registryConfig.Caches, newCache)
 

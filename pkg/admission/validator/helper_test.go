@@ -26,20 +26,19 @@ import (
 var _ = Describe("Helpers", func() {
 
 	DescribeTable("#FindRegistryCacheExtension",
-		func(extensions []core.Extension, expectedOk bool, expectedI int, expectedExt core.Extension) {
-			ok, i, ext := validator.FindRegistryCacheExtension(extensions)
-			Expect(ok).To(Equal(expectedOk))
+		func(extensions []core.Extension, expectedI int, expectedExt core.Extension) {
+			i, ext := validator.FindRegistryCacheExtension(extensions)
 			Expect(i).To(Equal(expectedI))
 			Expect(ext).To(Equal(expectedExt))
 		},
 
 		Entry("extensions is nil",
 			nil,
-			false, -1, core.Extension{},
+			-1, core.Extension{},
 		),
 		Entry("extensions is empty",
 			[]core.Extension{},
-			false, -1, core.Extension{},
+			-1, core.Extension{},
 		),
 		Entry("no registry-cache extension",
 			[]core.Extension{
@@ -47,7 +46,7 @@ var _ = Describe("Helpers", func() {
 				{Type: "bar"},
 				{Type: "baz"},
 			},
-			false, -1, core.Extension{},
+			-1, core.Extension{},
 		),
 		Entry("with registry-cache extension",
 			[]core.Extension{
@@ -56,7 +55,7 @@ var _ = Describe("Helpers", func() {
 				{Type: "registry-cache", ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"one": "two"}`)}},
 				{Type: "baz"},
 			},
-			true, 2, core.Extension{Type: "registry-cache", ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"one": "two"}`)}},
+			2, core.Extension{Type: "registry-cache", ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"one": "two"}`)}},
 		),
 	)
 })

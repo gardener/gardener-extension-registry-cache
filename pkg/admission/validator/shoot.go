@@ -47,8 +47,8 @@ func (s *shoot) Validate(_ context.Context, new, old client.Object) error {
 		return fmt.Errorf("wrong object type %T", new)
 	}
 
-	ok, i, ext := FindRegistryCacheExtension(shoot.Spec.Extensions)
-	if !ok {
+	i, ext := FindRegistryCacheExtension(shoot.Spec.Extensions)
+	if i == -1 {
 		return nil
 	}
 
@@ -76,8 +76,8 @@ func (s *shoot) Validate(_ context.Context, new, old client.Object) error {
 			return fmt.Errorf("wrong object type %T for old object", old)
 		}
 
-		oldOk, _, oldExt := FindRegistryCacheExtension(oldShoot.Spec.Extensions)
-		if oldOk {
+		oldI, oldExt := FindRegistryCacheExtension(oldShoot.Spec.Extensions)
+		if oldI != -1 {
 			if oldExt.ProviderConfig == nil {
 				return fmt.Errorf("providerConfig is not available on old Shoot")
 			}

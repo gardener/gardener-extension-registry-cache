@@ -53,6 +53,7 @@ build:
         - pkg/admission/cmd
         - pkg/admission/validator
         - pkg/apis/registry
+        - pkg/apis/registry/helper
         - pkg/apis/registry/install
         - pkg/apis/registry/v1alpha1
         - pkg/apis/registry/validation
