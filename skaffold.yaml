@@ -9,8 +9,8 @@ build:
     ko:
       dependencies:
         paths:
-        - charts
         - cmd/gardener-extension-registry-cache/app
+        - imagevector
         - pkg/apis/config
         - pkg/apis/config/v1alpha1
         - pkg/apis/config/validation
@@ -22,7 +22,6 @@ build:
         - pkg/component/registrycaches
         - pkg/constants
         - pkg/controller/extension
-        - pkg/imagevector
         - pkg/utils/registry
         - pkg/webhook/operatingsystemconfig
         - vendor

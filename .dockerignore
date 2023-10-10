@@ -3,10 +3,9 @@
 
 # Exclude folders relevant for build
 !.dockerignore
-!charts/images.go
-!charts/images.yaml
 !cmd/
 !hack/
+!imagevector/
 !pkg/
 !vendor/
 !go.mod
