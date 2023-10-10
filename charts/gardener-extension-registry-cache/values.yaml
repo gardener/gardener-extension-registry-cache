@@ -41,8 +41,8 @@ disableControllers: []
 #   images:
 #     - name: registry
 #       sourceRepository: github.com/distribution/distribution
-#       repository: registry
-#       tag: "2.8.1"
+#       repository: eu.gcr.io/gardener-project/3rd/registry
+#       tag: "2.8.3"
 
 gardener:
   version: ""
