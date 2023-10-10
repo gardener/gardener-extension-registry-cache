@@ -26,7 +26,6 @@ import (
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 // shoot validates shoots
@@ -42,22 +41,14 @@ func NewShootValidator(decoder runtime.Decoder) extensionswebhook.Validator {
 }
 
 // Validate validates the given shoot object
-func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
+func (s *shoot) Validate(_ context.Context, new, old client.Object) error {
 	shoot, ok := new.(*core.Shoot)
 	if !ok {
 		return fmt.Errorf("wrong object type %T", new)
 	}
 
-	var ext *core.Extension
-	var fldPath *field.Path
-	for i, ex := range shoot.Spec.Extensions {
-		if ex.Type == constants.ExtensionType {
-			ext = ex.DeepCopy()
-			fldPath = field.NewPath("spec", "extensions").Index(i)
-			break
-		}
-	}
-	if ext == nil {
+	i, ext := FindRegistryCacheExtension(shoot.Spec.Extensions)
+	if i == -1 {
 		return nil
 	}
 
@@ -67,7 +58,7 @@ func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
 		}
 	}
 
-	providerConfigPath := fldPath.Child("providerConfig")
+	providerConfigPath := field.NewPath("spec", "extensions").Index(i).Child("providerConfig")
 	if ext.ProviderConfig == nil {
 		return field.Required(providerConfigPath, "providerConfig is required for the registry-cache extension")
 	}
@@ -77,5 +68,30 @@ func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
 		return fmt.Errorf("failed to decode providerConfig: %w", err)
 	}
 
-	return validation.ValidateRegistryConfig(registryConfig, providerConfigPath).ToAggregate()
+	allErrs := field.ErrorList{}
+
+	if old != nil {
+		oldShoot, ok := old.(*core.Shoot)
+		if !ok {
+			return fmt.Errorf("wrong object type %T for old object", old)
+		}
+
+		oldI, oldExt := FindRegistryCacheExtension(oldShoot.Spec.Extensions)
+		if oldI != -1 {
+			if oldExt.ProviderConfig == nil {
+				return fmt.Errorf("providerConfig is not available on old Shoot")
+			}
+
+			oldRegistryConfig := &api.RegistryConfig{}
+			if err := runtime.DecodeInto(s.decoder, oldExt.ProviderConfig.Raw, oldRegistryConfig); err != nil {
+				return fmt.Errorf("failed to decode providerConfig: %w", err)
+			}
+
+			allErrs = append(allErrs, validation.ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, providerConfigPath)...)
+		}
+	}
+
+	allErrs = append(allErrs, validation.ValidateRegistryConfig(registryConfig, providerConfigPath)...)
+
+	return allErrs.ToAggregate()
 }

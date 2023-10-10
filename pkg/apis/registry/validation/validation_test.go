@@ -137,4 +137,39 @@ var _ = Describe("Validation", func() {
 			))
 		})
 	})
+
+	Describe("#ValidateRegistryConfigUpdate", func() {
+		var oldRegistryConfig *api.RegistryConfig
+
+		BeforeEach(func() {
+			oldRegistryConfig = registryConfig.DeepCopy()
+		})
+
+		It("should allow valid configuration update", func() {
+			size := resource.MustParse("5Gi")
+			newCache := api.RegistryCache{
+				Upstream: "docker.io",
+				Size:     &size,
+				GarbageCollection: &api.GarbageCollection{
+					Enabled: true,
+				},
+			}
+			registryConfig.Caches = append(registryConfig.Caches, newCache)
+
+			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(BeEmpty())
+		})
+
+		It("should deny cache size update", func() {
+			newSize := resource.MustParse("16Gi")
+			registryConfig.Caches[0].Size = &newSize
+
+			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("providerConfig.caches[0].size"),
+					"Detail": Equal("field is immutable"),
+				})),
+			))
+		})
+	})
 })
