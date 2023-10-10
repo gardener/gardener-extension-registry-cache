@@ -21,11 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 )
 
-// ImagesYAML contains the content of the images.yaml file
-//
-//go:embed images.yaml
-var imagesYAML string
-var imageVector imagevector.ImageVector
+var (
+	//go:embed images.yaml
+	imagesYAML  string
+	imageVector imagevector.ImageVector
+)
 
 func init() {
 	var err error
