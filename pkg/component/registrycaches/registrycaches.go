@@ -271,6 +271,9 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 									corev1.ResourceStorage: *cache.Size,
 								},
 							},
+							// We need to explicitly set the spec.storageClassName to default as marking the Gardener managed StorageClass as the default one is configurable on provider extensions side.
+							// For example, for provider-aws see the storage.managedDefaultClass field in the ControlPlaneConfig (https://github.com/gardener/gardener-extension-provider-aws/blob/v1.48.0/docs/usage/usage.md#controlplaneconfig).
+							StorageClassName: pointer.String("default"),
 						},
 					},
 				},
