@@ -37,10 +37,6 @@ webhookConfig:
   servicePort: 443
   serverPort: 10251
 
-registryConfig:
-  registries:
-    - ...
-
 disableControllers: []
 
 # imageVectorOverwrite: |
