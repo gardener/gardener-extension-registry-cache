@@ -43,7 +43,7 @@ spec:
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         args:
         - --config=/etc/registry-cache/config.yaml
-        - --max-concurrent-reconciles={{ .Values.controllers.concurrentSyncs }}
+        - --max-concurrent-reconciles={{ .Values.controllers.extension.concurrentSyncs }}
         - --heartbeat-namespace={{ .Release.Namespace }} 
         - --heartbeat-renew-interval-seconds={{ .Values.controllers.heartbeat.renewIntervalSeconds }} 
         - --disable-controllers={{ .Values.disableControllers | join "," }}

@@ -22,10 +22,11 @@ vpa:
 healthPort: 8081
 
 controllers:
-  concurrentSyncs: 5
-  ignoreOperationAnnotation: false
+  extension:
+    concurrentSyncs: 5
   heartbeat: 
     renewIntervalSeconds: 30 
+  ignoreOperationAnnotation: false
 
 webhookConfig:
   servicePort: 443
