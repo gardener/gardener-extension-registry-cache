@@ -56,18 +56,19 @@ var _ = Describe("RegistryCaches", func() {
 		dockerSize = resource.MustParse("10Gi")
 		gcrSize    = resource.MustParse("20Gi")
 
-		c client.Client
-
-		registryCaches component.DeployWaiter
-
+		c                     client.Client
+		values                Values
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
+
+		registryCaches component.DeployWaiter
 	)
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
-		values := Values{
-			Image: image,
+		values = Values{
+			Image:      image,
+			VPAEnabled: true,
 			Caches: []v1alpha1.RegistryCache{
 				{
 					Upstream: "docker.io",
@@ -85,7 +86,6 @@ var _ = Describe("RegistryCaches", func() {
 				},
 			},
 		}
-		registryCaches = New(c, namespace, values)
 
 		managedResource = &resourcesv1alpha1.ManagedResource{
 			ObjectMeta: metav1.ObjectMeta{
@@ -99,6 +99,10 @@ var _ = Describe("RegistryCaches", func() {
 				Namespace: namespace,
 			},
 		}
+	})
+
+	JustBeforeEach(func() {
+		registryCaches = New(c, namespace, values)
 	})
 
 	Describe("#Deploy", func() {
@@ -184,7 +188,10 @@ spec:
             port: 5001
           periodSeconds: 20
           successThreshold: 1
-        resources: {}
+        resources:
+          requests:
+            cpu: 20m
+            memory: 50Mi
         volumeMounts:
         - mountPath: /var/lib/registry
           name: cache-volume
@@ -208,6 +215,28 @@ spec:
 status:
   availableReplicas: 0
   replicas: 0
+`
+			}
+
+			vpaYAMLFor = func(name string) string {
+				return `apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  creationTimestamp: null
+  name: ` + name + `
+  namespace: kube-system
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: '*'
+      controlledValues: RequestsOnly
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: ` + name + `
+  updatePolicy:
+    updateMode: Auto
+status: {}
 `
 			}
 		)
@@ -260,11 +289,30 @@ status:
 			Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 			Expect(managedResourceSecret.Immutable).To(Equal(pointer.Bool(true)))
 			Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-			Expect(managedResourceSecret.Data).To(HaveLen(4))
+			Expect(managedResourceSecret.Data).To(HaveLen(6))
 			Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
 			Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", true)))
+			Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 			Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
 			Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", false)))
+			Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
+		})
+
+		Context("When VPA is disabled", func() {
+
+			BeforeEach(func() {
+				values.VPAEnabled = false
+			})
+
+			It("should skip VPA deploy when VPA is disabled", func() {
+				Expect(registryCaches.Deploy(ctx)).To(Succeed())
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
+				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
+				Expect(managedResourceSecret.Data).To(HaveLen(4))
+				Expect(managedResourceSecret.Data).ShouldNot(HaveKey("verticalpodautoscaler__kube-system__registry-docker-io.yaml"))
+				Expect(managedResourceSecret.Data).ShouldNot(HaveKey("verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"))
+			})
 		})
 	})
 

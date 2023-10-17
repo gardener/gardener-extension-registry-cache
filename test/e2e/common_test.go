@@ -64,6 +64,9 @@ func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
 					RegistryBurst:       pointer.Int32(20),
 				},
 				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
+				VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
+					Enabled: true,
+				},
 			},
 			Networking: &gardencorev1beta1.Networking{
 				Type: pointer.String("calico"),
