@@ -37,6 +37,10 @@ global:
     useObjectSelector: true
   # Kubeconfig to the target cluster. In-cluster configuration will be used if not specified.
   kubeconfig:
+# projectedKubeconfig:
+#   baseMountPath: /var/run/secrets/gardener.cloud
+#   genericKubeconfigSecretName: generic-token-kubeconfig
+#   tokenSecretName: access-registry-cache-admission
   serviceAccountTokenVolumeProjection:
     enabled: false
     expirationSeconds: 43200
