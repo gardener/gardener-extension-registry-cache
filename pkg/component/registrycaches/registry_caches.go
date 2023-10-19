@@ -238,7 +238,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.Re
 									ProbeHandler: corev1.ProbeHandler{
 										HTTPGet: &corev1.HTTPGetAction{
 											Path: "/debug/health",
-											Port: intstr.FromInt(debugPort),
+											Port: intstr.FromInt32(debugPort),
 										},
 									},
 									FailureThreshold: 6,
@@ -249,7 +249,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.Re
 									ProbeHandler: corev1.ProbeHandler{
 										HTTPGet: &corev1.HTTPGetAction{
 											Path: "/debug/health",
-											Port: intstr.FromInt(debugPort),
+											Port: intstr.FromInt32(debugPort),
 										},
 									},
 									FailureThreshold: 3,
@@ -293,8 +293,8 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.Re
 	)
 
 	if r.values.VPAEnabled {
-		vpaUpdateMode := vpaautoscalingv1.UpdateModeAuto
-		vpaControlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
+		updateMode := vpaautoscalingv1.UpdateModeAuto
+		controlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
 		vpa = &vpaautoscalingv1.VerticalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -307,13 +307,20 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.Re
 					Name:       name,
 				},
 				UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
-					UpdateMode: &vpaUpdateMode,
+					UpdateMode: &updateMode,
 				},
 				ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
 					ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
 						{
 							ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
-							ControlledValues: &vpaControlledValues,
+							ControlledValues: &controlledValues,
+							MinAllowed: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("20Mi"),
+							},
+							MaxAllowed: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("4"),
+								corev1.ResourceMemory: resource.MustParse("8Gi"),
+							},
 						},
 					},
 				},

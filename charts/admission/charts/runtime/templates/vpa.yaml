@@ -11,6 +11,10 @@ spec:
     - containerName: '*'
       minAllowed:
         memory: {{ required ".Values.global.vpa.resourcePolicy.minAllowed.memory is required" .Values.global.vpa.resourcePolicy.minAllowed.memory }}
+      maxAllowed:
+        cpu: {{ required ".Values.global.vpa.resourcePolicy.maxAllowed.cpu is required" .Values.global.vpa.resourcePolicy.maxAllowed.cpu }}
+        memory: {{ required ".Values.global.vpa.resourcePolicy.maxAllowed.memory is required" .Values.global.vpa.resourcePolicy.maxAllowed.memory }}
+      controlledValues: RequestsOnly
   {{- end }}
   targetRef:
     apiVersion: apps/v1
