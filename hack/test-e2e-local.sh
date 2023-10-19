@@ -26,6 +26,7 @@ seed_name="local"
 shoot_names=(
   e2e-default.local
   e2e-hib.local
+  e2e-default-ssc.local
 )
 
 if [ -n "${CI:-}" ]; then

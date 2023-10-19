@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package registrycaches_test
+package registryconfigurationcleaner_test
 
 import (
 	"context"
-	"strconv"
+	_ "embed"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
@@ -31,7 +31,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -39,26 +38,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
-	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
+	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registryconfigurationcleaner"
 )
 
-var _ = Describe("RegistryCaches", func() {
-	const (
-		managedResourceName = "extension-registry-cache"
+var (
+	//go:embed testdata/daemonset-with-systemd-unit.yaml
+	daemonSetWithSystemdUnit string
+	//go:embed testdata/daemonset-without-systemd-unit.yaml
+	daemonSetWithoutSystemdUnit string
+)
 
-		namespace = "some-namespace"
-		image     = "some-image:some-tag"
+var _ = Describe("RegistryConfigurationCleaner", func() {
+	const (
+		managedResourceName = "extension-registry-configuration-cleaner"
+		namespace           = "some-namespace"
+
+		alpineImage = "alpine:some-tag"
+		pauseImage  = "pause:some-tag"
 	)
 
 	var (
-		ctx        = context.TODO()
-		dockerSize = resource.MustParse("10Gi")
-		gcrSize    = resource.MustParse("20Gi")
+		ctx = context.Background()
 
 		c client.Client
-
-		registryCaches component.DeployWaiter
 
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
@@ -66,26 +68,6 @@ var _ = Describe("RegistryCaches", func() {
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
-		values := Values{
-			Image: image,
-			Caches: []v1alpha1.RegistryCache{
-				{
-					Upstream: "docker.io",
-					Size:     &dockerSize,
-					GarbageCollection: &v1alpha1.GarbageCollection{
-						Enabled: true,
-					},
-				},
-				{
-					Upstream: "eu.gcr.io",
-					Size:     &gcrSize,
-					GarbageCollection: &v1alpha1.GarbageCollection{
-						Enabled: false,
-					},
-				},
-			},
-		}
-		registryCaches = New(c, namespace, values)
 
 		managedResource = &resourcesv1alpha1.ManagedResource{
 			ObjectMeta: metav1.ObjectMeta{
@@ -101,135 +83,19 @@ var _ = Describe("RegistryCaches", func() {
 		}
 	})
 
-	Describe("#Deploy", func() {
-		var (
-			serviceYAMLFor = func(name, upstream string) string {
-				return `apiVersion: v1
-kind: Service
-metadata:
-  creationTimestamp: null
-  labels:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  name: ` + name + `
-  namespace: kube-system
-spec:
-  ports:
-  - name: registry-cache
-    port: 5000
-    protocol: TCP
-    targetPort: registry-cache
-  selector:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  type: ClusterIP
-status:
-  loadBalancer: {}
-`
-			}
-
-			statefulSetYAMLFor = func(name, upstream, upstreamURL, size string, garbageCollectionEnabled bool) string {
-				return `apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  creationTimestamp: null
-  labels:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  name: ` + name + `
-  namespace: kube-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ` + name + `
-      upstream-host: ` + upstream + `
-  serviceName: ` + name + `
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: ` + name + `
-        upstream-host: ` + upstream + `
-    spec:
-      containers:
-      - env:
-        - name: REGISTRY_PROXY_REMOTEURL
-          value: ` + upstreamURL + `
-        - name: REGISTRY_STORAGE_DELETE_ENABLED
-          value: "` + strconv.FormatBool(garbageCollectionEnabled) + `"
-        - name: REGISTRY_HTTP_ADDR
-          value: :5000
-        - name: REGISTRY_HTTP_DEBUG_ADDR
-          value: :5001
-        image: ` + image + `
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          failureThreshold: 6
-          httpGet:
-            path: /debug/health
-            port: 5001
-          periodSeconds: 20
-          successThreshold: 1
-        name: registry-cache
-        ports:
-        - containerPort: 5000
-          name: registry-cache
-        - containerPort: 5001
-          name: debug
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /debug/health
-            port: 5001
-          periodSeconds: 20
-          successThreshold: 1
-        resources: {}
-        volumeMounts:
-        - mountPath: /var/lib/registry
-          name: cache-volume
-      priorityClassName: system-cluster-critical
-  updateStrategy: {}
-  volumeClaimTemplates:
-  - metadata:
-      creationTimestamp: null
-      labels:
-        app: ` + name + `
-        upstream-host: ` + upstream + `
-      name: cache-volume
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: ` + size + `
-      storageClassName: default
-    status: {}
-status:
-  availableReplicas: 0
-  replicas: 0
-`
-			}
-		)
-
-		It("should return err when cache size is nil", func() {
+	DescribeTable("#Deploy",
+		func(deleteSystemdUnit bool, daemonSet string) {
 			values := Values{
-				Image: image,
-				Caches: []v1alpha1.RegistryCache{
-					{
-						Upstream: "docker.io",
-					},
-				},
+				AlpineImage:       alpineImage,
+				PauseImage:        pauseImage,
+				DeleteSystemdUnit: deleteSystemdUnit,
+				Upstreams:         []string{"docker.io", "eu.gcr.io"},
 			}
-			registryCaches = New(c, namespace, values)
+			cleaner := New(c, namespace, values)
 
-			Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("registry cache size is required")))
-		})
-
-		It("should successfully deploy the resources", func() {
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 
-			Expect(registryCaches.Deploy(ctx)).To(Succeed())
+			Expect(cleaner.Deploy(ctx)).To(Succeed())
 
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 			expectedMr := &resourcesv1alpha1.ManagedResource{
@@ -244,8 +110,7 @@ status:
 					Labels:          map[string]string{"origin": "registry-cache"},
 				},
 				Spec: resourcesv1alpha1.ManagedResourceSpec{
-					DeletePersistentVolumeClaims: pointer.Bool(true),
-					InjectLabels:                 map[string]string{"shoot.gardener.cloud/no-cleanup": "true"},
+					InjectLabels: map[string]string{"shoot.gardener.cloud/no-cleanup": "true"},
 					SecretRefs: []corev1.LocalObjectReference{{
 						Name: managedResource.Spec.SecretRefs[0].Name,
 					}},
@@ -260,23 +125,29 @@ status:
 			Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 			Expect(managedResourceSecret.Immutable).To(Equal(pointer.Bool(true)))
 			Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-			Expect(managedResourceSecret.Data).To(HaveLen(4))
-			Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-			Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", true)))
-			Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-			Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", false)))
-		})
-	})
+			Expect(managedResourceSecret.Data).To(HaveLen(1))
+			Expect(string(managedResourceSecret.Data["daemonset__kube-system__registry-configuration-cleaner.yaml"])).To(Equal(daemonSet))
+		},
+
+		Entry("should successfully deploy the resources (with systemd unit cleanup)",
+			true,
+			daemonSetWithSystemdUnit),
+		Entry("should successfully deploy the resources (without systemd unit cleanup)",
+			false,
+			daemonSetWithoutSystemdUnit),
+	)
 
 	Describe("#Destroy", func() {
 		It("should successfully destroy all resources", func() {
+			cleaner := New(c, namespace, Values{})
+
 			Expect(c.Create(ctx, managedResource)).To(Succeed())
 			Expect(c.Create(ctx, managedResourceSecret)).To(Succeed())
 
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
-			Expect(registryCaches.Destroy(ctx)).To(Succeed())
+			Expect(cleaner.Destroy(ctx)).To(Succeed())
 
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "secrets"}, managedResourceSecret.Name)))
@@ -284,7 +155,11 @@ status:
 	})
 
 	Context("waiting functions", func() {
-		var fakeOps *retryfake.Ops
+		var (
+			fakeOps *retryfake.Ops
+
+			cleaner component.DeployWaiter
+		)
 
 		BeforeEach(func() {
 			fakeOps = &retryfake.Ops{MaxAttempts: 1}
@@ -292,6 +167,8 @@ status:
 				&retry.Until, fakeOps.Until,
 				&retry.UntilTimeout, fakeOps.UntilTimeout,
 			))
+
+			cleaner = New(c, namespace, Values{})
 		})
 
 		Describe("#Wait", func() {
@@ -319,7 +196,7 @@ status:
 					},
 				})).To(Succeed())
 
-				Expect(registryCaches.Wait(ctx)).To(MatchError(ContainSubstring("is not healthy")))
+				Expect(cleaner.Wait(ctx)).To(MatchError(ContainSubstring("is not healthy")))
 			})
 
 			It("should successfully wait for the managed resource to become healthy", func() {
@@ -346,7 +223,7 @@ status:
 					},
 				})).To(Succeed())
 
-				Expect(registryCaches.Wait(ctx)).To(Succeed())
+				Expect(cleaner.Wait(ctx)).To(Succeed())
 			})
 		})
 
@@ -356,11 +233,11 @@ status:
 
 				Expect(c.Create(ctx, managedResource)).To(Succeed())
 
-				Expect(registryCaches.WaitCleanup(ctx)).To(MatchError(ContainSubstring("still exists")))
+				Expect(cleaner.WaitCleanup(ctx)).To(MatchError(ContainSubstring("still exists")))
 			})
 
 			It("should not return an error when it's already removed", func() {
-				Expect(registryCaches.WaitCleanup(ctx)).To(Succeed())
+				Expect(cleaner.WaitCleanup(ctx)).To(Succeed())
 			})
 		})
 	})

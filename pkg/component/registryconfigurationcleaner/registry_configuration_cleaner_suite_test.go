@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package constants
+package registryconfigurationcleaner_test
 
-const (
-	// ExtensionType is the name of the extension type.
-	ExtensionType = "registry-cache"
-	// Origin is the origin used for the registry cache ManagedResources.
-	Origin = "registry-cache"
+import (
+	"testing"
 
-	// UpstreamHostLabel is a label on registry cache resources (Service, StatefulSet) which denotes the upstream host.
-	UpstreamHostLabel = "upstream-host"
-	// RegistryCachePort is the port on which the pull through cache serves requests.
-	RegistryCachePort = 5000
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
+
+func TestRegistryConfigurationCleaner(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Component RegistryConfigurationCleaner Suite")
+}

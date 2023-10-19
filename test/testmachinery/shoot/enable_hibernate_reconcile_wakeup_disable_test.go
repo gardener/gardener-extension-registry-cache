@@ -26,11 +26,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 )
 
 const (
-	hibernationTestTimeout        = 50 * time.Minute
+	hibernationTestTimeout        = 60 * time.Minute
 	hibernationTestCleanupTimeout = 25 * time.Minute
 )
 
@@ -43,15 +44,22 @@ var _ = Describe("Shoot registry cache testing", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
-			common.AddRegistryCacheExtension(shoot, "docker.io", &size)
+			common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+				{Upstream: "docker.io", Size: &size},
+			})
 
 			return nil
 		})).To(Succeed())
 
+		By("Wait until the registry configuration is applied")
+		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
+		defer cancel()
+		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
+
 		By("Verify registry-cache works")
 		// We are using nginx:1.14.0 as nginx:1.13.0 is already used by the "should enable and disable the registry-cache extension" test.
 		// Hence, nginx:1.13.0 will be present in the Node.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.Nginx1140ImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1140ImageWithDigest)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
@@ -73,20 +81,27 @@ var _ = Describe("Shoot registry cache testing", func() {
 		defer cancel()
 		Expect(f.WakeUpShoot(ctx)).To(Succeed())
 
+		By("Wait until the registry configuration is applied")
+		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
+		defer cancel()
+		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
+
 		By("Verify registry-cache works after wake up")
 		// We are using nginx:1.15.0 as nginx:1.14.0 is already used above and already present in the Node and in the registry cache.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.Nginx1150ImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1150ImageWithDigest)
 	}, hibernationTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if v1beta1helper.HibernationIsEnabled(f.Shoot) {
 			By("Wake up Shoot")
 			Expect(f.WakeUpShoot(ctx)).To(Succeed())
 		}
 
-		By("Disable the registry-cache extension")
-		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
-			common.RemoveRegistryCacheExtension(shoot)
+		if common.HasRegistryCacheExtension(f.Shoot) {
+			By("Disable the registry-cache extension")
+			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
+				common.RemoveRegistryCacheExtension(shoot)
 
-			return nil
-		})).To(Succeed())
+				return nil
+			})).To(Succeed())
+		}
 	}, hibernationTestCleanupTimeout))
 })

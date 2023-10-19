@@ -38,8 +38,7 @@ import (
 )
 
 const (
-	// ManagedResourceName is the ManagedResource name for the registry cache resources in the shoot.
-	ManagedResourceName = "extension-registry-cache"
+	managedResourceName = "extension-registry-cache"
 )
 
 // Values is a set of configuration values for the registry caches.
@@ -77,11 +76,10 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 	}
 
 	var (
-		origin      = "registry-cache"
 		keepObjects = false
 
-		secretName, secret = managedresources.NewSecret(r.client, r.namespace, ManagedResourceName, data, false)
-		managedResource    = managedresources.NewForShoot(r.client, r.namespace, ManagedResourceName, origin, keepObjects).
+		secretName, secret = managedresources.NewSecret(r.client, r.namespace, managedResourceName, data, false)
+		managedResource    = managedresources.NewForShoot(r.client, r.namespace, managedResourceName, constants.Origin, keepObjects).
 					WithSecretRef(secretName).
 					DeletePersistentVolumeClaims(true)
 	)
@@ -99,7 +97,7 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 
 // Destroy implements component.DeployWaiter.
 func (r *registryCaches) Destroy(ctx context.Context) error {
-	return managedresources.Delete(ctx, r.client, r.namespace, ManagedResourceName, false)
+	return managedresources.Delete(ctx, r.client, r.namespace, managedResourceName, false)
 }
 
 // TimeoutWaitForManagedResource is the timeout used while waiting for the ManagedResources to become healthy
@@ -111,7 +109,7 @@ func (r *registryCaches) Wait(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, TimeoutWaitForManagedResource)
 	defer cancel()
 
-	return managedresources.WaitUntilHealthy(timeoutCtx, r.client, r.namespace, ManagedResourceName)
+	return managedresources.WaitUntilHealthy(timeoutCtx, r.client, r.namespace, managedResourceName)
 }
 
 // WaitCleanup implements component.DeployWaiter.
@@ -119,7 +117,7 @@ func (r *registryCaches) WaitCleanup(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, TimeoutWaitForManagedResource)
 	defer cancel()
 
-	return managedresources.WaitUntilDeleted(timeoutCtx, r.client, r.namespace, ManagedResourceName)
+	return managedresources.WaitUntilDeleted(timeoutCtx, r.client, r.namespace, managedResourceName)
 }
 
 func (r *registryCaches) computeResourcesData() (map[string][]byte, error) {

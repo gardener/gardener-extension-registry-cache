@@ -24,11 +24,12 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 )
 
 const (
-	defaultTestTimeout        = 20 * time.Minute
+	defaultTestTimeout        = 30 * time.Minute
 	defaultTestCleanupTimeout = 10 * time.Minute
 )
 
@@ -41,19 +42,40 @@ var _ = Describe("Shoot registry cache testing", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
-			common.AddRegistryCacheExtension(shoot, "docker.io", &size)
+			common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+				{Upstream: "docker.io", Size: &size},
+			})
 
 			return nil
 		})).To(Succeed())
 
+		By("Wait until the registry configuration is applied")
+		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
+		defer cancel()
+		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
+
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.Nginx1130ImageWithDigest)
-	}, defaultTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
+
 		By("Disable the registry-cache extension")
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			common.RemoveRegistryCacheExtension(shoot)
 
 			return nil
 		})).To(Succeed())
+
+		By("Verify registry configuration is removed")
+		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
+		defer cancel()
+		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootClient, []string{"docker.io"})
+	}, defaultTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
+		if common.HasRegistryCacheExtension(f.Shoot) {
+			By("Disable the registry-cache extension")
+			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
+				common.RemoveRegistryCacheExtension(shoot)
+
+				return nil
+			})).To(Succeed())
+		}
 	}, defaultTestCleanupTimeout))
 })
