@@ -25,9 +25,12 @@ import (
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,6 +48,8 @@ const (
 type Values struct {
 	// Image is the container image used for the registry cache.
 	Image string
+	// VPAEnabled marks whether VerticalPodAutoscaler is enabled for the shoot.
+	VPAEnabled bool
 	// Caches are the registry caches to deploy.
 	Caches []v1alpha1.RegistryCache
 }
@@ -124,7 +129,7 @@ func (r *registryCaches) computeResourcesData() (map[string][]byte, error) {
 	var objects []client.Object
 
 	for _, cache := range r.values.Caches {
-		cacheObjects, err := computeResourcesDataForRegistryCache(&cache, r.values.Image)
+		cacheObjects, err := r.computeResourcesDataForRegistryCache(&cache)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
 		}
@@ -137,7 +142,7 @@ func (r *registryCaches) computeResourcesData() (map[string][]byte, error) {
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image string) ([]client.Object, error) {
+func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache) ([]client.Object, error) {
 	if cache.Size == nil {
 		return nil, fmt.Errorf("registry cache size is required")
 	}
@@ -193,8 +198,14 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 						Containers: []corev1.Container{
 							{
 								Name:            "registry-cache",
-								Image:           image,
+								Image:           r.values.Image,
 								ImagePullPolicy: corev1.PullIfNotPresent,
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("20m"),
+										corev1.ResourceMemory: resource.MustParse("50Mi"),
+									},
+								},
 								Ports: []corev1.ContainerPort{
 									{
 										ContainerPort: constants.RegistryCachePort,
@@ -227,7 +238,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 									ProbeHandler: corev1.ProbeHandler{
 										HTTPGet: &corev1.HTTPGetAction{
 											Path: "/debug/health",
-											Port: intstr.FromInt(debugPort),
+											Port: intstr.FromInt32(debugPort),
 										},
 									},
 									FailureThreshold: 6,
@@ -238,7 +249,7 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 									ProbeHandler: corev1.ProbeHandler{
 										HTTPGet: &corev1.HTTPGetAction{
 											Path: "/debug/health",
-											Port: intstr.FromInt(debugPort),
+											Port: intstr.FromInt32(debugPort),
 										},
 									},
 									FailureThreshold: 3,
@@ -277,10 +288,49 @@ func computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache, image s
 				},
 			},
 		}
+
+		vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	)
+
+	if r.values.VPAEnabled {
+		updateMode := vpaautoscalingv1.UpdateModeAuto
+		controlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
+		vpa = &vpaautoscalingv1.VerticalPodAutoscaler{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: metav1.NamespaceSystem,
+			},
+			Spec: vpaautoscalingv1.VerticalPodAutoscalerSpec{
+				TargetRef: &autoscalingv1.CrossVersionObjectReference{
+					APIVersion: appsv1.SchemeGroupVersion.String(),
+					Kind:       "StatefulSet",
+					Name:       name,
+				},
+				UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
+					UpdateMode: &updateMode,
+				},
+				ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
+					ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
+						{
+							ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
+							ControlledValues: &controlledValues,
+							MinAllowed: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("20Mi"),
+							},
+							MaxAllowed: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("4"),
+								corev1.ResourceMemory: resource.MustParse("8Gi"),
+							},
+						},
+					},
+				},
+			},
+		}
+	}
 
 	return []client.Object{
 		service,
 		statefulSet,
+		vpa,
 	}, nil
 }

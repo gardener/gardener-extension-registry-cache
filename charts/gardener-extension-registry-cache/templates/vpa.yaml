@@ -14,6 +14,7 @@ spec:
         maxAllowed:
           cpu: {{ required ".Values.vpa.resourcePolicy.maxAllowed.cpu is required" .Values.vpa.resourcePolicy.maxAllowed.cpu }}
           memory: {{ required ".Values.vpa.resourcePolicy.maxAllowed.memory is required" .Values.vpa.resourcePolicy.maxAllowed.memory }}
+        controlledValues: RequestsOnly
   {{- end }}
   targetRef:
     apiVersion: apps/v1
