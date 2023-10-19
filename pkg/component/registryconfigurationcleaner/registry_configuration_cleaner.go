@@ -40,7 +40,7 @@ const (
 type Values struct {
 	// AlpineImage is the alpine container image.
 	AlpineImage string
-	// AlpineImage is the pause container image.
+	// PauseImage is the pause container image.
 	PauseImage string
 	// DeleteSystemdUnit represents whether the cleaner should delete the configure-containerd-registries.service systemd unit.
 	DeleteSystemdUnit bool

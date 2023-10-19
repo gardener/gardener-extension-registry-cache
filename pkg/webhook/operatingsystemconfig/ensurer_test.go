@@ -229,7 +229,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(MatchError(ContainSubstring("failed to decode providerStatus of extension 'shoot--foo--bar/registry-cache'")))
 		})
 
-		It("should add additional files to the current ones", func() {
+		It("should add additional unit to the current ones", func() {
 			cluster := &extensions.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
 				Shoot:      &gardencorev1beta1.Shoot{},
@@ -270,7 +270,7 @@ var _ = Describe("Ensurer", func() {
 			))
 		})
 
-		It("should overwrite existing files of the current ones", func() {
+		It("should overwrite existing unit of the current ones", func() {
 			cluster := &extensions.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
 				Shoot:      &gardencorev1beta1.Shoot{},
@@ -306,7 +306,7 @@ var _ = Describe("Ensurer", func() {
 			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
 
 			units = append(units,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io"),
+				configureContainerdRegistriesUnit("docker.io,foo,bar"),
 			)
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())

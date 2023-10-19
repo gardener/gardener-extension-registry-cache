@@ -35,21 +35,9 @@ import (
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
-const hostsTOMLTemplate = `server = "%s"
-
-[host."%s"]
-  capabilities = ["pull", "resolve"]
-`
-
 var (
 	//go:embed scripts/configure-containerd-registries.sh
 	configureContainerdRegistriesScript string
-)
-
-const (
-	// containerdRegistryHostsDirectory is a directory that is created by the containerd-inializer systemd service.
-	// containerd is configured to read registry configuration from this directory.
-	containerdRegistryHostsDirectory = "/etc/containerd/certs.d"
 )
 
 // NewEnsurer creates a new controlplane ensurer.

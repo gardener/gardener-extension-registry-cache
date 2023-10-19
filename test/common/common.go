@@ -52,7 +52,7 @@ const (
 	RegistryK8sNginx1154ImageWithDigest = "registry.k8s.io/e2e-test-images/nginx@sha256:db048754ae68ae337d8fa96494c96d2a1204c3320f5dcf7e8e71085adec85da6"
 )
 
-// AddRegistryCacheExtension adds registry-cache extension with the given upstream and size to to given Shoot.
+// AddRegistryCacheExtension adds registry-cache extension with the given caches to the given Shoot.
 func AddRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []v1alpha1.RegistryCache) {
 	providerConfig := &v1alpha1.RegistryConfig{
 		TypeMeta: metav1.TypeMeta{

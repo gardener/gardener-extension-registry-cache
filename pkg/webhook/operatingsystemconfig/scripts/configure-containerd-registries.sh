@@ -16,7 +16,7 @@ function with_backoff {
   local attempt=1
   local exit_code=0
 
-  while (( $attempt < $max_attempts ))
+  while (( attempt < max_attempts ))
   do
     if "$@"
     then
@@ -26,10 +26,10 @@ function with_backoff {
     fi
 
     echo "[$run_id] Request failed! Retrying in $interval seconds..."
-    sleep $interval
+    sleep "$interval"
 
     attempt=$(( attempt + 1 ))
-    if (( $interval * 2 <= max_interval )); then
+    if (( interval * 2 <= max_interval )); then
       interval=$(( interval * 2 ))
     fi
   done
@@ -47,7 +47,7 @@ function configure_registry {
   registry_cache_endpoint=$2
   upstream_url=$3
 
-  if ! run_id=$upstream_host with_backoff curl --silent --show-error --connect-timeout 2 $registry_cache_endpoint
+  if ! run_id=$upstream_host with_backoff curl --silent --show-error --connect-timeout 2 "$registry_cache_endpoint"
   then
     echo "[$upstream_host] Failed why waiting registry to be available. Exiting..."
     exit 1
@@ -78,9 +78,9 @@ do
   upstream_url=${parsed_arg[2]}
 
   echo "[$upstream_host] Configuring registry..."
-  configure_registry $upstream_host $registry_cache_endpoint $upstream_url &
+  configure_registry "$upstream_host" "$registry_cache_endpoint" "$upstream_url" &
   pids+=($!)
 done
 
-echo "Waiting for processes [${pids[@]}] to finish..."
-wait ${pids[@]}
+echo "Waiting for processes [${pids[*]}] to finish..."
+wait "${pids[@]}"

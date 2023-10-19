@@ -58,7 +58,7 @@ var _ = Describe("RegistryConfigurationCleaner", func() {
 	)
 
 	var (
-		ctx context.Context = context.Background()
+		ctx = context.Background()
 
 		c client.Client
 
