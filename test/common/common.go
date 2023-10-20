@@ -103,8 +103,8 @@ func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Log
 
 		EventuallyWithOffset(1, ctx, func(g Gomega) string {
 			command := "systemctl is-active configure-containerd-registries.service &>/dev/null && echo 'active' || echo 'not active'"
-			response, err := rootPodExecutor.Execute(ctx, command)
-			Expect(err).NotTo(HaveOccurred())
+			// err is ignored intentionally to reduce flakes from transient network errors in prow.
+			response, _ := rootPodExecutor.Execute(ctx, command)
 
 			return string(response)
 		}).WithPolling(10*time.Second).Should(Equal("active\n"), fmt.Sprintf("Expected the configure-containerd-registries.service unit to be active on node %s", node.Name))
@@ -127,8 +127,8 @@ func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger
 
 		EventuallyWithOffset(1, ctx, func(g Gomega) string {
 			command := "systemctl status configure-containerd-registries.service &>/dev/null && echo 'unit found' || echo 'unit not found'"
-			response, err := rootPodExecutor.Execute(ctx, command)
-			Expect(err).NotTo(HaveOccurred())
+			// err is ignored intentionally to reduce flakes from transient network errors in prow.
+			response, _ := rootPodExecutor.Execute(ctx, command)
 
 			return string(response)
 		}).WithPolling(10*time.Second).Should(Equal("unit not found\n"), fmt.Sprintf("Expected the configure-containerd-registries.service systemd unit on node %s to be deleted", node.Name))
@@ -136,8 +136,8 @@ func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger
 		for _, upstream := range upstreams {
 			EventuallyWithOffset(1, ctx, func(g Gomega) string {
 				command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
-				response, err := rootPodExecutor.Execute(ctx, command)
-				Expect(err).NotTo(HaveOccurred())
+				// err is ignored intentionally to reduce flakes from transient network errors in prow.
+				response, _ := rootPodExecutor.Execute(ctx, command)
 
 				return string(response)
 			}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", node.Name, upstream))
