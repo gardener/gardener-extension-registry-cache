@@ -182,18 +182,29 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	defer cancel()
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": upstream}))
-	var reader io.Reader
 	EventuallyWithOffset(1, ctx, func(g Gomega) (err error) {
-		reader, err = framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", metav1.NamespaceSystem, shootClient)
-		return err
-	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully cat registry's scheduler-state.json file")
+		reader, err := framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", metav1.NamespaceSystem, shootClient)
+		if err != nil {
+			return fmt.Errorf("failed to cat registry's scheduler-state.json file: %+w", err)
+		}
 
-	schedulerStateFileContent, err := io.ReadAll(reader)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	schedulerStateMap := map[string]interface{}{}
-	ExpectWithOffset(1, json.Unmarshal(schedulerStateFileContent, &schedulerStateMap)).To(Succeed())
-	expectedImage := strings.TrimPrefix(nginxImageWithDigest, upstream+"/")
-	ExpectWithOffset(1, schedulerStateMap).To(HaveKey(expectedImage), fmt.Sprintf("Expected to find image %s in the registry's scheduler-state.json file", expectedImage))
+		schedulerStateFileContent, err := io.ReadAll(reader)
+		if err != nil {
+			return fmt.Errorf("failed to read from reader: %+w", err)
+		}
+
+		schedulerStateMap := map[string]interface{}{}
+		if err := json.Unmarshal(schedulerStateFileContent, &schedulerStateMap); err != nil {
+			return fmt.Errorf("failed to unmarshal registry's scheduler-state.json file: %+w", err)
+		}
+
+		expectedImage := strings.TrimPrefix(nginxImageWithDigest, upstream+"/")
+		if _, ok := schedulerStateMap[expectedImage]; !ok {
+			return fmt.Errorf("failed to find key (image) '%s' in map (registry's scheduler-state.json file) %v", expectedImage, schedulerStateFileContent)
+		}
+
+		return nil
+	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's scheduler-state.json file")
 
 	By("Delete nginx Pod")
 	timeout := 5 * time.Minute
