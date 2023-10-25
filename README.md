@@ -1,16 +1,15 @@
 # [Gardener Extension for Registry Cache](https://gardener.cloud)
 
 [![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener-tests/pipelines/gardener-extension-registry-cache-main/jobs/main-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener-tests/pipelines/gardener-extension-registry-cache-main/jobs/main-head-update-job)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gardener/gardener-extension-registry-cache)](https://goreportcard.com/report/github.com/gardener/gardener-extension-registry-cache)
 
 Gardener extension controller which deploys pull-through caches for container registries.
 
-## Learn more!
+## Usage
 
-Please find further resources about out project here:
+Navigate to [Configuring the Registry Cache Extension](docs/usage/configuration.md) to learn what is the use-case for a pull-through cache, how to enable it and configure it.
 
-* [Our landing page gardener.cloud](https://gardener.cloud/)
-* ["Gardener, the Kubernetes Botanist" blog on kubernetes.io](https://kubernetes.io/blog/2018/05/17/gardener/)
-* ["Gardener Project Update" blog on kubernetes.io](https://kubernetes.io/blog/2019/12/02/gardener-project-update/)
-* [Gardener Extensions Golang library](https://godoc.org/github.com/gardener/gardener/extensions/pkg)
-* [GEP-1 (Gardener Enhancement Proposal) on extensibility](https://github.com/gardener/gardener/blob/master/docs/proposals/01-extensibility.md)
-* [Extensibility API documentation](https://github.com/gardener/gardener/tree/master/docs/extensions)
+## Local setup and development
+
+* [Deploying Registry Cache Extension Locally](docs/development/getting-started-locally.md) - learn how to set up a local development environment
+* [Developer Docs for Gardener Extension Registry Cache](docs/development/extension-registry-cache.md) - learn about the inner workings
