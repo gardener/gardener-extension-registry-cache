@@ -34,7 +34,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	f := defaultShootCreationFramework()
 	shoot := defaultShoot("e2e-hib")
 	size := resource.MustParse("2Gi")
-	common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 		{Upstream: "docker.io", Size: &size},
 	})
 	f.Shoot = shoot

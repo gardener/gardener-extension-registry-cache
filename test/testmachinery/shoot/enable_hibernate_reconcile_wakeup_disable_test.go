@@ -38,13 +38,13 @@ const (
 var _ = Describe("Shoot registry cache testing", func() {
 	f := framework.NewShootFramework(nil)
 
-	f.Serial().Beta().CIt("should enable the extension, hibernate Shoot, reconcile Shoot, wake up Shoot, disable the extension", func(parentCtx context.Context) {
+	f.Serial().Beta().CIt("should enable extension, hibernate Shoot, reconcile Shoot, wake up Shoot, disable extension", func(parentCtx context.Context) {
 		By("Enable the registry-cache extension")
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
-			common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 				{Upstream: "docker.io", Size: &size},
 			})
 
