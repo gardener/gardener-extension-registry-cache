@@ -173,8 +173,15 @@ func (a *actuator) Migrate(_ context.Context, _ logr.Logger, _ *extensionsv1alph
 }
 
 // ForceDelete the Extension resource.
-func (a *actuator) ForceDelete(ctx context.Context, log logr.Logger, ext *extensionsv1alpha1.Extension) error {
-	return a.Delete(ctx, log, ext)
+func (a *actuator) ForceDelete(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	namespace := ex.GetNamespace()
+
+	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{})
+	if err := component.OpDestroyAndWait(registryCaches).Destroy(ctx); err != nil {
+		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
+	}
+
+	return nil
 }
 
 func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *v1alpha1.RegistryConfig, namespace string) (*v1alpha1.RegistryStatus, error) {
