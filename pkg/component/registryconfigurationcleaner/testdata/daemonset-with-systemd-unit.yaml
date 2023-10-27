@@ -41,8 +41,6 @@ spec:
         imagePullPolicy: IfNotPresent
         name: registry-configuration-cleaner
         resources: {}
-        securityContext:
-          privileged: true
         volumeMounts:
         - mountPath: /host
           mountPropagation: HostToContainer

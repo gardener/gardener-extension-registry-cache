@@ -26,7 +26,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
@@ -135,10 +134,7 @@ func (r *registryConfigurationCleaner) computeResourcesData() (map[string][]byte
 							Name:            "registry-configuration-cleaner",
 							Image:           r.values.AlpineImage,
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							SecurityContext: &corev1.SecurityContext{
-								Privileged: pointer.Bool(true),
-							},
-							Command: computeCommand(r.values.DeleteSystemdUnit, r.values.Upstreams),
+							Command:         computeCommand(r.values.DeleteSystemdUnit, r.values.Upstreams),
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:             "host-root-volume",
