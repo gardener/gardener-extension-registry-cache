@@ -263,6 +263,11 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				},
 				Spec: corev1.PodSpec{
 					PriorityClassName: "system-cluster-critical",
+					SecurityContext: &corev1.PodSecurityContext{
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
 					Containers: []corev1.Container{
 						{
 							Name:            "registry-cache",

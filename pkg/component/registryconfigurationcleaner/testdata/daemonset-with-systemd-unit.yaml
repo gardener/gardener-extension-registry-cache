@@ -47,6 +47,9 @@ spec:
         - mountPath: /host
           mountPropagation: HostToContainer
           name: host-root-volume
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
       - hostPath:
           path: /

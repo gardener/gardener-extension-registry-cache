@@ -249,6 +249,9 @@ spec:
         - mountPath: /etc/docker/registry
           name: config-volume
       priorityClassName: system-cluster-critical
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
       - name: config-volume
         secret:

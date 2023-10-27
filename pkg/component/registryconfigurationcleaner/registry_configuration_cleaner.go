@@ -125,6 +125,11 @@ func (r *registryConfigurationCleaner) computeResourcesData() (map[string][]byte
 					Labels: getLabels(),
 				},
 				Spec: corev1.PodSpec{
+					SecurityContext: &corev1.PodSecurityContext{
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
 					InitContainers: []corev1.Container{
 						{
 							Name:            "registry-configuration-cleaner",
