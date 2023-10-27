@@ -30,6 +30,7 @@ import (
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
+	"github.com/gardener/gardener/pkg/utils"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	appsv1 "k8s.io/api/apps/v1"
@@ -259,7 +260,10 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Replicas: pointer.Int32(1),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: getLabels(name, cache.Upstream),
+					Labels: utils.MergeStringMaps(getLabels(name, cache.Upstream), map[string]string{
+						v1beta1constants.LabelNetworkPolicyToDNS:            v1beta1constants.LabelNetworkPolicyAllowed,
+						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
+					}),
 				},
 				Spec: corev1.PodSpec{
 					PriorityClassName: "system-cluster-critical",

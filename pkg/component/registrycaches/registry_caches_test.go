@@ -214,6 +214,8 @@ spec:
       creationTimestamp: null
       labels:
         app: ` + name + `
+        networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-public-networks: allowed
         upstream-host: ` + upstream + `
     spec:
       containers:
