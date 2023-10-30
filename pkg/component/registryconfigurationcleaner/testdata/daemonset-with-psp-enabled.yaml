@@ -46,6 +46,7 @@ spec:
         - mountPath: /host
           mountPropagation: HostToContainer
           name: host-root-volume
+      priorityClassName: gardener-shoot-system-700
       securityContext:
         seccompProfile:
           type: RuntimeDefault

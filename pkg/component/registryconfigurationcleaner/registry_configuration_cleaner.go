@@ -220,6 +220,7 @@ func (r *registryConfigurationCleaner) computeResourcesData() (map[string][]byte
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: pointer.Bool(false),
 					ServiceAccountName:           serviceAccountName,
+					PriorityClassName:            v1beta1constants.PriorityClassNameShootSystem700,
 					SecurityContext: &corev1.PodSecurityContext{
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
