@@ -37,7 +37,12 @@ spec:
         image: alpine:some-tag
         imagePullPolicy: IfNotPresent
         name: registry-configuration-cleaner
-        resources: {}
+        resources:
+          limits:
+            memory: 32Mi
+          requests:
+            cpu: 10m
+            memory: 8Mi
         volumeMounts:
         - mountPath: /host
           mountPropagation: HostToContainer
