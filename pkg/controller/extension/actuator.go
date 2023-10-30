@@ -107,6 +107,7 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{
 		Image:              image.String(),
 		VPAEnabled:         v1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
+		PSPDisabled:        v1beta1helper.IsPSPDisabled(cluster.Shoot),
 		Caches:             registryConfig.Caches,
 		ResourceReferences: cluster.Shoot.Spec.Resources,
 	})
