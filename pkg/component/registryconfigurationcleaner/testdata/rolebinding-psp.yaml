@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    resources.gardener.cloud/delete-on-invalid-update: "true"
+  creationTimestamp: null
+  name: gardener.cloud:psp:registry-configuration-cleaner
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gardener.cloud:psp:kube-system:registry-configuration-cleaner
+subjects:
+- kind: ServiceAccount
+  name: registry-configuration-cleaner
+  namespace: kube-system

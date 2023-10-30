@@ -16,6 +16,7 @@ spec:
         app.kubernetes.io/instance: registry-configuration-cleaner
         app.kubernetes.io/name: registry-configuration-cleaner
     spec:
+      automountServiceAccountToken: false
       containers:
       - image: pause:some-tag
         imagePullPolicy: IfNotPresent
@@ -48,6 +49,7 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      serviceAccountName: default
       volumes:
       - hostPath:
           path: /

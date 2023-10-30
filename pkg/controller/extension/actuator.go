@@ -258,6 +258,7 @@ func cleanRegistryConfiguration(ctx context.Context, cluster *extensionscontroll
 		AlpineImage:       alpineImage.String(),
 		PauseImage:        pauseImage.String(),
 		DeleteSystemdUnit: deleteSystemdUnit,
+		PSPDisabled:       v1beta1helper.IsPSPDisabled(cluster.Shoot),
 		Upstreams:         upstreams,
 	}
 	cleaner := registryconfigurationcleaner.New(client, namespace, values)

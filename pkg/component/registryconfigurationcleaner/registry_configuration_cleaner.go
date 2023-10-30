@@ -20,12 +20,17 @@ import (
 	"strings"
 	"time"
 
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
@@ -43,6 +48,8 @@ type Values struct {
 	PauseImage string
 	// DeleteSystemdUnit represents whether the cleaner should delete the configure-containerd-registries.service systemd unit.
 	DeleteSystemdUnit bool
+	// PSPDisabled marks whether the PodSecurityPolicy admission plugin is disabled.
+	PSPDisabled bool
 	// Upstreams are the upstreams which registry configuration will be removed by the cleaner.
 	Upstreams []string
 }
@@ -108,6 +115,93 @@ func (r *registryConfigurationCleaner) computeResourcesData() (map[string][]byte
 		return nil, fmt.Errorf("upstreams are required")
 	}
 
+	var objects []client.Object
+
+	serviceAccountName := "default"
+	if !r.values.PSPDisabled {
+		serviceAccountName = "registry-configuration-cleaner"
+
+		serviceAccount := &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      serviceAccountName,
+				Namespace: metav1.NamespaceSystem,
+			},
+			AutomountServiceAccountToken: pointer.Bool(false),
+		}
+		podSecurityPolicy := &policyv1beta1.PodSecurityPolicy{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "gardener.kube-system.registry-configuration-cleaner",
+				Annotations: map[string]string{
+					v1beta1constants.AnnotationSeccompDefaultProfile:  v1beta1constants.AnnotationSeccompAllowedProfilesRuntimeDefaultValue,
+					v1beta1constants.AnnotationSeccompAllowedProfiles: v1beta1constants.AnnotationSeccompAllowedProfilesRuntimeDefaultValue,
+				},
+			},
+			Spec: policyv1beta1.PodSecurityPolicySpec{
+				HostPID:                true,
+				ReadOnlyRootFilesystem: true,
+				RunAsUser: policyv1beta1.RunAsUserStrategyOptions{
+					Rule: policyv1beta1.RunAsUserStrategyRunAsAny,
+				},
+				SELinux: policyv1beta1.SELinuxStrategyOptions{
+					Rule: policyv1beta1.SELinuxStrategyRunAsAny,
+				},
+				SupplementalGroups: policyv1beta1.SupplementalGroupsStrategyOptions{
+					Rule: policyv1beta1.SupplementalGroupsStrategyRunAsAny,
+				},
+				FSGroup: policyv1beta1.FSGroupStrategyOptions{
+					Rule: policyv1beta1.FSGroupStrategyRunAsAny,
+				},
+				Volumes: []policyv1beta1.FSType{
+					policyv1beta1.HostPath,
+				},
+				AllowedHostPaths: []policyv1beta1.AllowedHostPath{
+					{
+						PathPrefix: "/",
+					},
+				},
+			},
+		}
+		clusterRolePSP := &rbacv1.ClusterRole{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "gardener.cloud:psp:kube-system:registry-configuration-cleaner",
+			},
+			Rules: []rbacv1.PolicyRule{
+				{
+					APIGroups:     []string{"policy", "extensions"},
+					ResourceNames: []string{podSecurityPolicy.Name},
+					Resources:     []string{"podsecuritypolicies"},
+					Verbs:         []string{"use"},
+				},
+			},
+		}
+		roleBindingPSP := &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gardener.cloud:psp:registry-configuration-cleaner",
+				Namespace: metav1.NamespaceSystem,
+				Annotations: map[string]string{
+					resourcesv1alpha1.DeleteOnInvalidUpdate: "true",
+				},
+			},
+			RoleRef: rbacv1.RoleRef{
+				APIGroup: rbacv1.GroupName,
+				Kind:     "ClusterRole",
+				Name:     clusterRolePSP.Name,
+			},
+			Subjects: []rbacv1.Subject{{
+				Kind:      rbacv1.ServiceAccountKind,
+				Name:      serviceAccount.Name,
+				Namespace: serviceAccount.Namespace,
+			}},
+		}
+
+		objects = append(objects,
+			serviceAccount,
+			podSecurityPolicy,
+			clusterRolePSP,
+			roleBindingPSP,
+		)
+	}
+
 	mountPropagationHostToContainer := corev1.MountPropagationHostToContainer
 
 	daemonSet := &appsv1.DaemonSet{
@@ -124,6 +218,8 @@ func (r *registryConfigurationCleaner) computeResourcesData() (map[string][]byte
 					Labels: getLabels(),
 				},
 				Spec: corev1.PodSpec{
+					AutomountServiceAccountToken: pointer.Bool(false),
+					ServiceAccountName:           serviceAccountName,
 					SecurityContext: &corev1.PodSecurityContext{
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
@@ -168,9 +264,11 @@ func (r *registryConfigurationCleaner) computeResourcesData() (map[string][]byte
 		},
 	}
 
+	objects = append(objects, daemonSet)
+
 	registry := managedresources.NewRegistry(kubernetes.ShootScheme, kubernetes.ShootCodec, kubernetes.ShootSerializer)
 
-	return registry.AddAllAndSerialize(daemonSet)
+	return registry.AddAllAndSerialize(objects...)
 }
 
 func computeCommand(deleteSystemdUnit bool, upstreams []string) []string {

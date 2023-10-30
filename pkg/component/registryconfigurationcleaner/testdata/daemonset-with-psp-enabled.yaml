@@ -28,6 +28,10 @@ spec:
         - sh
         - -c
         - |
+          if [[ -f /host/etc/systemd/system/configure-containerd-registries.service ]]; then
+            chroot /host /bin/bash -c 'systemctl disable configure-containerd-registries.service; systemctl stop configure-containerd-registries.service; rm -f /etc/systemd/system/configure-containerd-registries.service'
+          fi
+
           if [[ -d /host/etc/containerd/certs.d/docker.io ]]; then
             rm -rf /host/etc/containerd/certs.d/docker.io
           fi
@@ -45,7 +49,7 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: default
+      serviceAccountName: registry-configuration-cleaner
       volumes:
       - hostPath:
           path: /
