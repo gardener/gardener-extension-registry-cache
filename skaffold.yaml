@@ -56,6 +56,7 @@ build:
         - pkg/apis/registry/helper
         - pkg/apis/registry/install
         - pkg/apis/registry/v1alpha1
+        - pkg/apis/registry/v1alpha1/helper
         - pkg/apis/registry/validation
         - pkg/constants
         - vendor

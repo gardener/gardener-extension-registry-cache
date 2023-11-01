@@ -21,15 +21,22 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gardener/gardener/extensions/pkg/controller"
+	gardencore "github.com/gardener/gardener/pkg/apis/core"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
+	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,6 +50,14 @@ import (
 const (
 	managedResourceName = "extension-registry-cache"
 )
+
+var scheme *runtime.Scheme
+
+func init() {
+	scheme = runtime.NewScheme()
+	utilruntime.Must(gardencore.AddToScheme(scheme))
+	utilruntime.Must(gardencorev1beta1.AddToScheme(scheme))
+}
 
 // Values is a set of configuration values for the registry caches.
 type Values struct {
@@ -75,7 +90,7 @@ type registryCaches struct {
 
 // Deploy implements component.DeployWaiter.
 func (r *registryCaches) Deploy(ctx context.Context) error {
-	data, err := r.computeResourcesData()
+	data, err := r.computeResourcesData(ctx)
 	if err != nil {
 		return err
 	}
@@ -125,11 +140,16 @@ func (r *registryCaches) WaitCleanup(ctx context.Context) error {
 	return managedresources.WaitUntilDeleted(timeoutCtx, r.client, r.namespace, managedResourceName)
 }
 
-func (r *registryCaches) computeResourcesData() (map[string][]byte, error) {
+func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][]byte, error) {
 	var objects []client.Object
 
+	cluster, err := controller.GetCluster(ctx, r.client, r.namespace)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, cache := range r.values.Caches {
-		cacheObjects, err := r.computeResourcesDataForRegistryCache(&cache)
+		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, cluster)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
 		}
@@ -142,7 +162,7 @@ func (r *registryCaches) computeResourcesData() (map[string][]byte, error) {
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.RegistryCache) ([]client.Object, error) {
+func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *v1alpha1.RegistryCache, cluster *controller.Cluster) ([]client.Object, error) {
 	if cache.Size == nil {
 		return nil, fmt.Errorf("registry cache size is required")
 	}
@@ -151,151 +171,218 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.Re
 		registryCacheVolumeName = "cache-volume"
 		debugPort               = 5001
 	)
+	var resources []client.Object
 
-	var (
-		name   = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
-		labels = map[string]string{
-			"app":                       name,
-			constants.UpstreamHostLabel: cache.Upstream,
+	name := strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
+
+	// envVars overrides configuration options in registry
+	envVars := []corev1.EnvVar{
+		{
+			Name:  "REGISTRY_PROXY_REMOTEURL",
+			Value: registryutils.GetUpstreamURL(cache.Upstream),
+		},
+		{
+			Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
+			Value: strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
+		},
+		{
+			Name:  "REGISTRY_HTTP_ADDR",
+			Value: fmt.Sprintf(":%d", constants.RegistryCachePort),
+		},
+		{
+			Name:  "REGISTRY_HTTP_DEBUG_ADDR",
+			Value: fmt.Sprintf(":%d", debugPort),
+		},
+	}
+
+	// init upstream registry credentials
+	if cache.SecretReferenceName != nil {
+		// TODO: Remove the conversion once GetSecretReference helper function is available in gardener/gardener
+		obj, err := scheme.ConvertToVersion(cluster.Shoot, gardencore.SchemeGroupVersion)
+		if err != nil {
+			return nil, fmt.Errorf("shoot conversion from v1beta1 to internal version failed: %w", err)
+		}
+		shoot, ok := obj.(*gardencore.Shoot)
+		if !ok {
+			return nil, fmt.Errorf("shoot cast to internal version failed")
 		}
 
-		service = &corev1.Service{
+		ref := helper.GetSecretReference(shoot.Spec.Resources, *cache.SecretReferenceName)
+		if ref == nil {
+			return nil, fmt.Errorf("referenced resource with kind Secret not found for reference: %q", *cache.SecretReferenceName)
+		}
+
+		refSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      ref.Name,
+				Namespace: r.namespace,
+			},
+		}
+		if err := controller.GetObjectByReference(ctx, r.client, ref, r.namespace, refSecret); err != nil {
+			return nil, fmt.Errorf("failed to read referenced secret %s%s for reference: %s", v1beta1constants.ReferencedResourcesPrefix, ref.Name, *cache.SecretReferenceName)
+		}
+
+		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: metav1.NamespaceSystem,
-				Labels:    labels,
 			},
-			Spec: corev1.ServiceSpec{
-				Selector: labels,
-				Ports: []corev1.ServicePort{{
-					Name:       "registry-cache",
-					Port:       constants.RegistryCachePort,
-					Protocol:   corev1.ProtocolTCP,
-					TargetPort: intstr.FromString("registry-cache"),
-				}},
-				Type: corev1.ServiceTypeClusterIP,
-			},
+			Data: refSecret.Data,
 		}
+		utilruntime.Must(kubernetesutils.MakeUnique(secret))
 
-		statefulSet = &appsv1.StatefulSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: metav1.NamespaceSystem,
-				Labels:    labels,
+		resources = append(resources, secret)
+
+		envVars = append(envVars,
+			corev1.EnvVar{
+				Name: "REGISTRY_PROXY_USERNAME",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: secret.Name,
+						},
+						Key: "username",
+					},
+				},
 			},
-			Spec: appsv1.StatefulSetSpec{
-				ServiceName: service.Name,
-				Selector: &metav1.LabelSelector{
-					MatchLabels: labels,
-				},
-				Replicas: pointer.Int32(1),
-				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: labels,
-					},
-					Spec: corev1.PodSpec{
-						PriorityClassName: "system-cluster-critical",
-						Containers: []corev1.Container{
-							{
-								Name:            "registry-cache",
-								Image:           r.values.Image,
-								ImagePullPolicy: corev1.PullIfNotPresent,
-								Resources: corev1.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceCPU:    resource.MustParse("20m"),
-										corev1.ResourceMemory: resource.MustParse("50Mi"),
-									},
-								},
-								Ports: []corev1.ContainerPort{
-									{
-										ContainerPort: constants.RegistryCachePort,
-										Name:          "registry-cache",
-									},
-									{
-										ContainerPort: debugPort,
-										Name:          "debug",
-									},
-								},
-								Env: []corev1.EnvVar{
-									{
-										Name:  "REGISTRY_PROXY_REMOTEURL",
-										Value: registryutils.GetUpstreamURL(cache.Upstream),
-									},
-									{
-										Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
-										Value: strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
-									},
-									{
-										Name:  "REGISTRY_HTTP_ADDR",
-										Value: fmt.Sprintf(":%d", constants.RegistryCachePort),
-									},
-									{
-										Name:  "REGISTRY_HTTP_DEBUG_ADDR",
-										Value: fmt.Sprintf(":%d", debugPort),
-									},
-								},
-								LivenessProbe: &corev1.Probe{
-									ProbeHandler: corev1.ProbeHandler{
-										HTTPGet: &corev1.HTTPGetAction{
-											Path: "/debug/health",
-											Port: intstr.FromInt32(debugPort),
-										},
-									},
-									FailureThreshold: 6,
-									SuccessThreshold: 1,
-									PeriodSeconds:    20,
-								},
-								ReadinessProbe: &corev1.Probe{
-									ProbeHandler: corev1.ProbeHandler{
-										HTTPGet: &corev1.HTTPGetAction{
-											Path: "/debug/health",
-											Port: intstr.FromInt32(debugPort),
-										},
-									},
-									FailureThreshold: 3,
-									SuccessThreshold: 1,
-									PeriodSeconds:    20,
-								},
-								VolumeMounts: []corev1.VolumeMount{
-									{
-										Name:      registryCacheVolumeName,
-										ReadOnly:  false,
-										MountPath: "/var/lib/registry",
-									},
-								},
-							},
+			corev1.EnvVar{
+				Name: "REGISTRY_PROXY_PASSWORD",
+				ValueFrom: &corev1.EnvVarSource{
+					SecretKeyRef: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: secret.Name,
 						},
+						Key: "password",
 					},
 				},
-				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:   registryCacheVolumeName,
-							Labels: labels,
-						},
-						Spec: corev1.PersistentVolumeClaimSpec{
-							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			},
+		)
+	}
+
+	labels := map[string]string{
+		"app":                       name,
+		constants.UpstreamHostLabel: cache.Upstream,
+	}
+
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: metav1.NamespaceSystem,
+			Labels:    labels,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: labels,
+			Ports: []corev1.ServicePort{{
+				Name:       "registry-cache",
+				Port:       constants.RegistryCachePort,
+				Protocol:   corev1.ProtocolTCP,
+				TargetPort: intstr.FromString("registry-cache"),
+			}},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+	resources = append(resources, service)
+
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: metav1.NamespaceSystem,
+			Labels:    labels,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			ServiceName: service.Name,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Replicas: pointer.Int32(1),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: corev1.PodSpec{
+					PriorityClassName: "system-cluster-critical",
+					Containers: []corev1.Container{
+						{
+							Name:            "registry-cache",
+							Image:           r.values.Image,
+							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
-									corev1.ResourceStorage: *cache.Size,
+									corev1.ResourceCPU:    resource.MustParse("20m"),
+									corev1.ResourceMemory: resource.MustParse("50Mi"),
 								},
 							},
-							// We need to explicitly set the spec.storageClassName to default as marking the Gardener managed StorageClass as the default one is configurable on provider extensions side.
-							// For example, for provider-aws see the storage.managedDefaultClass field in the ControlPlaneConfig (https://github.com/gardener/gardener-extension-provider-aws/blob/v1.48.0/docs/usage/usage.md#controlplaneconfig).
-							StorageClassName: pointer.String("default"),
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: constants.RegistryCachePort,
+									Name:          "registry-cache",
+								},
+								{
+									ContainerPort: debugPort,
+									Name:          "debug",
+								},
+							},
+							Env: envVars,
+							LivenessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/debug/health",
+										Port: intstr.FromInt32(debugPort),
+									},
+								},
+								FailureThreshold: 6,
+								SuccessThreshold: 1,
+								PeriodSeconds:    20,
+							},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/debug/health",
+										Port: intstr.FromInt32(debugPort),
+									},
+								},
+								FailureThreshold: 3,
+								SuccessThreshold: 1,
+								PeriodSeconds:    20,
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      registryCacheVolumeName,
+									ReadOnly:  false,
+									MountPath: "/var/lib/registry",
+								},
+							},
 						},
 					},
 				},
 			},
-		}
-
-		vpa *vpaautoscalingv1.VerticalPodAutoscaler
-	)
+			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   registryCacheVolumeName,
+						Labels: labels,
+					},
+					Spec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: *cache.Size,
+							},
+						},
+						// We need to explicitly set the spec.storageClassName to default as marking the Gardener managed StorageClass as the default one is configurable on provider extensions side.
+						// For example, for provider-aws see the storage.managedDefaultClass field in the ControlPlaneConfig (https://github.com/gardener/gardener-extension-provider-aws/blob/v1.48.0/docs/usage/usage.md#controlplaneconfig).
+						StorageClassName: pointer.String("default"),
+					},
+				},
+			},
+		},
+	}
+	resources = append(resources, statefulSet)
 
 	if r.values.VPAEnabled {
 		updateMode := vpaautoscalingv1.UpdateModeAuto
 		controlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
-		vpa = &vpaautoscalingv1.VerticalPodAutoscaler{
+		vpa := &vpaautoscalingv1.VerticalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: metav1.NamespaceSystem,
@@ -326,11 +413,9 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(cache *v1alpha1.Re
 				},
 			},
 		}
+
+		resources = append(resources, vpa)
 	}
 
-	return []client.Object{
-		service,
-		statefulSet,
-		vpa,
-	}, nil
+	return resources, nil
 }

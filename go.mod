@@ -10,6 +10,7 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
+	go.uber.org/mock v0.2.0
 	golang.org/x/tools v0.13.0
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
@@ -95,7 +96,6 @@ require (
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	go.uber.org/mock v0.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect

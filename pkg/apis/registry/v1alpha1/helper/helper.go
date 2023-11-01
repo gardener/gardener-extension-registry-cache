@@ -14,9 +14,24 @@
 
 package helper
 
-import "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+import (
+	"github.com/gardener/gardener/pkg/apis/core"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+)
 
 // GarbageCollectionEnabled returns whether the garbage collection is enabled for the given cache.
 func GarbageCollectionEnabled(cache *v1alpha1.RegistryCache) bool {
 	return cache.GarbageCollection == nil || cache.GarbageCollection.Enabled
+}
+
+// GetSecretReference returns secret reference or nil if not found
+func GetSecretReference(resourceRefs []core.NamedResourceReference, secretReferenceName string) *autoscalingv1.CrossVersionObjectReference {
+	for _, resourceRef := range resourceRefs {
+		if resourceRef.Name == secretReferenceName && resourceRef.ResourceRef.Kind == "Secret" {
+			return &resourceRef.ResourceRef
+		}
+	}
+	return nil
 }

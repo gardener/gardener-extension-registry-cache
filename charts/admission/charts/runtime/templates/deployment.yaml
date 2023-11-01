@@ -20,6 +20,7 @@ spec:
         checksum/secret-kubeconfig: {{ include (print $.Template.BasePath "/secret-kubeconfig.yaml") . | sha256sum }}
         {{- end }}
       labels:
+        networking.gardener.cloud/to-runtime-apiserver: allowed
 {{ include "labels" . | indent 8 }}
     spec:
       {{- if not .Values.global.virtualGarden.enabled }}

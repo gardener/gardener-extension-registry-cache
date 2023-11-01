@@ -15,38 +15,17 @@
 package validation
 
 import (
+	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 )
-
-// ValidateRegistryConfig validates the passed configuration instance.
-func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-
-	if len(config.Caches) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("caches"), "at least one cache must be provided"))
-	}
-
-	upstreams := sets.New[string]()
-	for i, cache := range config.Caches {
-		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
-
-		if upstreams.Has(cache.Upstream) {
-			allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("upstream"), cache.Upstream))
-		} else {
-			upstreams.Insert(cache.Upstream)
-		}
-	}
-
-	return allErrs
-}
 
 // ValidateRegistryConfigUpdate validates the passed configuration update.
 func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig, fldPath *field.Path) field.ErrorList {
@@ -63,7 +42,8 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 	return allErrs
 }
 
-func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) field.ErrorList {
+// ValidateRegistryCache validates the passed registry cache instance.
+func ValidateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
@@ -96,4 +76,28 @@ func validatePositiveQuantity(value resource.Quantity, fldPath *field.Path) fiel
 		allErrs = append(allErrs, field.Invalid(fldPath, value.String(), "must be greater than 0"))
 	}
 	return allErrs
+}
+
+// ValidateUpstreamRepositorySecret checks whether the given secret is immutable and contains `data.username` and `data.password` fields.
+func ValidateUpstreamRepositorySecret(secret *corev1.Secret, fldPath *field.Path, secretReference string) field.ErrorList {
+	var allErrors field.ErrorList
+
+	secretRef := fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
+
+	if secret.Immutable == nil || !*secret.Immutable {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("referenced secret %q should be immutable", secretRef)))
+	}
+	if len(secret.Data) != 2 {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("referenced secret %q should have only two data entries", secretRef)))
+	}
+	const username = "username"
+	if _, ok := secret.Data[username]; !ok {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("missing %q data entry in referenced secret %q", username, secretRef)))
+	}
+	const password = "password"
+	if _, ok := secret.Data[password]; !ok {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("missing %q data entry in referenced secret %q", password, secretRef)))
+	}
+
+	return allErrors
 }

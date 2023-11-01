@@ -17,8 +17,10 @@ package helper_test
 import (
 	"testing"
 
+	"github.com/gardener/gardener/pkg/apis/core"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1/helper"
@@ -38,5 +40,28 @@ var _ = Describe("Helpers", func() {
 		Entry("garbageCollection is nil", &v1alpha1.RegistryCache{GarbageCollection: nil}, true),
 		Entry("garbageCollection.enabled is false", &v1alpha1.RegistryCache{GarbageCollection: &v1alpha1.GarbageCollection{Enabled: false}}, false),
 		Entry("garbageCollection.enabled is true", &v1alpha1.RegistryCache{GarbageCollection: &v1alpha1.GarbageCollection{Enabled: true}}, true),
+	)
+
+	DescribeTable("#GetSecretReference",
+		func(resourceRefs []core.NamedResourceReference, secretReferenceName string, expected *autoscalingv1.CrossVersionObjectReference) {
+			Expect(helper.GetSecretReference(resourceRefs, secretReferenceName)).To(Equal(expected))
+		},
+		Entry("resourceRefs is nil", nil, "foo", nil),
+		Entry("resourceRefs is empty", []core.NamedResourceReference{}, "foo", nil),
+		Entry("resourceRefs doesn't contains secret ref name", []core.NamedResourceReference{{Name: "bar"}, {Name: "baz"}}, "foo", nil),
+		Entry("resourceRefs contains secret ref name with kind ConfigMap",
+			[]core.NamedResourceReference{
+				{Name: "bar"},
+				{Name: "foo", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "ConfigMap"}},
+			},
+			"foo",
+			nil),
+		Entry("resourceRefs contains secret ref name with kind Secret",
+			[]core.NamedResourceReference{
+				{Name: "bar"},
+				{Name: "foo", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "Secret"}},
+			},
+			"foo",
+			&autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "Secret"}),
 	)
 })
