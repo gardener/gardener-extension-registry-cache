@@ -50,10 +50,12 @@ const (
 	EuGcrNginx1176ImageWithDigest = "eu.gcr.io/gardener-project/3rd/nginx@sha256:3efdd8ec67f2eb4e96c6f49560f20d6888242f1376808b84ed0ceb064dceae11"
 	// RegistryK8sNginx1154ImageWithDigest corresponds to the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154ImageWithDigest = "registry.k8s.io/e2e-test-images/nginx@sha256:db048754ae68ae337d8fa96494c96d2a1204c3320f5dcf7e8e71085adec85da6"
+	// PublicEcrAwsNginx1199ImageWithDigest corresponds to the public.ecr.aws/nginx/nginx:1.19.9 image.
+	PublicEcrAwsNginx1199ImageWithDigest = "public.ecr.aws/nginx/nginx@sha256:f248a8862fa9b21badbe043518f52f143946e2dc705300e8534f8ca624a291b2"
 )
 
-// AddRegistryCacheExtension adds registry-cache extension with the given caches to the given Shoot.
-func AddRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []v1alpha1.RegistryCache) {
+// AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
+func AddOrUpdateRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []v1alpha1.RegistryCache) {
 	providerConfig := &v1alpha1.RegistryConfig{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
@@ -71,18 +73,21 @@ func AddRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []v1alpha1
 		},
 	}
 
-	shoot.Spec.Extensions = append(shoot.Spec.Extensions, extension)
+	i := slices.IndexFunc(shoot.Spec.Extensions, func(ext gardencorev1beta1.Extension) bool {
+		return ext.Type == "registry-cache"
+	})
+	if i == -1 {
+		shoot.Spec.Extensions = append(shoot.Spec.Extensions, extension)
+	} else {
+		shoot.Spec.Extensions[i] = extension
+	}
 }
 
 // HasRegistryCacheExtension returns whether the Shoot has an extension of type registry-cache.
 func HasRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) bool {
-	for _, extension := range shoot.Spec.Extensions {
-		if extension.Type == "registry-cache" {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(shoot.Spec.Extensions, func(ext gardencorev1beta1.Extension) bool {
+		return ext.Type == "registry-cache"
+	})
 }
 
 // RemoveRegistryCacheExtension removes registry caches extensions from given Shoot.
@@ -113,25 +118,28 @@ func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Log
 	}
 }
 
-// VerifyRegistryConfigurationsAreRemoved verifies that configure-containerd-registries.service systemd unit gets deleted and the hosts.toml files for the given upstreams are removed.
-// The hosts.toml file and the systemd unit are deleted by a DaemonSet by the registry-cache extension.
+// VerifyRegistryConfigurationsAreRemoved verifies that configure-containerd-registries.service systemd unit gets deleted (if expectSystemdUnitDeletion is true)
+// and the hosts.toml files for the given upstreams are removed.
+// The hosts.toml file(s) and the systemd unit are deleted by the registry-configuration-cleaner DaemonSet.
 //
 // Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io and quay.io.
 // Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
-func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstreams []string) {
+func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, expectSystemdUnitDeletion bool, upstreams []string) {
 	nodes := &corev1.NodeList{}
 	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
 
 	for _, node := range nodes.Items {
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
-		EventuallyWithOffset(1, ctx, func(g Gomega) string {
-			command := "systemctl status configure-containerd-registries.service &>/dev/null && echo 'unit found' || echo 'unit not found'"
-			// err is ignored intentionally to reduce flakes from transient network errors in prow.
-			response, _ := rootPodExecutor.Execute(ctx, command)
+		if expectSystemdUnitDeletion {
+			EventuallyWithOffset(1, ctx, func(g Gomega) string {
+				command := "systemctl status configure-containerd-registries.service &>/dev/null && echo 'unit found' || echo 'unit not found'"
+				// err is ignored intentionally to reduce flakes from transient network errors in prow.
+				response, _ := rootPodExecutor.Execute(ctx, command)
 
-			return string(response)
-		}).WithPolling(10*time.Second).Should(Equal("unit not found\n"), fmt.Sprintf("Expected the configure-containerd-registries.service systemd unit on node %s to be deleted", node.Name))
+				return string(response)
+			}).WithPolling(10*time.Second).Should(Equal("unit not found\n"), fmt.Sprintf("Expected the configure-containerd-registries.service systemd unit on node %s to be deleted", node.Name))
+		}
 
 		for _, upstream := range upstreams {
 			EventuallyWithOffset(1, ctx, func(g Gomega) string {

@@ -33,7 +33,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	f := defaultShootCreationFramework()
 	f.Shoot = defaultShoot("e2e-default")
 
-	It("should create Shoot, enable and disable the registry-cache extension, delete Shoot", func() {
+	It("should create Shoot, enable extension, add upstream, remove upstream, disable extension, delete Shoot", func() {
 		By("Create Shoot")
 		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
@@ -45,7 +45,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
-			common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 				{Upstream: "docker.io", Size: &size},
 			})
 
@@ -57,8 +57,46 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		defer cancel()
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
-		By("Verify registry-cache works")
+		By("[docker.io] Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
+
+		By("Add the public.ecr.aws upstream to the registry-cache extension")
+		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
+		defer cancel()
+		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+			size := resource.MustParse("2Gi")
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+				{Upstream: "docker.io", Size: &size},
+				{Upstream: "public.ecr.aws", Size: &size},
+			})
+
+			return nil
+		})).To(Succeed())
+
+		By("Wait until the registry configuration is applied")
+		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
+		defer cancel()
+		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
+
+		By("[public.ecr.aws] Verify registry-cache works")
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "public.ecr.aws", common.PublicEcrAwsNginx1199ImageWithDigest)
+
+		By("Remove the public.ecr.aws upstream from the registry-cache extension")
+		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
+		defer cancel()
+		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+			size := resource.MustParse("2Gi")
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+				{Upstream: "docker.io", Size: &size},
+			})
+
+			return nil
+		})).To(Succeed())
+
+		By("[public.ecr.aws] Verify registry configuration is removed")
+		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
+		defer cancel()
+		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootFramework.ShootClient, false, []string{"public.ecr.aws"})
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -69,10 +107,10 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 			return nil
 		})).To(Succeed())
 
-		By("Verify registry configuration is removed")
+		By("[docker.io] Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"docker.io"})
+		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootFramework.ShootClient, true, []string{"docker.io"})
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)

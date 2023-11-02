@@ -32,7 +32,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	f := defaultShootCreationFramework()
 	shoot := defaultShoot("e2e-default-ssc")
 	size := resource.MustParse("2Gi")
-	common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 		{Upstream: "eu.gcr.io", Size: &size},
 		{Upstream: "quay.io", Size: &size},
 		{Upstream: "registry.k8s.io", Size: &size},

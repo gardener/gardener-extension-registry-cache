@@ -42,7 +42,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
-			common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 				{Upstream: "docker.io", Size: &size},
 			})
 
@@ -67,7 +67,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootClient, []string{"docker.io"})
+		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootClient, true, []string{"docker.io"})
 	}, defaultTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if common.HasRegistryCacheExtension(f.Shoot) {
 			By("Disable the registry-cache extension")

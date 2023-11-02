@@ -33,7 +33,7 @@ func TestHelper(t *testing.T) {
 var _ = Describe("Helpers", func() {
 	size := resource.MustParse("5Gi")
 
-	DescribeTable("#FindRegistryCacheExtension",
+	DescribeTable("#FindCacheByUpstream",
 		func(caches []registry.RegistryCache, upstream string, expectedOk bool, expectedCache registry.RegistryCache) {
 			ok, cache := helper.FindCacheByUpstream(caches, upstream)
 			Expect(ok).To(Equal(expectedOk))
