@@ -27,6 +27,7 @@ shoot_names=(
   e2e-default.local
   e2e-hib.local
   e2e-default-ssc.local
+  e2e-force-delete.local
 )
 
 if [ -n "${CI:-}" ]; then

@@ -172,6 +172,21 @@ func (a *actuator) Migrate(_ context.Context, _ logr.Logger, _ *extensionsv1alph
 	return nil
 }
 
+// ForceDelete the Extension resource.
+//
+// We don't need to wait for the ManagedResource deletion because ManagedResources are finalized by gardenlet
+// in later step in the Shoot force deletion flow.
+func (a *actuator) ForceDelete(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	namespace := ex.GetNamespace()
+
+	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{})
+	if err := component.OpDestroy(registryCaches).Destroy(ctx); err != nil {
+		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
+	}
+
+	return nil
+}
+
 func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *v1alpha1.RegistryConfig, namespace string) (*v1alpha1.RegistryStatus, error) {
 	// get service IPs from shoot
 	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfig.RESTOptions{})
