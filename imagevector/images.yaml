@@ -8,7 +8,21 @@ images:
 - name: alpine
   repository: eu.gcr.io/gardener-project/3rd/alpine
   tag: "3.15.8"
+  labels:
+  - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
+    value:
+      policy: skip
+      comment: >
+        The alpine container is not accessible from outside k8s clusters and not
+        interacted with from other containers or other systems.
 - name: pause
   sourceRepository: github.com/kubernetes/kubernetes/blob/master/build/pause/Dockerfile
   repository: registry.k8s.io/pause
   tag: "3.9"
+  labels:
+  - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
+    value:
+      policy: skip
+      comment: >
+        The pause container is not accessible from outside k8s clusters and not
+        interacted with from other containers or other systems.
