@@ -45,13 +45,17 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
-			common.AddRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 				{Upstream: "docker.io", Size: &size},
 			})
 
 			return nil
 		})).To(Succeed())
 
+		By("Wait until the registry configuration is applied")
+		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
+		defer cancel()
+		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 		By("Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
 
