@@ -56,6 +56,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
 		defer cancel()
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
+
 		By("Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
 
