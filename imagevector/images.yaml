@@ -7,7 +7,7 @@ images:
 # registry-configuration-cleaner DaemonSet
 - name: alpine
   repository: eu.gcr.io/gardener-project/3rd/alpine
-  tag: "3.15.8"
+  tag: "3.18.4"
   labels:
   - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
     value:
