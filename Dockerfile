@@ -6,7 +6,7 @@ COPY . .
 RUN make install
 
 ############# base
-FROM gcr.io/distroless/static-debian11:nonroot AS base
+FROM gcr.io/distroless/static-debian12:nonroot AS base
 WORKDIR /
 
 ############# gardener-extension-registry-cache
