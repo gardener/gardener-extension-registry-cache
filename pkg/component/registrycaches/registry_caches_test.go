@@ -569,6 +569,20 @@ metadata:
 				})
 			})
 		})
+
+		It("should deploy a monitoring ConfigMap", func() {
+			Expect(registryCaches.Deploy(ctx)).To(Succeed())
+
+			monitoringConfigMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "extension-registry-cache-monitoring",
+					Namespace: namespace,
+				},
+			}
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(monitoringConfigMap), monitoringConfigMap)).To(Succeed())
+			Expect(monitoringConfigMap.Labels).To(HaveKeyWithValue("extensions.gardener.cloud/configuration", "monitoring"))
+			Expect(monitoringConfigMap.Data).To(HaveKey("alerting_rules"))
+		})
 	})
 
 	Describe("#Destroy", func() {

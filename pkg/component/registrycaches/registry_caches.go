@@ -123,9 +123,12 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 	if err := secret.Reconcile(ctx); err != nil {
 		return fmt.Errorf("failed to create or update secret of managed resources: %w", err)
 	}
-
 	if err := managedResource.Reconcile(ctx); err != nil {
 		return fmt.Errorf("failed to not create or update managed resource: %w", err)
+	}
+
+	if err := r.deployMonitoringConfigMap(ctx); err != nil {
+		return fmt.Errorf("failed to deploy monitoring ConfigMap: %w", err)
 	}
 
 	return nil

@@ -65,6 +65,23 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  verbs:
+  - create
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - update
+  - patch
+  - delete
+  resourceNames:
+  - extension-registry-cache-monitoring
+- apiGroups:
+  - ""
+  resources:
   - namespaces
   verbs:
   - get
