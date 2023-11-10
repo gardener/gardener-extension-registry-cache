@@ -22,7 +22,6 @@ import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
 	mockclient "github.com/gardener/gardener/pkg/mock/controller-runtime/client"
-	mockmanager "github.com/gardener/gardener/pkg/mock/controller-runtime/manager"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -32,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,7 +51,6 @@ var _ = Describe("Shoot validator", func() {
 			shootValidator extensionswebhook.Validator
 			ctrl           *gomock.Controller
 			apiReader      *mockclient.MockReader
-			mgr            *mockmanager.MockManager
 
 			shoot *core.Shoot
 		)
@@ -61,14 +60,11 @@ var _ = Describe("Shoot validator", func() {
 			Expect(api.AddToScheme(scheme)).To(Succeed())
 			Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
 
+			decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 			ctrl = gomock.NewController(GinkgoT())
 			apiReader = mockclient.NewMockReader(ctrl)
-			mgr = mockmanager.NewMockManager(ctrl)
 
-			mgr.EXPECT().GetScheme().Return(scheme)
-			mgr.EXPECT().GetAPIReader().Return(apiReader)
-
-			shootValidator = validator.NewShootValidator(mgr)
+			shootValidator = validator.NewShootValidator(apiReader, decoder)
 
 			shoot = &core.Shoot{
 				ObjectMeta: metav1.ObjectMeta{

@@ -23,11 +23,9 @@ import (
 	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1/helper"
@@ -41,10 +39,10 @@ type shoot struct {
 }
 
 // NewShootValidator returns a new instance of a shoot validator.
-func NewShootValidator(mgr manager.Manager) extensionswebhook.Validator {
+func NewShootValidator(apiReader client.Reader, decoder runtime.Decoder) extensionswebhook.Validator {
 	return &shoot{
-		apiReader: mgr.GetAPIReader(),
-		decoder:   serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder(),
+		apiReader: apiReader,
+		decoder:   decoder,
 	}
 }
 

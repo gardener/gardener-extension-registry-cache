@@ -99,11 +99,17 @@ To enlarge the PVC's size follow the following steps:
 
 > Drawback of this approach: The cache's size in the Shoot spec (`providerConfig.caches[].size`) diverges from the PVC's size.
 
-#### [Alternative 2] Remove and readd the cache
+#### [Alternative 2] Remove and re-add the cache
 
-There is always the option to remove the cache from the Shoot spec and to readd it again with the updated size.
+There is always the option to remove the cache from the Shoot spec and to re-add it again with the updated size.
 
 > Drawback of this approach: The already cached images get lost and the cache starts with an empty disk.
+
+## Caching images from private repositories
+
+To cache private repository images, credentials to upstream repository should be supplied. For details see [How to provide credentials for upstream repository](upstream-credentials.md#how-to-provide-credentials-for-upstream-repository).
+> **Note**: It's only possible to provide credentials for one private repository per upstream registry.
+> See [this](https://github.com/distribution/distribution/blob/main/docs/content/recipes/mirror.md#gotcha) for more details.
 
 ## High-availability
 
@@ -118,7 +124,7 @@ The registry cache runs with a single replica. This fact may lead to concerns fo
 
 - A registry cache cannot cache content from the Shoot system components if such upstream is requested:
   - On Shoot creation with the registry cache extension enabled, a registry cache is unable to cache all of images from the Shoot system components because a registry cache Pod requires its PVC to be provisioned, attached and mounted (the corresponding CSI node plugin needs to be running). Usually, until the registry cache Pod is running containerd falls back to the upstream for pulling the images from the Shoot system components.
-  - On new Node creation for existing Shoot with the registry cache extension enabled, a registry cache is unable to cache most of the images from  Shoot system components because the containerd registry configuration on that Node is applied after the registry cache Service is reachable from the Node (the `configure-containerd-registries.service` unit is the machinery that does this). The reachability of the registry cache Service requires the Service network to be set up, i.e the kube-proxy for that new Node to be running and to have set up iptables/IPVS configuration for the registry cache Service.
+  - On new Node creation for existing Shoot with the registry cache extension enabled, a registry cache is unable to cache most of the images from  Shoot system components because the containerd registry configuration on that Node is applied after the registry cache Service is reachable from the Node (the `configure-containerd-registries.service` unit is the machinery that does this). The reachability of the registry cache Service requires the Service network to be set up, i.e. the kube-proxy for that new Node to be running and to have set up iptables/IPVS configuration for the registry cache Service.
 - Services cannot be resolved by DNS from the Node. That's why the registry cache's Service cluster IP is configured in containerd (instead of the Service DNS). A Service's cluster IP is assigned on its creation by the kube-apiserver. Deletion of the registry cache's Service by Shoot owner would lead the Service to be recreated with a new cluster IP. In such case, until the next Shoot reconciliation, containerd will be configured with the old cluster IP. Hence, containerd will fail to pull images from the cache.
 - containerd is configured to fall back to the upstream itself if a request against the cache fails. However, if the cluster IP of the registry cache Service does not exist or if kube-proxy hasn't configured iptables/IPVS rules for the registry cache Service, then containerd requests against the registry cache time out in 30 seconds. This increases significantly the image pull times because containerd does multiple requests as part of the image pull (HEAD request to resolve the manifest by tag, GET request for the manifest by SHA, GET requests for blobs).
   - Example: If the Service of a registry cache is deleted, then a new Service will be created. containerd registry config will still contain the old Service's cluster IP.
