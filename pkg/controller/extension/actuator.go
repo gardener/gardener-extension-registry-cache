@@ -133,15 +133,18 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
 
-	if ex.Status.ProviderStatus != nil {
+	cluster, err := extensionscontroller.GetCluster(ctx, a.client, namespace)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster: %w", err)
+	}
+
+	// If the Shoot is in deletion, then there is no need to clean up the registry configuration from Nodes.
+	// The Shoot deletion flows ensures that the Worker is deleted before the Extension deletion.
+	// Hence, there are no Nodes, no need to clean up registry configuration.
+	if ex.Status.ProviderStatus != nil && cluster.Shoot.DeletionTimestamp == nil {
 		registryStatus := &v1alpha1.RegistryStatus{}
 		if _, _, err := a.decoder.Decode(ex.Status.ProviderStatus.Raw, nil, registryStatus); err != nil {
 			return fmt.Errorf("failed to decode providerStatus of extension '%s': %w", client.ObjectKeyFromObject(ex), err)
-		}
-
-		cluster, err := extensionscontroller.GetCluster(ctx, a.client, namespace)
-		if err != nil {
-			return fmt.Errorf("failed to get cluster: %w", err)
 		}
 
 		upstreams := make([]string, 0, len(registryStatus.Caches))
