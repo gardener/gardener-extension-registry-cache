@@ -19,9 +19,14 @@ IMAGE                       := eu.gcr.io/gardener-project/gardener/extensions/re
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
-LD_FLAGS                    := "-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(IMAGE_TAG)"
+EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
+IMAGE_TAG                   := $(EFFECTIVE_VERSION)
+LD_FLAGS                    := "-w $(shell $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
 PARALLEL_E2E_TESTS          := 2
 
+ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
+	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
+endif
 
 #########################################
 # Tools                                 #
@@ -39,7 +44,7 @@ include $(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/tools.mk
 
 .PHONY: install
 install:
-	@LD_FLAGS="-w -X github.com/gardener/$(EXTENSION_PREFIX)-$(NAME)/pkg/version.Version=$(VERSION)" \
+	@LD_FLAGS=$(LD_FLAGS) \
 	$(REPO_ROOT)/vendor/github.com/gardener/gardener/hack/install.sh ./cmd/...
 
 .PHONY: docker-login
@@ -48,8 +53,8 @@ docker-login:
 
 .PHONY: docker-images
 docker-images:
-	@docker build -t $(IMAGE):$(VERSION) -t $(IMAGE):latest -f Dockerfile -m 6g --target $(NAME) .
-	@docker build -t $(IMAGE)-admission:$(VERSION) -t $(IMAGE)-admission:latest -f Dockerfile -m 6g --target $(ADMISSION_NAME) .
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE):$(IMAGE_TAG) -f Dockerfile -m 6g --target $(NAME) .
+	@docker build --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) -t $(IMAGE)-admission:$(IMAGE_TAG) -f Dockerfile -m 6g --target $(ADMISSION_NAME) .
 
 #####################################################################
 # Rules for verification, formatting, linting, testing and cleaning #
@@ -123,7 +128,7 @@ ci-e2e-kind:
 extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
 extension-up: $(SKAFFOLD) $(KIND) $(HELM)
-	$(SKAFFOLD) run
+	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
 
 extension-dev: $(SKAFFOLD) $(HELM)
 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
