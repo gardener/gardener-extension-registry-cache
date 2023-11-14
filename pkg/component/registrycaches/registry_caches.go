@@ -15,10 +15,13 @@
 package registrycaches
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
@@ -49,6 +52,20 @@ import (
 const (
 	managedResourceName = "extension-registry-cache"
 )
+
+var (
+	//go:embed templates/config.yml.tpl
+	configContentTpl string
+	configTpl        *template.Template
+)
+
+func init() {
+	var err error
+	configTpl, err = template.
+		New("config.yml.tpl").
+		Parse(configContentTpl)
+	utilruntime.Must(err)
+}
 
 // Values is a set of configuration values for the registry caches.
 type Values struct {
@@ -156,36 +173,21 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 
 	const (
-		registryCacheVolumeName = "cache-volume"
-		debugPort               = 5001
+		registryCacheVolumeName  = "cache-volume"
+		registryConfigVolumeName = "config-volume"
+		debugPort                = 5001
 	)
 
 	var (
-		name    = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
-		envVars = []corev1.EnvVar{
-			{
-				Name:  "REGISTRY_PROXY_REMOTEURL",
-				Value: registryutils.GetUpstreamURL(cache.Upstream),
-			},
-			{
-				Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
-				Value: strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
-			},
-			{
-				Name:  "REGISTRY_HTTP_ADDR",
-				Value: fmt.Sprintf(":%d", constants.RegistryCachePort),
-			},
-			{
-				Name:  "REGISTRY_HTTP_DEBUG_ADDR",
-				Value: fmt.Sprintf(":%d", debugPort),
-			},
-		}
-		labels = map[string]string{
-			"app":                       name,
-			constants.UpstreamHostLabel: cache.Upstream,
+		name         = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
+		configValues = map[string]interface{}{
+			"http_addr":              fmt.Sprintf(":%d", constants.RegistryCachePort),
+			"http_debug_addr":        fmt.Sprintf(":%d", debugPort),
+			"proxy_remoteurl":        registryutils.GetUpstreamURL(cache.Upstream),
+			"storage_delete_enabled": strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
 		}
 
-		resources []client.Object
+		vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	)
 
 	if cache.SecretReferenceName != nil {
@@ -204,51 +206,35 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			return nil, fmt.Errorf("failed to read referenced secret %s%s for reference %s", v1beta1constants.ReferencedResourcesPrefix, ref.ResourceRef.Name, *cache.SecretReferenceName)
 		}
 
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: metav1.NamespaceSystem,
-			},
-			Data: refSecret.Data,
-		}
-		utilruntime.Must(kubernetesutils.MakeUnique(secret))
-
-		resources = append(resources, secret)
-
-		envVars = append(envVars,
-			corev1.EnvVar{
-				Name: "REGISTRY_PROXY_USERNAME",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: secret.Name,
-						},
-						Key: "username",
-					},
-				},
-			},
-			corev1.EnvVar{
-				Name: "REGISTRY_PROXY_PASSWORD",
-				ValueFrom: &corev1.EnvVarSource{
-					SecretKeyRef: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: secret.Name,
-						},
-						Key: "password",
-					},
-				},
-			},
-		)
+		configValues["proxy_username"] = string(refSecret.Data["username"])
+		configValues["proxy_password"] = string(refSecret.Data["password"])
 	}
+
+	var configYAML bytes.Buffer
+	if err := configTpl.Execute(&configYAML, configValues); err != nil {
+		return nil, err
+	}
+
+	configSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name + "-config",
+			Namespace: metav1.NamespaceSystem,
+			Labels:    getLabels(name, cache.Upstream),
+		},
+		Data: map[string][]byte{
+			"config.yml": configYAML.Bytes(),
+		},
+	}
+	utilruntime.Must(kubernetesutils.MakeUnique(configSecret))
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    labels,
+			Labels:    getLabels(name, cache.Upstream),
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: labels,
+			Selector: getLabels(name, cache.Upstream),
 			Ports: []corev1.ServicePort{{
 				Name:       "registry-cache",
 				Port:       constants.RegistryCachePort,
@@ -258,23 +244,22 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Type: corev1.ServiceTypeClusterIP,
 		},
 	}
-	resources = append(resources, service)
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    labels,
+			Labels:    getLabels(name, cache.Upstream),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: service.Name,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: getLabels(name, cache.Upstream),
 			},
 			Replicas: pointer.Int32(1),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Labels: getLabels(name, cache.Upstream),
 				},
 				Spec: corev1.PodSpec{
 					PriorityClassName: "system-cluster-critical",
@@ -299,7 +284,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 									Name:          "debug",
 								},
 							},
-							Env: envVars,
 							LivenessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
@@ -328,6 +312,20 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 									ReadOnly:  false,
 									MountPath: "/var/lib/registry",
 								},
+								{
+									Name:      registryConfigVolumeName,
+									MountPath: "/etc/docker/registry",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: registryConfigVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: configSecret.Name,
+								},
 							},
 						},
 					},
@@ -337,7 +335,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   registryCacheVolumeName,
-						Labels: labels,
+						Labels: getLabels(name, cache.Upstream),
 					},
 					Spec: corev1.PersistentVolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -354,12 +352,11 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			},
 		},
 	}
-	resources = append(resources, statefulSet)
 
 	if r.values.VPAEnabled {
 		updateMode := vpaautoscalingv1.UpdateModeAuto
 		controlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
-		vpa := &vpaautoscalingv1.VerticalPodAutoscaler{
+		vpa = &vpaautoscalingv1.VerticalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: metav1.NamespaceSystem,
@@ -390,8 +387,19 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				},
 			},
 		}
-		resources = append(resources, vpa)
 	}
 
-	return resources, nil
+	return []client.Object{
+		configSecret,
+		service,
+		statefulSet,
+		vpa,
+	}, nil
+}
+
+func getLabels(name, upstream string) map[string]string {
+	return map[string]string{
+		"app":                       name,
+		constants.UpstreamHostLabel: upstream,
+	}
 }

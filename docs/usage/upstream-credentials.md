@@ -21,9 +21,9 @@ In order to pull private images through registry cache, it is required to supply
    EOF
    ```
 
-   In some cases the password can be a JSON (e.g. for GCR the username is `_json_key` and the password is the service account key in JSON format). If so, make sure the JSON value is enclosed in single quotes:
+   For GCR, the username is `_json_key` and the password is the service account key in JSON format. To base64 encode the service account key, copy it and run:
    ```bash
-   % echo "'{"type": "service_account",... ,"universe_domain": "googleapis.com"}'" | base64 -w0
+   % echo -n $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
    ```
 
 1. Add the newly created Secret as a reference to the Shoot spec, and then to the registry-cache extension configuration
@@ -62,3 +62,7 @@ To rotate registry credentials perform the following steps:
 1 The above step will trigger a Shoot reconciliation. Wait for the Shoot reconciliation to complete.
 1. Make sure that the old Secret is no longer referenced by any Shoot cluster. Finally, delete the Secret containing the old credentials (e.g. `ro-docker-secret-v1`).
 1. Delete the corresponding old credentials from the cloud provider account.
+
+## Gotchas
+
+- The registry cache provides the credentials for every request against the corresponding upstream. In some cases, misconfigured credentials can prevent the registry cache to pull even public images from the upstream (for example:  invalid service account key for GCR). However, this behaviour is controlled by the server-side logic of the upstream registry.

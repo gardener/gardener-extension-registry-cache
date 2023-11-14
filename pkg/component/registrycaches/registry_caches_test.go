@@ -17,7 +17,6 @@ package registrycaches_test
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"strconv"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -111,6 +110,63 @@ var _ = Describe("RegistryCaches", func() {
 
 	Describe("#Deploy", func() {
 		var (
+			configSecretYAMLFor = func(secretName, name, upstream, configYAML string) string {
+				return `apiVersion: v1
+data:
+  config.yml: ` + encodeBase64(configYAML) + `
+immutable: true
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ` + name + `
+    resources.gardener.cloud/garbage-collectable-reference: "true"
+    upstream-host: ` + upstream + `
+  name: ` + secretName + `
+  namespace: kube-system
+`
+			}
+
+			configYAMLFor = func(upstreamURL string, garbageCollectionEnabled bool, username, password string) string {
+				config := `# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (eu.gcr.io/gardener-project/3rd/registry:2.8.3).
+version: 0.1
+log:
+  fields:
+    service: registry
+storage:
+  delete:
+    enabled: ` + strconv.FormatBool(garbageCollectionEnabled) + `
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+http:
+  addr: :5000
+  debug:
+    addr: :5001
+    prometheus:
+      enabled: true
+      path: /metrics
+  headers:
+    X-Content-Type-Options: [nosniff]
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
+proxy:
+  remoteurl: ` + upstreamURL + `
+`
+
+				if username != "" && password != "" {
+					config += `  username: ` + username + `
+  password: '` + password + `'
+`
+				}
+
+				return config
+			}
+
 			serviceYAMLFor = func(name, upstream string) string {
 				return `apiVersion: v1
 kind: Service
@@ -136,7 +192,7 @@ status:
 `
 			}
 
-			statefulSetYAMLFor = func(name, upstream, upstreamURL, size, credentialsEnvs string, garbageCollectionEnabled bool) string {
+			statefulSetYAMLFor = func(name, upstream, upstreamURL, size, configSecretName string) string {
 				return `apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -161,16 +217,7 @@ spec:
         upstream-host: ` + upstream + `
     spec:
       containers:
-      - env:
-        - name: REGISTRY_PROXY_REMOTEURL
-          value: ` + upstreamURL + `
-        - name: REGISTRY_STORAGE_DELETE_ENABLED
-          value: "` + strconv.FormatBool(garbageCollectionEnabled) + `"
-        - name: REGISTRY_HTTP_ADDR
-          value: :5000
-        - name: REGISTRY_HTTP_DEBUG_ADDR
-          value: :5001` + credentialsEnvs + `
-        image: ` + image + `
+      - image: ` + image + `
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 6
@@ -199,7 +246,13 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/registry
           name: cache-volume
+        - mountPath: /etc/docker/registry
+          name: config-volume
       priorityClassName: system-cluster-critical
+      volumes:
+      - name: config-volume
+        secret:
+          secretName: ` + configSecretName + `
   updateStrategy: {}
   volumeClaimTemplates:
   - metadata:
@@ -246,22 +299,6 @@ spec:
   updatePolicy:
     updateMode: Auto
 status: {}
-`
-			}
-
-			secretYAMLFor = func(name, user, password string) string {
-				return `apiVersion: v1
-data:
-  password: ` + password + `
-  username: ` + user + `
-immutable: true
-kind: Secret
-metadata:
-  creationTimestamp: null
-  labels:
-    resources.gardener.cloud/garbage-collectable-reference: "true"
-  name: ` + name + `
-  namespace: kube-system
 `
 			}
 		)
@@ -313,12 +350,18 @@ metadata:
 				Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 				Expect(managedResourceSecret.Immutable).To(Equal(pointer.Bool(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-				Expect(managedResourceSecret.Data).To(HaveLen(6))
+
+				Expect(managedResourceSecret.Data).To(HaveLen(8))
+				dockerConfigSecretName := "registry-docker-io-config-8082c67c"
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerConfigSecretName+".yaml"])).To(Equal(configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", true, "", ""))))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", "", true)))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", dockerConfigSecretName)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
+
+				gcrConfigSecretName := "registry-eu-gcr-io-config-47e65d2c"
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+gcrConfigSecretName+".yaml"])).To(Equal(configSecretYAMLFor(gcrConfigSecretName, "registry-eu-gcr-io", "eu.gcr.io", configYAMLFor("https://eu.gcr.io", false, "", ""))))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", "", false)))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", gcrConfigSecretName)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
 			})
 		})
@@ -335,11 +378,8 @@ metadata:
 				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
-				Expect(managedResourceSecret.Data).To(HaveLen(4))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", "", true)))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", "", false)))
+				Expect(managedResourceSecret.Data).To(HaveLen(6))
+				Expect(managedResourceSecret.Data).ShouldNot(HaveKey(ContainSubstring("verticalpodautoscaler")))
 			})
 		})
 
@@ -347,25 +387,6 @@ metadata:
 			var (
 				dockerSecret *corev1.Secret
 				gcrSecret    *corev1.Secret
-
-				dockerSecretChecksum = "bf30ffa0"
-				gcrSecretChecksum    = "685366f9"
-				dockerSecretName     = fmt.Sprintf("registry-docker-io-%s", dockerSecretChecksum)
-				gcrSecretName        = fmt.Sprintf("registry-eu-gcr-io-%s", gcrSecretChecksum)
-
-				credentialsEnvsFor = func(secret string) string {
-					return `
-        - name: REGISTRY_PROXY_USERNAME
-          valueFrom:
-            secretKeyRef:
-              key: username
-              name: ` + secret + `
-        - name: REGISTRY_PROXY_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: ` + secret
-				}
 			)
 
 			BeforeEach(func() {
@@ -386,7 +407,7 @@ metadata:
 					},
 					Data: map[string][]byte{
 						"username": []byte("gcr-user"),
-						"password": []byte("s3cret"),
+						"password": []byte(`{"foo":"bar"}`),
 					},
 				}
 				values.ResourceReferences = []gardencorev1beta1.NamedResourceReference{
@@ -416,15 +437,16 @@ metadata:
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
 				Expect(managedResourceSecret.Data).To(HaveLen(8))
-
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerSecretName+".yaml"])).To(Equal(secretYAMLFor(dockerSecretName, encodeBase64("docker-user"), encodeBase64("s3cret"))))
+				dockerConfigSecretName := "registry-docker-io-config-f712accc"
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerConfigSecretName+".yaml"])).To(Equal(configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", true, "docker-user", "s3cret"))))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", credentialsEnvsFor(dockerSecretName), true)))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", dockerConfigSecretName)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+gcrSecretName+".yaml"])).To(Equal(secretYAMLFor(gcrSecretName, encodeBase64("gcr-user"), encodeBase64("s3cret"))))
+				gcrConfigSecretName := "registry-eu-gcr-io-config-55614f89"
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+gcrConfigSecretName+".yaml"])).To(Equal(configSecretYAMLFor(gcrConfigSecretName, "registry-eu-gcr-io", "eu.gcr.io", configYAMLFor("https://eu.gcr.io", false, "gcr-user", `{"foo":"bar"}`))))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", credentialsEnvsFor(gcrSecretName), false)))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", gcrConfigSecretName)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
 			})
 
