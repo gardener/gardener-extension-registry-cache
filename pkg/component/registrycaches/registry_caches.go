@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
-	gardencore "github.com/gardener/gardener/pkg/apis/core"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
+	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
@@ -34,7 +34,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
@@ -51,14 +50,6 @@ const (
 	managedResourceName = "extension-registry-cache"
 )
 
-var scheme *runtime.Scheme
-
-func init() {
-	scheme = runtime.NewScheme()
-	utilruntime.Must(gardencore.AddToScheme(scheme))
-	utilruntime.Must(gardencorev1beta1.AddToScheme(scheme))
-}
-
 // Values is a set of configuration values for the registry caches.
 type Values struct {
 	// Image is the container image used for the registry cache.
@@ -67,6 +58,8 @@ type Values struct {
 	VPAEnabled bool
 	// Caches are the registry caches to deploy.
 	Caches []v1alpha1.RegistryCache
+	// ResourceReferences are the resource references from the Shoot spec (the .spec.resources field).
+	ResourceReferences []gardencorev1beta1.NamedResourceReference
 }
 
 // New creates a new instance of DeployWaiter for registry caches.
@@ -143,13 +136,8 @@ func (r *registryCaches) WaitCleanup(ctx context.Context) error {
 func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][]byte, error) {
 	var objects []client.Object
 
-	cluster, err := controller.GetCluster(ctx, r.client, r.namespace)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, cache := range r.values.Caches {
-		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, cluster)
+		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
 		}
@@ -162,7 +150,7 @@ func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *v1alpha1.RegistryCache, cluster *controller.Cluster) ([]client.Object, error) {
+func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *v1alpha1.RegistryCache) ([]client.Object, error) {
 	if cache.Size == nil {
 		return nil, fmt.Errorf("registry cache size is required")
 	}
@@ -171,55 +159,49 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		registryCacheVolumeName = "cache-volume"
 		debugPort               = 5001
 	)
-	var resources []client.Object
 
-	name := strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
+	var (
+		name    = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
+		envVars = []corev1.EnvVar{
+			{
+				Name:  "REGISTRY_PROXY_REMOTEURL",
+				Value: registryutils.GetUpstreamURL(cache.Upstream),
+			},
+			{
+				Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
+				Value: strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
+			},
+			{
+				Name:  "REGISTRY_HTTP_ADDR",
+				Value: fmt.Sprintf(":%d", constants.RegistryCachePort),
+			},
+			{
+				Name:  "REGISTRY_HTTP_DEBUG_ADDR",
+				Value: fmt.Sprintf(":%d", debugPort),
+			},
+		}
+		labels = map[string]string{
+			"app":                       name,
+			constants.UpstreamHostLabel: cache.Upstream,
+		}
 
-	// envVars overrides configuration options in registry
-	envVars := []corev1.EnvVar{
-		{
-			Name:  "REGISTRY_PROXY_REMOTEURL",
-			Value: registryutils.GetUpstreamURL(cache.Upstream),
-		},
-		{
-			Name:  "REGISTRY_STORAGE_DELETE_ENABLED",
-			Value: strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
-		},
-		{
-			Name:  "REGISTRY_HTTP_ADDR",
-			Value: fmt.Sprintf(":%d", constants.RegistryCachePort),
-		},
-		{
-			Name:  "REGISTRY_HTTP_DEBUG_ADDR",
-			Value: fmt.Sprintf(":%d", debugPort),
-		},
-	}
+		resources []client.Object
+	)
 
-	// init upstream registry credentials
 	if cache.SecretReferenceName != nil {
-		// TODO: Remove the conversion once GetSecretReference helper function is available in gardener/gardener
-		obj, err := scheme.ConvertToVersion(cluster.Shoot, gardencore.SchemeGroupVersion)
-		if err != nil {
-			return nil, fmt.Errorf("shoot conversion from v1beta1 to internal version failed: %w", err)
-		}
-		shoot, ok := obj.(*gardencore.Shoot)
-		if !ok {
-			return nil, fmt.Errorf("shoot cast to internal version failed")
-		}
-
-		ref := helper.GetSecretReference(shoot.Spec.Resources, *cache.SecretReferenceName)
-		if ref == nil {
-			return nil, fmt.Errorf("referenced resource with kind Secret not found for reference: %q", *cache.SecretReferenceName)
+		ref := v1beta1helper.GetResourceByName(r.values.ResourceReferences, *cache.SecretReferenceName)
+		if ref == nil || ref.ResourceRef.Kind != "Secret" {
+			return nil, fmt.Errorf("failed to find referenced resource with name %s and kind Secret", *cache.SecretReferenceName)
 		}
 
 		refSecret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      ref.Name,
+				Name:      ref.ResourceRef.Name,
 				Namespace: r.namespace,
 			},
 		}
-		if err := controller.GetObjectByReference(ctx, r.client, ref, r.namespace, refSecret); err != nil {
-			return nil, fmt.Errorf("failed to read referenced secret %s%s for reference: %s", v1beta1constants.ReferencedResourcesPrefix, ref.Name, *cache.SecretReferenceName)
+		if err := controller.GetObjectByReference(ctx, r.client, &ref.ResourceRef, r.namespace, refSecret); err != nil {
+			return nil, fmt.Errorf("failed to read referenced secret %s%s for reference %s", v1beta1constants.ReferencedResourcesPrefix, ref.ResourceRef.Name, *cache.SecretReferenceName)
 		}
 
 		secret := &corev1.Secret{
@@ -257,11 +239,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				},
 			},
 		)
-	}
-
-	labels := map[string]string{
-		"app":                       name,
-		constants.UpstreamHostLabel: cache.Upstream,
 	}
 
 	service := &corev1.Service{
@@ -413,7 +390,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				},
 			},
 		}
-
 		resources = append(resources, vpa)
 	}
 

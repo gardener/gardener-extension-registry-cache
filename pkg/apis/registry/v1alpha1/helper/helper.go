@@ -16,7 +16,6 @@ package helper
 
 import (
 	"github.com/gardener/gardener/pkg/apis/core"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 )
@@ -26,11 +25,12 @@ func GarbageCollectionEnabled(cache *v1alpha1.RegistryCache) bool {
 	return cache.GarbageCollection == nil || cache.GarbageCollection.Enabled
 }
 
-// GetSecretReference returns secret reference or nil if not found
-func GetSecretReference(resourceRefs []core.NamedResourceReference, secretReferenceName string) *autoscalingv1.CrossVersionObjectReference {
-	for _, resourceRef := range resourceRefs {
-		if resourceRef.Name == secretReferenceName && resourceRef.ResourceRef.Kind == "Secret" {
-			return &resourceRef.ResourceRef
+// GetResourceByName returns the first NamedResourceReference with the given name in the given slice, or nil if not found.
+// TODO(dimitar-kostadinov): Drop this func instead of the same helper func in gardener/gardener that was introduced with https://github.com/gardener/gardener/pull/8801.
+func GetResourceByName(resources []core.NamedResourceReference, name string) *core.NamedResourceReference {
+	for _, resource := range resources {
+		if resource.Name == name {
+			return &resource
 		}
 	}
 	return nil

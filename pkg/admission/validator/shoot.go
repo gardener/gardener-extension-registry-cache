@@ -20,10 +20,9 @@ import (
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
-	kutil "github.com/gardener/gardener/pkg/utils/kubernetes"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -97,7 +96,9 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 		}
 	}
 
-	errList, err := s.validateRegistryConfig(ctx, registryConfig, providerConfigPath, shoot.Spec.Resources, shoot.Namespace)
+	allErrs = append(allErrs, validation.ValidateRegistryConfig(registryConfig, providerConfigPath)...)
+
+	errList, err := s.validateRegistryCredentials(ctx, registryConfig, providerConfigPath, shoot.Spec.Resources, shoot.Namespace)
 	if err != nil {
 		return err
 	}
@@ -107,41 +108,34 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 }
 
 // validateRegistryConfig validates the passed configuration instance.
-func (s *shoot) validateRegistryConfig(ctx context.Context, config *api.RegistryConfig, fldPath *field.Path, resources []core.NamedResourceReference, namespace string) (field.ErrorList, error) {
+func (s *shoot) validateRegistryCredentials(ctx context.Context, config *api.RegistryConfig, fldPath *field.Path, resources []core.NamedResourceReference, namespace string) (field.ErrorList, error) {
 	allErrs := field.ErrorList{}
 
-	if len(config.Caches) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath.Child("caches"), "at least one cache must be provided"))
-	}
-
-	upstreams := sets.New[string]()
 	for i, cache := range config.Caches {
 		cacheFldPath := fldPath.Child("caches").Index(i)
-		allErrs = append(allErrs, validation.ValidateRegistryCache(cache, cacheFldPath)...)
-
-		if upstreams.Has(cache.Upstream) {
-			allErrs = append(allErrs, field.Duplicate(cacheFldPath.Child("upstream"), cache.Upstream))
-		} else {
-			upstreams.Insert(cache.Upstream)
-		}
 
 		if cache.SecretReferenceName != nil {
-			ref := helper.GetSecretReference(resources, *cache.SecretReferenceName)
 			secretRefFldPath := cacheFldPath.Child("secretReferenceName")
-			if ref == nil {
-				allErrs = append(allErrs, field.Invalid(secretRefFldPath, *cache.SecretReferenceName, fmt.Sprintf("referenced resource with kind Secret not found for reference: %q", *cache.SecretReferenceName)))
-			} else {
-				var (
-					secret    = &corev1.Secret{}
-					secretKey = kutil.Key(namespace, ref.Name)
-				)
-				// Explicitly use the client.Reader to prevent controller-runtime to start Informer for Secrets
-				// under the hood. The latter increases the memory usage of the component.
-				if err := s.apiReader.Get(ctx, secretKey, secret); err != nil {
-					return allErrs, fmt.Errorf("failed to get secret %s/%s for secretReferenceName %s: %w", namespace, ref.Name, *cache.SecretReferenceName, err)
-				}
-				allErrs = append(allErrs, validation.ValidateUpstreamRepositorySecret(secret, secretRefFldPath, *cache.SecretReferenceName)...)
+
+			ref := helper.GetResourceByName(resources, *cache.SecretReferenceName)
+			if ref == nil || ref.ResourceRef.Kind != "Secret" {
+				allErrs = append(allErrs, field.Invalid(secretRefFldPath, *cache.SecretReferenceName, fmt.Sprintf("failed to find referenced resource with name %s and kind Secret", *cache.SecretReferenceName)))
+				continue
 			}
+
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ref.ResourceRef.Name,
+					Namespace: namespace,
+				},
+			}
+			// Explicitly use the client.Reader to prevent controller-runtime to start Informer for Secrets
+			// under the hood. The latter increases the memory usage of the component.
+			if err := s.apiReader.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
+				return allErrs, fmt.Errorf("failed to get secret %s for secretReferenceName %s: %w", client.ObjectKeyFromObject(secret), *cache.SecretReferenceName, err)
+			}
+
+			allErrs = append(allErrs, validation.ValidateUpstreamRegistrySecret(secret, secretRefFldPath, *cache.SecretReferenceName)...)
 		}
 	}
 

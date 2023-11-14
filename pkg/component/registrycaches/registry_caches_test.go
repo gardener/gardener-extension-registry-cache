@@ -17,13 +17,9 @@ package registrycaches_test
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"strconv"
-	"strings"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
-	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
@@ -39,7 +35,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/pointer"
@@ -92,6 +87,7 @@ var _ = Describe("RegistryCaches", func() {
 					},
 				},
 			},
+			ResourceReferences: []gardencorev1beta1.NamedResourceReference{},
 		}
 
 		managedResource = &resourcesv1alpha1.ManagedResource{
@@ -114,8 +110,6 @@ var _ = Describe("RegistryCaches", func() {
 
 	Describe("#Deploy", func() {
 		var (
-			clusterResource *extensionsv1alpha1.Cluster
-
 			serviceYAMLFor = func(name, upstream string) string {
 				return `apiVersion: v1
 kind: Service
@@ -269,37 +263,9 @@ metadata:
   namespace: kube-system
 `
 			}
-
-			credentialsEnvsFor = func(secret string) string {
-				return `
-        - name: REGISTRY_PROXY_USERNAME
-          valueFrom:
-            secretKeyRef:
-              key: username
-              name: ` + secret + `
-        - name: REGISTRY_PROXY_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: ` + secret
-			}
 		)
 
-		BeforeEach(func() {
-			clusterResource = &extensionsv1alpha1.Cluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: namespace,
-				},
-			}
-		})
-
-		JustBeforeEach(func() {
-			Expect(c.Create(ctx, clusterResource)).To(Succeed())
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(clusterResource), clusterResource)).To(Succeed())
-		})
-
-		Context("When cache size is nil", func() {
-
+		Context("when cache size is nil", func() {
 			BeforeEach(func() {
 				values.Caches = []v1alpha1.RegistryCache{
 					{
@@ -312,7 +278,7 @@ metadata:
 			})
 		})
 
-		Context("When VPA is enabled", func() {
+		Context("when VPA is enabled", func() {
 			It("should successfully deploy the resources", func() {
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 				Expect(registryCaches.Deploy(ctx)).To(Succeed())
@@ -348,18 +314,15 @@ metadata:
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 				Expect(managedResourceSecret.Data).To(HaveLen(6))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-				statefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", "", true)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSet))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", "", true)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				statefulSet = statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", "", false)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSet))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", "", false)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
 			})
 		})
 
-		Context("When VPA is disabled", func() {
-
+		Context("when VPA is disabled", func() {
 			BeforeEach(func() {
 				values.VPAEnabled = false
 			})
@@ -373,26 +336,40 @@ metadata:
 
 				Expect(managedResourceSecret.Data).To(HaveLen(4))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-				statefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", "", true)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSet))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", "", true)))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				statefulSet = statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", "", false)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSet))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", "", false)))
 			})
 		})
 
-		Context("When upstream credentials are set", func() {
-
+		Context("upstream credentials are set", func() {
 			var (
 				dockerSecret *corev1.Secret
 				gcrSecret    *corev1.Secret
+
+				dockerSecretName = "registry-docker-io-bf30ffa0"
+				gcrSecretName    = "registry-eu-gcr-io-685366f9"
+
+				credentialsEnvsFor = func(secret string) string {
+					return `
+        - name: REGISTRY_PROXY_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: ` + secret + `
+        - name: REGISTRY_PROXY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: ` + secret
+				}
 			)
 
 			BeforeEach(func() {
 				dockerSecret = &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: namespace,
-						Name:      v1beta1constants.ReferencedResourcesPrefix + "docker-creds",
+						Name:      "ref-docker-creds",
 					},
 					Data: map[string][]byte{
 						"username": []byte("docker-user"),
@@ -402,37 +379,17 @@ metadata:
 				gcrSecret = &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: namespace,
-						Name:      v1beta1constants.ReferencedResourcesPrefix + "gcr-creds",
+						Name:      "ref-gcr-creds",
 					},
 					Data: map[string][]byte{
 						"username": []byte("gcr-user"),
 						"password": []byte("s3cret"),
 					},
 				}
-
-				clusterResource.Spec.Shoot = runtime.RawExtension{
-					Raw: encode(&gardencorev1beta1.Shoot{
-						Spec: gardencorev1beta1.ShootSpec{
-							Resources: []gardencorev1beta1.NamedResourceReference{
-								{
-									Name: "docker-ref",
-									ResourceRef: autoscalingv1.CrossVersionObjectReference{
-										Kind: "Secret",
-										Name: "docker-creds",
-									},
-								},
-								{
-									Name: "gcr-ref",
-									ResourceRef: autoscalingv1.CrossVersionObjectReference{
-										Kind: "Secret",
-										Name: "gcr-creds",
-									},
-								},
-							},
-						},
-					}),
+				values.ResourceReferences = []gardencorev1beta1.NamedResourceReference{
+					{Name: "docker-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "docker-creds", Kind: "Secret"}},
+					{Name: "gcr-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "gcr-creds", Kind: "Secret"}},
 				}
-
 				values.Caches[0].SecretReferenceName = pointer.String("docker-ref")
 				values.Caches[1].SecretReferenceName = pointer.String("gcr-ref")
 			})
@@ -457,62 +414,37 @@ metadata:
 
 				Expect(managedResourceSecret.Data).To(HaveLen(8))
 
-				key := getSecretResourceKey(managedResourceSecret.Data, "secret__kube-system__registry-docker-io")
-				Expect(key).NotTo(BeEmpty())
-				hash := getSecretNameHash(key)
-				Expect(hash).NotTo(BeEmpty())
-				Expect(string(managedResourceSecret.Data[key])).To(Equal(secretYAMLFor("registry-docker-io-"+hash, encodeB64("docker-user"), encodeB64("s3cret"))))
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerSecretName+".yaml"])).To(Equal(secretYAMLFor(dockerSecretName, encodeBase64("docker-user"), encodeBase64("s3cret"))))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
-				statefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", credentialsEnvsFor("registry-docker-io-"+hash), true)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSet))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", credentialsEnvsFor(dockerSecretName), true)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 
-				key = getSecretResourceKey(managedResourceSecret.Data, "secret__kube-system__registry-eu-gcr-io")
-				Expect(key).NotTo(BeEmpty())
-				hash = getSecretNameHash(key)
-				Expect(hash).NotTo(BeEmpty())
-				Expect(string(managedResourceSecret.Data[key])).To(Equal(secretYAMLFor("registry-eu-gcr-io-"+hash, encodeB64("gcr-user"), encodeB64("s3cret"))))
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+gcrSecretName+".yaml"])).To(Equal(secretYAMLFor(gcrSecretName, encodeBase64("gcr-user"), encodeBase64("s3cret"))))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				statefulSet = statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", credentialsEnvsFor("registry-eu-gcr-io-"+hash), false)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSet))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", credentialsEnvsFor(gcrSecretName), false)))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
 			})
 
-			When("get secret failed", func() {
-
+			When("get secret fails", func() {
 				BeforeEach(func() {
 					dockerSecret = nil
 				})
 
 				It("should return error", func() {
 					err := registryCaches.Deploy(ctx)
-					Expect(err.Error()).To(ContainSubstring("failed to read referenced secret ref-docker-creds for reference: docker-ref"))
+					Expect(err).To(MatchError(ContainSubstring("failed to read referenced secret ref-docker-creds for reference docker-ref")))
 				})
 			})
 
 			When("referenced resource is invalid", func() {
-
 				BeforeEach(func() {
-					clusterResource.Spec.Shoot = runtime.RawExtension{
-						Raw: encode(&gardencorev1beta1.Shoot{
-							Spec: gardencorev1beta1.ShootSpec{
-								Resources: []gardencorev1beta1.NamedResourceReference{
-									{
-										Name: "docker-ref",
-										ResourceRef: autoscalingv1.CrossVersionObjectReference{
-											Kind: "ConfigMap",
-											Name: "docker-creds",
-										},
-									},
-								},
-							},
-						}),
+					values.ResourceReferences = []gardencorev1beta1.NamedResourceReference{
+						{Name: "docker-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "docker-creds", Kind: "ConfigMap"}},
 					}
-				})
-
-				It("should return error", func() {
-					err := registryCaches.Deploy(ctx)
-					Expect(err.Error()).To(ContainSubstring("referenced resource with kind Secret not found for reference: \"docker-ref\""))
+					It("should return error", func() {
+						err := registryCaches.Deploy(ctx)
+						Expect(err).To(MatchError(ContainSubstring("referenced resource with kind Secret not found for reference: \"docker-ref\"")))
+					})
 				})
 			})
 		})
@@ -616,31 +548,6 @@ metadata:
 	})
 })
 
-func encode(obj runtime.Object) []byte {
-	data, _ := json.Marshal(obj)
-	return data
-}
-
-func encodeB64(val string) string {
+func encodeBase64(val string) string {
 	return base64.StdEncoding.EncodeToString([]byte(val))
-}
-
-func getSecretResourceKey(data map[string][]byte, prefix string) string {
-	for key := range data {
-		if strings.HasPrefix(key, prefix) {
-			return key
-		}
-	}
-	return ""
-}
-
-func getSecretNameHash(name string) string {
-	index := strings.LastIndexByte(name, '-')
-	if index != -1 {
-		hash := name[index+1:]
-		if strings.HasSuffix(hash, ".yaml") {
-			return hash[:len(hash)-5]
-		}
-	}
-	return ""
 }

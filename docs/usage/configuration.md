@@ -49,6 +49,14 @@ spec:
       - upstream: quay.io
         garbageCollection:
           enabled: false
+        secretReferenceName: quay-credentials
+  # ...
+  resources:
+  - name: quay-credentials
+    resourceRef:
+      apiVersion: v1
+      kind: Secret
+      name: quay-credentials-v1
 ```
 
 The `providerConfig` field is required.
@@ -62,6 +70,10 @@ The `providerConfig.caches[].size` field is the size of the registry cache. Defa
 The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the default StorageClass and the configured size.
 
 The `providerConfig.caches[].garbageCollection.enabled` field enables/disables the cache's garbage collection. Defaults to `true`. The time to live (ttl) for an image is `7d`. See the [garbage collection section](#garbage-collection) for more details.
+
+The `providerConfig.caches[].secretReferenceName` is the name of the reference for the Secret containing the upstream registry credentials. To cache images from a private registry, credentials to the upstream registry should be supplied. For details see [How to provide credentials for upstream registry](upstream-credentials.md#how-to-provide-credentials-for-upstream-registry).
+
+> **Note**: It's only possible to provide one set of credentials for one private upstream registry.
 
 ## Garbage Collection
 
@@ -104,12 +116,6 @@ To enlarge the PVC's size follow the following steps:
 There is always the option to remove the cache from the Shoot spec and to re-add it again with the updated size.
 
 > Drawback of this approach: The already cached images get lost and the cache starts with an empty disk.
-
-## Caching images from private repositories
-
-To cache private repository images, credentials to upstream repository should be supplied. For details see [How to provide credentials for upstream repository](upstream-credentials.md#how-to-provide-credentials-for-upstream-repository).
-> **Note**: It's only possible to provide credentials for one private repository per upstream registry.
-> See [this](https://github.com/distribution/distribution/blob/main/docs/content/recipes/mirror.md#gotcha) for more details.
 
 ## High-availability
 

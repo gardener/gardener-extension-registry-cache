@@ -146,64 +146,6 @@ var _ = Describe("Shoot validator", func() {
 				Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig")))
 			})
 
-			It("should return err when registry-cache providerConfig is without a cache", func() {
-				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-					Raw: encode(&v1alpha1.RegistryConfig{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-							Kind:       "RegistryConfig",
-						},
-						Caches: nil,
-					}),
-				}
-
-				err := shootValidator.Validate(ctx, shoot, nil)
-				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeRequired),
-					"Field":  Equal("spec.extensions[0].providerConfig.caches"),
-					"Detail": ContainSubstring("at least one cache must be provided"),
-				}))))
-
-				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-					Raw: encode(&v1alpha1.RegistryConfig{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-							Kind:       "RegistryConfig",
-						},
-						Caches: []v1alpha1.RegistryCache{},
-					}),
-				}
-
-				err = shootValidator.Validate(ctx, shoot, nil)
-				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeRequired),
-					"Field":  Equal("spec.extensions[0].providerConfig.caches"),
-					"Detail": ContainSubstring("at least one cache must be provided"),
-				}))))
-			})
-
-			It("should return err when registry-cache providerConfig contains duplicate cache upstreams", func() {
-				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-					Raw: encode(&v1alpha1.RegistryConfig{
-						TypeMeta: metav1.TypeMeta{
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
-							Kind:       "RegistryConfig",
-						},
-						Caches: []v1alpha1.RegistryCache{
-							{Upstream: "foo"},
-							{Upstream: "bar"},
-							{Upstream: "foo"},
-						},
-					}),
-				}
-
-				err := shootValidator.Validate(ctx, shoot, nil)
-				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":  Equal(field.ErrorTypeDuplicate),
-					"Field": Equal("spec.extensions[0].providerConfig.caches[2].upstream"),
-				}))))
-			})
-
 			It("should return err when registry-cache providerConfig is invalid", func() {
 				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
 					Raw: encode(&v1alpha1.RegistryConfig{
@@ -350,7 +292,7 @@ var _ = Describe("Shoot validator", func() {
 						PointTo(MatchFields(IgnoreExtras, Fields{
 							"Type":   Equal(field.ErrorTypeInvalid),
 							"Field":  Equal("spec.extensions[0].providerConfig.caches[0].secretReferenceName"),
-							"Detail": ContainSubstring("referenced resource with kind Secret not found for reference: \"docker-creds\""),
+							"Detail": ContainSubstring("failed to find referenced resource with name docker-creds and kind Secret"),
 						})),
 					))
 				},

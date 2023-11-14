@@ -42,26 +42,20 @@ var _ = Describe("Helpers", func() {
 		Entry("garbageCollection.enabled is true", &v1alpha1.RegistryCache{GarbageCollection: &v1alpha1.GarbageCollection{Enabled: true}}, true),
 	)
 
-	DescribeTable("#GetSecretReference",
-		func(resourceRefs []core.NamedResourceReference, secretReferenceName string, expected *autoscalingv1.CrossVersionObjectReference) {
-			Expect(helper.GetSecretReference(resourceRefs, secretReferenceName)).To(Equal(expected))
+	DescribeTable("#GetResourceByName",
+		func(resourceRefs []core.NamedResourceReference, secretReferenceName string, expected *core.NamedResourceReference) {
+			Expect(helper.GetResourceByName(resourceRefs, secretReferenceName)).To(Equal(expected))
 		},
 		Entry("resourceRefs is nil", nil, "foo", nil),
 		Entry("resourceRefs is empty", []core.NamedResourceReference{}, "foo", nil),
 		Entry("resourceRefs doesn't contains secret ref name", []core.NamedResourceReference{{Name: "bar"}, {Name: "baz"}}, "foo", nil),
-		Entry("resourceRefs contains secret ref name with kind ConfigMap",
+		Entry("resourceRefs contains secret ref name",
 			[]core.NamedResourceReference{
-				{Name: "bar"},
-				{Name: "foo", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "ConfigMap"}},
+				{Name: "foo"},
+				{Name: "bar", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "Secret"}},
+				{Name: "baz"},
 			},
-			"foo",
-			nil),
-		Entry("resourceRefs contains secret ref name with kind Secret",
-			[]core.NamedResourceReference{
-				{Name: "bar"},
-				{Name: "foo", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "Secret"}},
-			},
-			"foo",
-			&autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "Secret"}),
+			"bar",
+			&core.NamedResourceReference{Name: "bar", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ref", Kind: "Secret"}}),
 	)
 })
