@@ -17,6 +17,7 @@ package registrycaches_test
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"strconv"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -347,8 +348,10 @@ metadata:
 				dockerSecret *corev1.Secret
 				gcrSecret    *corev1.Secret
 
-				dockerSecretName = "registry-docker-io-bf30ffa0"
-				gcrSecretName    = "registry-eu-gcr-io-685366f9"
+				dockerSecretChecksum = "bf30ffa0"
+				gcrSecretChecksum    = "685366f9"
+				dockerSecretName     = fmt.Sprintf("registry-docker-io-%s", dockerSecretChecksum)
+				gcrSecretName        = fmt.Sprintf("registry-eu-gcr-io-%s", gcrSecretChecksum)
 
 				credentialsEnvsFor = func(secret string) string {
 					return `
