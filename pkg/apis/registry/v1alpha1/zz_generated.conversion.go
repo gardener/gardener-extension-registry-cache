@@ -114,6 +114,7 @@ func autoConvert_v1alpha1_RegistryCache_To_registry_RegistryCache(in *RegistryCa
 	out.Upstream = in.Upstream
 	out.Size = (*resource.Quantity)(unsafe.Pointer(in.Size))
 	out.GarbageCollection = (*registry.GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
+	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
 	return nil
 }
 
@@ -126,6 +127,7 @@ func autoConvert_registry_RegistryCache_To_v1alpha1_RegistryCache(in *registry.R
 	out.Upstream = in.Upstream
 	out.Size = (*resource.Quantity)(unsafe.Pointer(in.Size))
 	out.GarbageCollection = (*GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
+	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
 	return nil
 }
 

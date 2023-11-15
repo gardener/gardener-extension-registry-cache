@@ -20,28 +20,33 @@ import (
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
 )
 
 // shoot validates shoots
 type shoot struct {
-	decoder runtime.Decoder
+	apiReader client.Reader
+	decoder   runtime.Decoder
 }
 
 // NewShootValidator returns a new instance of a shoot validator.
-func NewShootValidator(decoder runtime.Decoder) extensionswebhook.Validator {
+func NewShootValidator(apiReader client.Reader, decoder runtime.Decoder) extensionswebhook.Validator {
 	return &shoot{
-		decoder: decoder,
+		apiReader: apiReader,
+		decoder:   decoder,
 	}
 }
 
 // Validate validates the given shoot object
-func (s *shoot) Validate(_ context.Context, new, old client.Object) error {
+func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 	shoot, ok := new.(*core.Shoot)
 	if !ok {
 		return fmt.Errorf("wrong object type %T", new)
@@ -93,5 +98,46 @@ func (s *shoot) Validate(_ context.Context, new, old client.Object) error {
 
 	allErrs = append(allErrs, validation.ValidateRegistryConfig(registryConfig, providerConfigPath)...)
 
+	errList, err := s.validateRegistryCredentials(ctx, registryConfig, providerConfigPath, shoot.Spec.Resources, shoot.Namespace)
+	if err != nil {
+		return err
+	}
+	allErrs = append(allErrs, errList...)
+
 	return allErrs.ToAggregate()
+}
+
+// validateRegistryConfig validates the passed configuration instance.
+func (s *shoot) validateRegistryCredentials(ctx context.Context, config *api.RegistryConfig, fldPath *field.Path, resources []core.NamedResourceReference, namespace string) (field.ErrorList, error) {
+	allErrs := field.ErrorList{}
+
+	for i, cache := range config.Caches {
+		cacheFldPath := fldPath.Child("caches").Index(i)
+
+		if cache.SecretReferenceName != nil {
+			secretRefFldPath := cacheFldPath.Child("secretReferenceName")
+
+			ref := helper.GetResourceByName(resources, *cache.SecretReferenceName)
+			if ref == nil || ref.ResourceRef.Kind != "Secret" {
+				allErrs = append(allErrs, field.Invalid(secretRefFldPath, *cache.SecretReferenceName, fmt.Sprintf("failed to find referenced resource with name %s and kind Secret", *cache.SecretReferenceName)))
+				continue
+			}
+
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ref.ResourceRef.Name,
+					Namespace: namespace,
+				},
+			}
+			// Explicitly use the client.Reader to prevent controller-runtime to start Informer for Secrets
+			// under the hood. The latter increases the memory usage of the component.
+			if err := s.apiReader.Get(ctx, client.ObjectKeyFromObject(secret), secret); err != nil {
+				return allErrs, fmt.Errorf("failed to get secret %s for secretReferenceName %s: %w", client.ObjectKeyFromObject(secret), *cache.SecretReferenceName, err)
+			}
+
+			allErrs = append(allErrs, validation.ValidateUpstreamRegistrySecret(secret, secretRefFldPath, *cache.SecretReferenceName)...)
+		}
+	}
+
+	return allErrs, nil
 }

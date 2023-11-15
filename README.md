@@ -7,7 +7,8 @@ Gardener extension controller which deploys pull-through caches for container re
 
 ## Usage
 
-Navigate to [Configuring the Registry Cache Extension](docs/usage/configuration.md) to learn what is the use-case for a pull-through cache, how to enable it and configure it.
+- [Configuring the Registry Cache Extension](docs/usage/configuration.md) - learn what is the use-case for a pull-through cache, how to enable it and configure it
+- [How to provide credentials for upstream repository?](docs/usage/upstream-credentials.md)
 
 ## Local setup and development
 

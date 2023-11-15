@@ -18,8 +18,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/pointer"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
@@ -27,12 +30,12 @@ import (
 
 var _ = Describe("Validation", func() {
 	var (
-		fldPath = field.NewPath("providerConfig")
-
+		fldPath        *field.Path
 		registryConfig *api.RegistryConfig
 	)
 
 	BeforeEach(func() {
+		fldPath = field.NewPath("providerConfig")
 		size := resource.MustParse("5Gi")
 		registryConfig = &api.RegistryConfig{
 			Caches: []api.RegistryCache{{
@@ -168,6 +171,90 @@ var _ = Describe("Validation", func() {
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[0].size"),
 					"Detail": Equal("field is immutable"),
+				})),
+			))
+		})
+	})
+
+	Describe("#ValidateUpstreamRegistrySecret", func() {
+
+		var secret *corev1.Secret
+
+		BeforeEach(func() {
+			fldPath = fldPath.Child("caches").Index(0).Child("secretReferenceName")
+			secret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "bar",
+				},
+				Data: map[string][]byte{
+					"username": []byte("john"),
+					"password": []byte("swordfish"),
+				},
+				Immutable: pointer.Bool(true),
+			}
+		})
+
+		It("should allow valid upstream registry secret", func() {
+			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(BeEmpty())
+		})
+
+		DescribeTable("should deny non immutable secrets",
+			func(isImmutable *bool) {
+				secret.Immutable = isImmutable
+
+				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ConsistOf(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(field.ErrorTypeInvalid),
+						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
+						"Detail": ContainSubstring("referenced secret \"foo/bar\" should be immutable"),
+					})),
+				))
+			},
+			Entry("when immutable field is nil", nil),
+			Entry("when immutable field is false", pointer.Bool(false)),
+		)
+
+		DescribeTable("should have only two data entries",
+			func(data map[string][]byte) {
+				secret.Data = data
+
+				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(field.ErrorTypeInvalid),
+						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
+						"Detail": ContainSubstring("referenced secret \"foo/bar\" should have only two data entries"),
+					})),
+				))
+			},
+			Entry("when secret data is empty", map[string][]byte{}),
+			Entry("when secret data has more entries", map[string][]byte{
+				"username": []byte("john"),
+				"password": []byte("swordfish"),
+				"foo":      []byte("foo"),
+			}),
+		)
+
+		It("should deny secrets without 'username' data entry", func() {
+			delete(secret.Data, "username")
+
+			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
+					"Detail": ContainSubstring("missing \"username\" data entry in referenced secret \"foo/bar\""),
+				})),
+			))
+		})
+
+		It("should deny secrets without 'password' data entry", func() {
+			delete(secret.Data, "password")
+
+			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
+					"Detail": ContainSubstring("missing \"password\" data entry in referenced secret \"foo/bar\""),
 				})),
 			))
 		})

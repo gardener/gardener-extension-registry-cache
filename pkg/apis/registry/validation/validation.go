@@ -15,8 +15,10 @@
 package validation
 
 import (
+	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -96,4 +98,31 @@ func validatePositiveQuantity(value resource.Quantity, fldPath *field.Path) fiel
 		allErrs = append(allErrs, field.Invalid(fldPath, value.String(), "must be greater than 0"))
 	}
 	return allErrs
+}
+
+const (
+	username = "username"
+	password = "password"
+)
+
+// ValidateUpstreamRegistrySecret checks whether the given Secret is immutable and contains `data.username` and `data.password` fields.
+func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, secretReference string) field.ErrorList {
+	var allErrors field.ErrorList
+
+	secretRef := fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
+
+	if secret.Immutable == nil || !*secret.Immutable {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("referenced secret %q should be immutable", secretRef)))
+	}
+	if len(secret.Data) != 2 {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("referenced secret %q should have only two data entries", secretRef)))
+	}
+	if _, ok := secret.Data[username]; !ok {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("missing %q data entry in referenced secret %q", username, secretRef)))
+	}
+	if _, ok := secret.Data[password]; !ok {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("missing %q data entry in referenced secret %q", password, secretRef)))
+	}
+
+	return allErrors
 }

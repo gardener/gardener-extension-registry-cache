@@ -33,16 +33,17 @@ var logger = log.Log.WithName("registry-cache-validator-webhook")
 
 // New creates a new webhook that validates Shoot and CloudProfile resources.
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
-	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
-
 	logger.Info("Setting up webhook", "name", Name)
+
+	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
+	apiReader := mgr.GetAPIReader()
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
 		Provider: constants.ExtensionType,
 		Name:     Name,
 		Path:     "/webhooks/validate",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewShootValidator(decoder): {{Obj: &core.Shoot{}}},
+			NewShootValidator(apiReader, decoder): {{Obj: &core.Shoot{}}},
 		},
 	})
 }
