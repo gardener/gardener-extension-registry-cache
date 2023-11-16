@@ -55,7 +55,7 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: default
+      serviceAccountName: registry-configuration-cleaner
       volumes:
       - hostPath:
           path: /

@@ -16,6 +16,7 @@ spec:
         app.kubernetes.io/instance: registry-configuration-cleaner
         app.kubernetes.io/name: registry-configuration-cleaner
     spec:
+      automountServiceAccountToken: false
       containers:
       - image: pause:some-tag
         imagePullPolicy: IfNotPresent
@@ -36,13 +37,21 @@ spec:
         image: alpine:some-tag
         imagePullPolicy: IfNotPresent
         name: registry-configuration-cleaner
-        resources: {}
-        securityContext:
-          privileged: true
+        resources:
+          limits:
+            memory: 32Mi
+          requests:
+            cpu: 10m
+            memory: 8Mi
         volumeMounts:
         - mountPath: /host
           mountPropagation: HostToContainer
           name: host-root-volume
+      priorityClassName: gardener-shoot-system-700
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: default
       volumes:
       - hostPath:
           path: /
