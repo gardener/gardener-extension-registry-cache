@@ -27,6 +27,8 @@ build:
         - pkg/webhook/operatingsystemconfig
         - vendor
         - VERSION
+      ldflags:
+      - '{{.LD_FLAGS}}'
       main: ./cmd/gardener-extension-registry-cache
 resourceSelector:
   allow:
@@ -61,6 +63,8 @@ build:
         - pkg/constants
         - vendor
         - VERSION
+      ldflags:
+      - '{{.LD_FLAGS}}'
       main: ./cmd/gardener-extension-registry-cache-admission
 deploy:
   helm:

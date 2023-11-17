@@ -25,13 +25,18 @@ import (
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	componentbaseconfig "k8s.io/component-base/config"
+	"k8s.io/component-base/version"
+	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
 	extensioncontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/extension"
 )
+
+var log = logf.Log.WithName("gardener-extension-registry-cache")
 
 // NewServiceControllerCommand creates a new command that is used to start the registry service controller.
 func NewServiceControllerCommand() *cobra.Command {
@@ -43,6 +48,10 @@ func NewServiceControllerCommand() *cobra.Command {
 		SilenceErrors: true,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
+			verflag.PrintAndExitIfRequested()
+
+			log.Info("Starting registry-cache", "version", version.Get())
+
 			if err := options.optionAggregator.Complete(); err != nil {
 				return fmt.Errorf("error completing options: %w", err)
 			}
@@ -55,6 +64,7 @@ func NewServiceControllerCommand() *cobra.Command {
 		},
 	}
 
+	verflag.AddFlags(cmd.Flags())
 	options.optionAggregator.AddFlags(cmd.Flags())
 
 	return cmd

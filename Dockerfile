@@ -3,7 +3,10 @@ FROM golang:1.21.4 AS builder
 
 WORKDIR /go/src/github.com/gardener/gardener-extension-registry-cache
 COPY . .
-RUN make install
+
+ARG EFFECTIVE_VERSION
+
+RUN make install EFFECTIVE_VERSION=$EFFECTIVE_VERSION
 
 ############# base
 FROM gcr.io/distroless/static-debian12:nonroot AS base

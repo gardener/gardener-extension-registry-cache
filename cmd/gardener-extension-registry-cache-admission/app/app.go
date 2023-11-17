@@ -23,6 +23,7 @@ import (
 	coreinstall "github.com/gardener/gardener/pkg/apis/core/install"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/spf13/cobra"
+	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -60,6 +61,8 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			verflag.PrintAndExitIfRequested()
+
+			log.Info("Starting registry-cache-admission", "version", version.Get())
 
 			if err := aggOption.Complete(); err != nil {
 				return fmt.Errorf("error completing options: %w", err)
