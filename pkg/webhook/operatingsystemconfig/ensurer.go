@@ -116,7 +116,7 @@ func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.Garde
 
 	unit := extensionsv1alpha1.Unit{
 		Name:    "configure-containerd-registries.service",
-		Command: pointer.String("start"),
+		Command: extensionsv1alpha1.UnitCommandPtr(extensionsv1alpha1.CommandStart),
 		Enable:  pointer.Bool(true),
 		Content: pointer.String(`[Unit]
 Description=Configures containerd registries
