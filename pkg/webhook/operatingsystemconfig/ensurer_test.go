@@ -333,7 +333,7 @@ func configureContainerdRegistriesFile(script string) extensionsv1alpha1.File {
 func configureContainerdRegistriesUnit(args string) extensionsv1alpha1.Unit {
 	return extensionsv1alpha1.Unit{
 		Name:    "configure-containerd-registries.service",
-		Command: pointer.String("start"),
+		Command: extensionsv1alpha1.UnitCommandPtr(extensionsv1alpha1.CommandStart),
 		Enable:  pointer.Bool(true),
 		Content: pointer.String(`[Unit]
 Description=Configures containerd registries
