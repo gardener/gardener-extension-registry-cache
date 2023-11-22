@@ -67,6 +67,7 @@ The `providerConfig.caches[].upstream` field is the remote registry host (and op
 The desired format is `host[:port]`. The value must not include a scheme. The configured upstream registry must be accessible by `https` (`https://` is the assumed scheme).
 
 The `providerConfig.caches[].size` field is the size of the registry cache. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
+This field is immutable. See the [Increase the cache disk size](#increase-the-cache-disk-size) on how to resize the disk.
 The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the default StorageClass and the configured size.
 
 The `providerConfig.caches[].garbageCollection.enabled` field enables/disables the cache's garbage collection. Defaults to `true`. The time to live (ttl) for an image is `7d`. See the [garbage collection section](#garbage-collection) for more details.

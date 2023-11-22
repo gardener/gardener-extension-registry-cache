@@ -78,7 +78,8 @@ k8s.io/apimachinery/pkg/api/resource.Quantity
 <td>
 <em>(Optional)</em>
 <p>Size is the size of the registry cache.
-Defaults to 10Gi.</p>
+Defaults to 10Gi.
+This field is immutable.</p>
 </td>
 </tr>
 <tr>

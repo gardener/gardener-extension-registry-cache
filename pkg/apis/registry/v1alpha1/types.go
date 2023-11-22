@@ -35,6 +35,7 @@ type RegistryCache struct {
 	Upstream string `json:"upstream"`
 	// Size is the size of the registry cache.
 	// Defaults to 10Gi.
+	// This field is immutable.
 	// +optional
 	Size *resource.Quantity `json:"size,omitempty"`
 	// GarbageCollection contains settings for the garbage collection of content from the cache.
