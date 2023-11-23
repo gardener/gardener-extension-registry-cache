@@ -221,9 +221,10 @@ var _ = Describe("Shoot validator", func() {
 
 				err := shootValidator.Validate(ctx, shoot, oldShoot)
 				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("spec.extensions[0].providerConfig.caches[0].size"),
-					"Detail": Equal("field is immutable"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("spec.extensions[0].providerConfig.caches[0].volume.size"),
+					"BadValue": Equal("42Gi"),
+					"Detail":   Equal("field is immutable"),
 				}))))
 			})
 		})

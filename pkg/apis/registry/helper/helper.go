@@ -15,6 +15,8 @@
 package helper
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
@@ -29,4 +31,22 @@ func FindCacheByUpstream(caches []registry.RegistryCache, upstream string) (bool
 	}
 
 	return false, registry.RegistryCache{}
+}
+
+// VolumeSize returns the volume size for the given cache.
+func VolumeSize(cache *registry.RegistryCache) *resource.Quantity {
+	if cache.Volume == nil {
+		return nil
+	}
+
+	return cache.Volume.Size
+}
+
+// VolumeStorageClassName returns the volume StorageClass name for the given cache.
+func VolumeStorageClassName(cache *registry.RegistryCache) *string {
+	if cache.Volume == nil {
+		return nil
+	}
+
+	return cache.Volume.StorageClassName
 }

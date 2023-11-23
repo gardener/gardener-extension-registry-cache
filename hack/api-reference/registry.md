@@ -1,20 +1,20 @@
 <p>Packages:</p>
 <ul>
 <li>
-<a href="#registry.extensions.gardener.cloud%2fv1alpha1">registry.extensions.gardener.cloud/v1alpha1</a>
+<a href="#registry.extensions.gardener.cloud%2fv1alpha2">registry.extensions.gardener.cloud/v1alpha2</a>
 </li>
 </ul>
-<h2 id="registry.extensions.gardener.cloud/v1alpha1">registry.extensions.gardener.cloud/v1alpha1</h2>
+<h2 id="registry.extensions.gardener.cloud/v1alpha2">registry.extensions.gardener.cloud/v1alpha2</h2>
 <p>
-<p>Package v1alpha1 contains the registry service extension.</p>
+<p>Package v1alpha2 contains the registry service extension.</p>
 </p>
 Resource Types:
 <ul></ul>
-<h3 id="registry.extensions.gardener.cloud/v1alpha1.GarbageCollection">GarbageCollection
+<h3 id="registry.extensions.gardener.cloud/v1alpha2.GarbageCollection">GarbageCollection
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryCache">RegistryCache</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCache">RegistryCache</a>)
 </p>
 <p>
 <p>GarbageCollection contains settings for the garbage collection of content from the cache.</p>
@@ -40,11 +40,11 @@ bool
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryCache">RegistryCache
+<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryCache">RegistryCache
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryConfig">RegistryConfig</a>)
 </p>
 <p>
 <p>RegistryCache represents a registry cache to deploy.</p>
@@ -70,23 +70,23 @@ string
 </tr>
 <tr>
 <td>
-<code>size</code></br>
+<code>volume</code></br>
 <em>
-k8s.io/apimachinery/pkg/api/resource.Quantity
+<a href="#registry.extensions.gardener.cloud/v1alpha2.Volume">
+Volume
+</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>Size is the size of the registry cache.
-Defaults to 10Gi.
-This field is immutable.</p>
+<p>Volume contains settings for the registry cache volume.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>garbageCollection</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.GarbageCollection">
+<a href="#registry.extensions.gardener.cloud/v1alpha2.GarbageCollection">
 GarbageCollection
 </a>
 </em>
@@ -111,11 +111,11 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryCacheStatus">RegistryCacheStatus
+<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryCacheStatus">RegistryCacheStatus
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryStatus">RegistryStatus</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryStatus">RegistryStatus</a>)
 </p>
 <p>
 <p>RegistryCacheStatus represents a deployed registry cache.</p>
@@ -153,7 +153,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryConfig">RegistryConfig
+<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryConfig">RegistryConfig
 </h3>
 <p>
 <p>RegistryConfig contains information about registry caches to deploy.</p>
@@ -170,7 +170,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 <td>
 <code>caches</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryCache">
+<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCache">
 []RegistryCache
 </a>
 </em>
@@ -181,7 +181,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha1.RegistryStatus">RegistryStatus
+<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryStatus">RegistryStatus
 </h3>
 <p>
 <p>RegistryStatus contains information about deployed registry caches.</p>
@@ -198,13 +198,59 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 <td>
 <code>caches</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha1.RegistryCacheStatus">
+<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCacheStatus">
 []RegistryCacheStatus
 </a>
 </em>
 </td>
 <td>
 <p>Caches is a slice of deployed registry caches.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha2.Volume">Volume
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCache">RegistryCache</a>)
+</p>
+<p>
+<p>Volume contains settings for the registry cache volume.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>size</code></br>
+<em>
+k8s.io/apimachinery/pkg/api/resource.Quantity
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Size is the size of the registry cache volume.
+Defaults to 10Gi.
+This field is immutable.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>storageClassName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>StorageClassName is the name of the StorageClass used by the registry cache volume.
+This field is immutable.</p>
 </td>
 </tr>
 </tbody>
