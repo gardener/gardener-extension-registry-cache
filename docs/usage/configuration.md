@@ -40,11 +40,13 @@ spec:
   extensions:
   - type: registry-cache
     providerConfig:
-      apiVersion: registry.extensions.gardener.cloud/v1alpha1
+      apiVersion: registry.extensions.gardener.cloud/v1alpha2
       kind: RegistryConfig
       caches:
       - upstream: docker.io
-        size: 100Gi
+        volume:
+          size: 100Gi
+          storageClassName: premium
       - upstream: ghcr.io
       - upstream: quay.io
         garbageCollection:
@@ -66,9 +68,14 @@ The `providerConfig.caches` field contains information about the registry caches
 The `providerConfig.caches[].upstream` field is the remote registry host (and optionally port) to cache. It is a required field.
 The desired format is `host[:port]`. The value must not include a scheme. The configured upstream registry must be accessible by `https` (`https://` is the assumed scheme).
 
-The `providerConfig.caches[].size` field is the size of the registry cache. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
-This field is immutable. See the [Increase the cache disk size](#increase-the-cache-disk-size) on how to resize the disk.
-The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the default StorageClass and the configured size.
+The `providerConfig.caches[].volume` field contains settings for the registry cache volume.
+The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the configured size and StorageClass name.
+
+The `providerConfig.caches[].volume.size` field is the size of the registry cache. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
+This field is immutable. See [Increase the cache disk size](#increase-the-cache-disk-size) on how to resize the disk.
+
+The `providerConfig.caches[].volume.storageClassName` field is the name of the StorageClass used by the registry cache volume.
+This field is immutable. If the field is not specified, then the [default StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/#default-storageclass) will be used.
 
 The `providerConfig.caches[].garbageCollection.enabled` field enables/disables the cache's garbage collection. Defaults to `true`. The time to live (ttl) for an image is `7d`. See the [garbage collection section](#garbage-collection) for more details.
 
