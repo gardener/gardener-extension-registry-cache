@@ -34,6 +34,15 @@ func TestHelper(t *testing.T) {
 var _ = Describe("Helpers", func() {
 	size := resource.MustParse("5Gi")
 
+	DescribeTable("#GarbageCollectionEnabled",
+		func(cache *registry.RegistryCache, expected bool) {
+			Expect(helper.GarbageCollectionEnabled(cache)).To(Equal(expected))
+		},
+		Entry("garbageCollection is nil", &registry.RegistryCache{GarbageCollection: nil}, true),
+		Entry("garbageCollection.enabled is false", &registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{Enabled: false}}, false),
+		Entry("garbageCollection.enabled is true", &registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{Enabled: true}}, true),
+	)
+
 	DescribeTable("#FindCacheByUpstream",
 		func(caches []registry.RegistryCache, upstream string, expectedOk bool, expectedCache registry.RegistryCache) {
 			ok, cache := helper.FindCacheByUpstream(caches, upstream)

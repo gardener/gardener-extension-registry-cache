@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/webhook/operatingsystemconfig"
 )
@@ -61,7 +62,7 @@ var _ = Describe("Ensurer", func() {
 	BeforeEach(func() {
 		scheme := runtime.NewScheme()
 		Expect(extensionsv1alpha1.AddToScheme(scheme)).To(Succeed())
-		Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
+		registryinstall.Install(scheme)
 
 		decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 		fakeClient = fakeclient.NewClientBuilder().WithScheme(scheme).Build()
@@ -245,6 +246,10 @@ var _ = Describe("Ensurer", func() {
 					DefaultStatus: extensionsv1alpha1.DefaultStatus{
 						ProviderStatus: &runtime.RawExtension{
 							Object: &v1alpha1.RegistryStatus{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha1.SchemeGroupVersion.String(),
+									Kind:       "RegistryStatus",
+								},
 								Caches: []v1alpha1.RegistryCacheStatus{
 									{
 										Upstream: "docker.io",
@@ -286,6 +291,10 @@ var _ = Describe("Ensurer", func() {
 					DefaultStatus: extensionsv1alpha1.DefaultStatus{
 						ProviderStatus: &runtime.RawExtension{
 							Object: &v1alpha1.RegistryStatus{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha1.SchemeGroupVersion.String(),
+									Kind:       "RegistryStatus",
+								},
 								Caches: []v1alpha1.RegistryCacheStatus{
 									{
 										Upstream: "docker.io",

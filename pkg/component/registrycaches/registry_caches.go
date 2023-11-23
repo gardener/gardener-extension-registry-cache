@@ -47,8 +47,8 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1/helper"
+	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
@@ -80,7 +80,7 @@ type Values struct {
 	// PSPDisabled marks whether the PodSecurityPolicy admission plugin is disabled.
 	PSPDisabled bool
 	// Caches are the registry caches to deploy.
-	Caches []v1alpha1.RegistryCache
+	Caches []api.RegistryCache
 	// ResourceReferences are the resource references from the Shoot spec (the .spec.resources field).
 	ResourceReferences []gardencorev1beta1.NamedResourceReference
 }
@@ -254,9 +254,9 @@ func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *v1alpha1.RegistryCache, serviceAccountName string) ([]client.Object, error) {
-	if cache.Size == nil {
-		return nil, fmt.Errorf("registry cache size is required")
+func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *api.RegistryCache, serviceAccountName string) ([]client.Object, error) {
+	if cache.Volume == nil || cache.Volume.Size == nil {
+		return nil, fmt.Errorf("registry cache volume size is required")
 	}
 
 	const (
@@ -273,9 +273,12 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			"proxy_remoteurl":        registryutils.GetUpstreamURL(cache.Upstream),
 			"storage_delete_enabled": strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
 		}
-
-		vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	)
+
+	var storageClassName *string
+	if cache.Volume != nil {
+		storageClassName = cache.Volume.StorageClassName
+	}
 
 	if cache.SecretReferenceName != nil {
 		ref := v1beta1helper.GetResourceByName(r.values.ResourceReferences, *cache.SecretReferenceName)
@@ -438,18 +441,18 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: *cache.Size,
+								corev1.ResourceStorage: *cache.Volume.Size,
 							},
 						},
-						// We need to explicitly set the spec.storageClassName to default as marking the Gardener managed StorageClass as the default one is configurable on provider extensions side.
-						// For example, for provider-aws see the storage.managedDefaultClass field in the ControlPlaneConfig (https://github.com/gardener/gardener-extension-provider-aws/blob/v1.48.0/docs/usage/usage.md#controlplaneconfig).
-						StorageClassName: pointer.String("default"),
+
+						StorageClassName: storageClassName,
 					},
 				},
 			},
 		},
 	}
 
+	var vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	if r.values.VPAEnabled {
 		updateMode := vpaautoscalingv1.UpdateModeAuto
 		controlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly

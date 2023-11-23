@@ -20,6 +20,11 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
+// GarbageCollectionEnabled returns whether the garbage collection is enabled for the given cache.
+func GarbageCollectionEnabled(cache *registry.RegistryCache) bool {
+	return cache.GarbageCollection == nil || cache.GarbageCollection.Enabled
+}
+
 // FindCacheByUpstream finds a cache by upstream.
 // The first return argument is whether the extension was found.
 // The second return argument is the cache itself. An empty cache is returned if the cache is not found.
