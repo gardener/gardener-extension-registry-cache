@@ -15,11 +15,12 @@ spec:
   extensions:
   - type: registry-cache
     providerConfig:
-      apiVersion: registry.extensions.gardener.cloud/v1alpha1
+      apiVersion: registry.extensions.gardener.cloud/v1alpha2
       kind: RegistryConfig
       caches:
       - upstream: docker.io
-        size: 500Mi
+        volume:
+          size: 500Mi
       - upstream: ghcr.io
       - upstream: quay.io
         garbageCollection:
