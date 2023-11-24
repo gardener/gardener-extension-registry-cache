@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -31,26 +30,19 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	parentCtx := context.Background()
 
 	f := defaultShootCreationFramework()
-	f.Shoot = defaultShoot("e2e-force-delete")
+	shoot := defaultShoot("e2e-force-delete")
+	size := resource.MustParse("2Gi")
+	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
+		{Upstream: "docker.io", Size: &size},
+	})
+	f.Shoot = shoot
 
-	It("should create Shoot, enable the registry-cache extension, force delete Shoot", func() {
+	It("should create Shoot with registry-cache extension enabled, force delete Shoot", func() {
 		By("Create Shoot")
 		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
-
-		By("Enable the registry-cache extension")
-		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
-		defer cancel()
-		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
-			size := resource.MustParse("2Gi")
-			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
-				{Upstream: "docker.io", Size: &size},
-			})
-
-			return nil
-		})).To(Succeed())
 
 		By("Wait until the registry configuration is applied")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
