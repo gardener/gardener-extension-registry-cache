@@ -20,6 +20,7 @@ import (
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
+	gardencorehelper "github.com/gardener/gardener/pkg/apis/core/helper"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
 )
 
@@ -117,7 +117,7 @@ func (s *shoot) validateRegistryCredentials(ctx context.Context, config *api.Reg
 		if cache.SecretReferenceName != nil {
 			secretRefFldPath := cacheFldPath.Child("secretReferenceName")
 
-			ref := helper.GetResourceByName(resources, *cache.SecretReferenceName)
+			ref := gardencorehelper.GetResourceByName(resources, *cache.SecretReferenceName)
 			if ref == nil || ref.ResourceRef.Kind != "Secret" {
 				allErrs = append(allErrs, field.Invalid(secretRefFldPath, *cache.SecretReferenceName, fmt.Sprintf("failed to find referenced resource with name %s and kind Secret", *cache.SecretReferenceName)))
 				continue
