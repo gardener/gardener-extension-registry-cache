@@ -16,20 +16,22 @@
 
 set -e
 
-echo "> Check Skaffold Dependencies"
+operation="${1:-check}"
 
-check_successful=true
+echo "> ${operation^} Skaffold Dependencies"
+
+success=true
 repo_root="$(git rev-parse --show-toplevel)"
 
-function check() {
-  if ! $repo_root/vendor/github.com/gardener/gardener/hack/check-skaffold-deps-for-binary.sh --skaffold-file $1 --binary $2 --skaffold-config $3; then
-    check_successful=false
+function run() {
+  if ! "$repo_root"/vendor/github.com/gardener/gardener/hack/check-skaffold-deps-for-binary.sh "$operation" --skaffold-file "$1" --binary "$2" --skaffold-config "$3"; then
+    success=false
   fi
 }
 
-check "skaffold.yaml" "gardener-extension-registry-cache"           "extension"
-check "skaffold.yaml" "gardener-extension-registry-cache-admission" "admission"
+run "skaffold.yaml" "gardener-extension-registry-cache"           "extension"
+run "skaffold.yaml" "gardener-extension-registry-cache-admission" "admission"
 
-if [ "$check_successful" = false ] ; then
+if ! $success ; then
   exit 1
 fi
