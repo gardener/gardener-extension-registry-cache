@@ -29,3 +29,7 @@ function check() {
 
 check "skaffold.yaml" "gardener-extension-registry-cache"           "extension"
 check "skaffold.yaml" "gardener-extension-registry-cache-admission" "admission"
+
+if [ "$check_successful" = false ] ; then
+  exit 1
+fi
