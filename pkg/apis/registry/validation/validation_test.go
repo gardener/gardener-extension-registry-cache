@@ -40,7 +40,9 @@ var _ = Describe("Validation", func() {
 		registryConfig = &api.RegistryConfig{
 			Caches: []api.RegistryCache{{
 				Upstream: "docker.io",
-				Size:     &size,
+				Volume: &api.Volume{
+					Size: &size,
+				},
 			}},
 		}
 	})
@@ -108,22 +110,24 @@ var _ = Describe("Validation", func() {
 			negativeSize := resource.MustParse("-1Gi")
 			cache := api.RegistryCache{
 				Upstream: "quay.io",
-				Size:     &negativeSize,
+				Volume: &api.Volume{
+					Size: &negativeSize,
+				},
 			}
 			registryConfig.Caches = append(registryConfig.Caches, cache)
 
 			zeroSize := resource.MustParse("0")
-			registryConfig.Caches[0].Size = &zeroSize
+			registryConfig.Caches[0].Volume.Size = &zeroSize
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].size"),
+					"Field":  Equal("providerConfig.caches[0].volume.size"),
 					"Detail": ContainSubstring("must be greater than 0"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[1].size"),
+					"Field":  Equal("providerConfig.caches[1].volume.size"),
 					"Detail": ContainSubstring("must be greater than 0"),
 				})),
 			))
@@ -152,7 +156,9 @@ var _ = Describe("Validation", func() {
 			size := resource.MustParse("5Gi")
 			newCache := api.RegistryCache{
 				Upstream: "docker.io",
-				Size:     &size,
+				Volume: &api.Volume{
+					Size: &size,
+				},
 				GarbageCollection: &api.GarbageCollection{
 					Enabled: true,
 				},
@@ -162,15 +168,29 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(BeEmpty())
 		})
 
-		It("should deny cache size update", func() {
+		It("should deny cache volume size update", func() {
 			newSize := resource.MustParse("16Gi")
-			registryConfig.Caches[0].Size = &newSize
+			registryConfig.Caches[0].Volume.Size = &newSize
 
 			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].size"),
-					"Detail": Equal("field is immutable"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].volume.size"),
+					"BadValue": Equal("16Gi"),
+					"Detail":   Equal("field is immutable"),
+				})),
+			))
+		})
+
+		It("should deny cache volume storageClassName update", func() {
+			registryConfig.Caches[0].Volume.StorageClassName = pointer.String("foo")
+
+			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].volume.storageClassName"),
+					"BadValue": Equal(pointer.String("foo")),
+					"Detail":   Equal("field is immutable"),
 				})),
 			))
 		})

@@ -20,6 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/pointer"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
@@ -32,6 +33,15 @@ func TestHelper(t *testing.T) {
 
 var _ = Describe("Helpers", func() {
 	size := resource.MustParse("5Gi")
+
+	DescribeTable("#GarbageCollectionEnabled",
+		func(cache *registry.RegistryCache, expected bool) {
+			Expect(helper.GarbageCollectionEnabled(cache)).To(Equal(expected))
+		},
+		Entry("garbageCollection is nil", &registry.RegistryCache{GarbageCollection: nil}, true),
+		Entry("garbageCollection.enabled is false", &registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{Enabled: false}}, false),
+		Entry("garbageCollection.enabled is true", &registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{Enabled: true}}, true),
+	)
 
 	DescribeTable("#FindCacheByUpstream",
 		func(caches []registry.RegistryCache, upstream string, expectedOk bool, expectedCache registry.RegistryCache) {
@@ -55,9 +65,25 @@ var _ = Describe("Helpers", func() {
 			false, registry.RegistryCache{},
 		),
 		Entry("with cache with the given upstream",
-			[]registry.RegistryCache{{Upstream: "gcr.io"}, {Upstream: "quay.io"}, {Upstream: "docker.io", Size: &size}, {Upstream: "registry.k8s.io"}},
+			[]registry.RegistryCache{{Upstream: "gcr.io"}, {Upstream: "quay.io"}, {Upstream: "docker.io", Volume: &registry.Volume{Size: &size}}, {Upstream: "registry.k8s.io"}},
 			"docker.io",
-			true, registry.RegistryCache{Upstream: "docker.io", Size: &size},
+			true, registry.RegistryCache{Upstream: "docker.io", Volume: &registry.Volume{Size: &size}},
 		),
+	)
+
+	DescribeTable("#VolumeSize",
+		func(cache *registry.RegistryCache, expected *resource.Quantity) {
+			Expect(helper.VolumeSize(cache)).To(Equal(expected))
+		},
+		Entry("volume is nil", &registry.RegistryCache{Volume: nil}, nil),
+		Entry("volume.size is not nil", &registry.RegistryCache{Volume: &registry.Volume{Size: &size}}, &size),
+	)
+
+	DescribeTable("#VolumeStorageClassName",
+		func(cache *registry.RegistryCache, expected *string) {
+			Expect(helper.VolumeStorageClassName(cache)).To(Equal(expected))
+		},
+		Entry("volume is nil", &registry.RegistryCache{Volume: nil}, nil),
+		Entry("volume.storageClassname is not nil", &registry.RegistryCache{Volume: &registry.Volume{StorageClassName: pointer.String("foo")}}, pointer.String("foo")),
 	)
 })

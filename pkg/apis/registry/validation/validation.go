@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
+	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
@@ -56,9 +57,14 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 
 	for i, newCache := range newConfig.Caches {
 		if ok, oldCache := helper.FindCacheByUpstream(oldConfig.Caches, newCache.Upstream); ok {
-			if !apiequality.Semantic.DeepEqual(oldCache.Size, newCache.Size) {
-				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("size"), newCache.Size.String(), "field is immutable"))
+			cacheFldPath := fldPath.Child("caches").Index(i)
+
+			// We don't use the apivalidation.ValidateImmutableField func for the volume size field immutability check to be able to pass
+			// string representation of it as invalid value in order to better display the invalid value.
+			if !apiequality.Semantic.DeepEqual(helper.VolumeSize(&oldCache), helper.VolumeSize(&newCache)) {
+				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("volume").Child("size"), helper.VolumeSize(&newCache).String(), "field is immutable"))
 			}
+			allErrs = append(allErrs, apivalidation.ValidateImmutableField(helper.VolumeStorageClassName(&newCache), helper.VolumeStorageClassName(&oldCache), cacheFldPath.Child("volume").Child("storageClassName"))...)
 		}
 	}
 
@@ -69,8 +75,10 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
-	if cache.Size != nil {
-		allErrs = append(allErrs, validatePositiveQuantity(*cache.Size, fldPath.Child("size"))...)
+	if cache.Volume != nil {
+		if cache.Volume.Size != nil {
+			allErrs = append(allErrs, validatePositiveQuantity(*cache.Volume.Size, fldPath.Child("volume", "size"))...)
+		}
 	}
 
 	return allErrs

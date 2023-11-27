@@ -39,7 +39,7 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gardener/gardener-extension-registry-cache/pkg/client \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
-  "registry:v1alpha1" \
+  "registry:v1alpha1,v1alpha2" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
@@ -47,8 +47,7 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gardener/gardener-extension-registry-cache/pkg/client \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
-  "registry:v1alpha1" \
-  --extra-peer-dirs=github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry,github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime \
+  "registry:v1alpha1,v1alpha2" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
@@ -65,5 +64,4 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   "config:v1alpha1" \
-  --extra-peer-dirs=github.com/gardener/gardener-extension-registry-cache/pkg/apis/config,github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/v1alpha1,k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/conversion,k8s.io/apimachinery/pkg/runtime \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
