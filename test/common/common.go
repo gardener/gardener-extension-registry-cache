@@ -208,7 +208,8 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 
 		expectedImage := strings.TrimPrefix(nginxImageWithDigest, upstream+"/")
 		if _, ok := schedulerStateMap[expectedImage]; !ok {
-			return fmt.Errorf("failed to find key (image) '%s' in map (registry's scheduler-state.json file) %v", expectedImage, schedulerStateFileContent)
+			prettyFileContent, _ := json.MarshalIndent(schedulerStateMap, "", "  ")
+			return fmt.Errorf("failed to find key (image) '%s' in map (registry's scheduler-state.json file) %v", expectedImage, string(prettyFileContent))
 		}
 
 		return nil
