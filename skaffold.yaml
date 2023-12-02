@@ -5,40 +5,40 @@ metadata:
   name: extension
 build:
   artifacts:
-  - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
-    ko:
-      dependencies:
-        paths:
-        - cmd/gardener-extension-registry-cache/app
-        - imagevector
-        - pkg/apis/config
-        - pkg/apis/config/v1alpha1
-        - pkg/apis/config/validation
-        - pkg/apis/registry
-        - pkg/apis/registry/helper
-        - pkg/apis/registry/install
-        - pkg/apis/registry/v1alpha1
-        - pkg/apis/registry/v1alpha2
-        - pkg/cmd
-        - pkg/component/registrycaches
-        - pkg/component/registryconfigurationcleaner
-        - pkg/constants
-        - pkg/controller/extension
-        - pkg/utils/registry
-        - pkg/webhook/operatingsystemconfig
-        - vendor
-        - VERSION
-      ldflags:
-      - '{{.LD_FLAGS}}'
-      main: ./cmd/gardener-extension-registry-cache
+    - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-registry-cache/app
+            - imagevector
+            - pkg/apis/config
+            - pkg/apis/config/v1alpha1
+            - pkg/apis/config/validation
+            - pkg/apis/registry
+            - pkg/apis/registry/helper
+            - pkg/apis/registry/install
+            - pkg/apis/registry/v1alpha1
+            - pkg/apis/registry/v1alpha2
+            - pkg/cmd
+            - pkg/component/registrycaches
+            - pkg/component/registryconfigurationcleaner
+            - pkg/constants
+            - pkg/controller/extension
+            - pkg/utils/registry
+            - pkg/webhook/operatingsystemconfig
+            - vendor
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-registry-cache
 resourceSelector:
   allow:
-  # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
-  - groupKind: ControllerDeployment.core.gardener.cloud
-    image: [".*"]
+    # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
+    - groupKind: ControllerDeployment.core.gardener.cloud
+      image: [".*"]
 manifests:
   rawYaml:
-  - example/controller-registration.yaml
+    - example/controller-registration.yaml
 deploy:
   kubectl: {}
 ---
@@ -48,34 +48,34 @@ metadata:
   name: admission
 build:
   artifacts:
-  - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
-    ko:
-      dependencies:
-        paths:
-        - cmd/gardener-extension-registry-cache-admission/app
-        - pkg/admission/cmd
-        - pkg/admission/validator
-        - pkg/apis/registry
-        - pkg/apis/registry/helper
-        - pkg/apis/registry/install
-        - pkg/apis/registry/v1alpha1
-        - pkg/apis/registry/v1alpha2
-        - pkg/apis/registry/validation
-        - pkg/constants
-        - vendor
-        - VERSION
-      ldflags:
-      - '{{.LD_FLAGS}}'
-      main: ./cmd/gardener-extension-registry-cache-admission
+    - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-registry-cache-admission/app
+            - pkg/admission/cmd
+            - pkg/admission/validator
+            - pkg/apis/registry
+            - pkg/apis/registry/helper
+            - pkg/apis/registry/install
+            - pkg/apis/registry/v1alpha1
+            - pkg/apis/registry/v1alpha2
+            - pkg/apis/registry/validation
+            - pkg/constants
+            - vendor
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-registry-cache-admission
 deploy:
   helm:
     releases:
-    - name: gardener-extension-registry-cache-admission
-      namespace: garden
-      wait: true
-      chartPath: charts/admission
-      valuesFiles:
-      - example/admission/values.yaml
-      setValueTemplates:
-        runtime.image.repository: '{{.IMAGE_REPO_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
-        runtime.image.tag: '{{.IMAGE_TAG_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
+      - name: gardener-extension-registry-cache-admission
+        namespace: garden
+        wait: true
+        chartPath: charts/admission
+        valuesFiles:
+          - example/admission/values.yaml
+        setValueTemplates:
+          runtime.image.repository: '{{.IMAGE_REPO_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
+          runtime.image.tag: '{{.IMAGE_TAG_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
