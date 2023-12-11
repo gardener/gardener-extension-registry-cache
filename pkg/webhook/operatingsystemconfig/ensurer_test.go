@@ -355,8 +355,7 @@ After=containerd.service
 Requires=containerd.service
 
 [Service]
-Type=oneshot
-RemainAfterExit=yes
+Type=simple
 ExecStart=/opt/bin/configure-containerd-registries.sh ` + args),
 	}
 }

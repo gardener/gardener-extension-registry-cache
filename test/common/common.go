@@ -97,8 +97,8 @@ func RemoveRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) {
 	})
 }
 
-// WaitUntilRegistryConfigurationsAreApplied waits until the configure-containerd-registries.service systemd unit gets active on the Nodes.
-// The unit will be in activating state until it configures all registry caches.
+// WaitUntilRegistryConfigurationsAreApplied waits until the configure-containerd-registries.service systemd unit gets inactive on the Nodes.
+// The unit will be in active state until it configures all registry caches.
 func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface) {
 	nodes := &corev1.NodeList{}
 	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
@@ -107,12 +107,12 @@ func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Log
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
 		EventuallyWithOffset(1, ctx, func(g Gomega) string {
-			command := "systemctl is-active configure-containerd-registries.service &>/dev/null && echo 'active' || echo 'not active'"
+			command := "systemctl -q is-active configure-containerd-registries.service && echo 'active' || echo 'inactive'"
 			// err is ignored intentionally to reduce flakes from transient network errors in prow.
 			response, _ := rootPodExecutor.Execute(ctx, command)
 
 			return string(response)
-		}).WithPolling(10*time.Second).Should(Equal("active\n"), fmt.Sprintf("Expected the configure-containerd-registries.service unit to be active on node %s", node.Name))
+		}).WithPolling(10*time.Second).Should(Equal("inactive\n"), fmt.Sprintf("Expected the configure-containerd-registries.service unit to be inactive on node %s", node.Name))
 
 		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
 	}
