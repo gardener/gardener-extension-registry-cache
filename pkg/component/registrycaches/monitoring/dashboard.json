@@ -18,7 +18,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "iteration": 1702476096107,
+  "iteration": 1702912677955,
   "links": [],
   "panels": [
     {
@@ -87,7 +87,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(label_replace(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"^cache-volume-registry-(${upstream_host:pipe})-0$\"}, \"upstream\", \"$1\", \"persistentvolumeclaim\", \"^cache-volume-registry-(.+)-0$\")) by (upstream)",
+          "expr": "sum by (upstream) (\n  label_replace(\n    kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"^cache-volume-registry-(${upstream_host:pipe})-0$\"},\n    \"upstream\",\n    \"$1\",\n    \"persistentvolumeclaim\",\n    \"^cache-volume-registry-(.+)-0$\"\n  )\n)",
           "interval": "",
           "legendFormat": "{{upstream}}",
           "refId": "A"
@@ -146,7 +146,7 @@
       "decimals": 2,
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit"
+          "unit": "decbytes"
         },
         "overrides": []
       },
@@ -192,7 +192,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(label_replace(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~\"^cache-volume-registry-(${upstream_host:pipe})-0$\"}, \"upstream\", \"$1\", \"persistentvolumeclaim\", \"^cache-volume-registry-(.+)-0$\") / label_replace(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~\"^cache-volume-registry-(${upstream_host:pipe})-0$\"}, \"upstream\", \"$1\", \"persistentvolumeclaim\", \"^cache-volume-registry-(.+)-0$\")) by (upstream)",
+          "expr": "sum by (upstream) (\n  label_replace(\n    kubelet_volume_stats_available_bytes{persistentvolumeclaim=~\"^cache-volume-registry-(${upstream_host:pipe})-0$\"},\n    \"upstream\",\n    \"$1\",\n    \"persistentvolumeclaim\",\n    \"^cache-volume-registry-(.+)-0$\"\n  )\n)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{upstream}}",
@@ -203,7 +203,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Persistent Volume Usage",
+      "title": "Persistent Volume Available Size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -222,7 +222,7 @@
         {
           "$$hashKey": "object:591",
           "decimals": null,
-          "format": "percentunit",
+          "format": "decbytes",
           "label": "",
           "logBase": 1,
           "max": null,
@@ -252,20 +252,17 @@
     "image",
     "cache",
     "registry",
-    "pull through"
+    "pull through",
+    "pull-through"
   ],
   "templating": {
     "list": [
       {
         "allValue": null,
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": null,
         "definition": "label_values({__name__=~\"kubelet_volume_stats_.+\"}, persistentvolumeclaim)",
@@ -322,7 +319,7 @@
     ]
   },
   "timezone": "utc",
-  "title": "Image pull through cache registries",
+  "title": "Pull-through cache registries",
   "uid": "extension-extension-registry-cache",
   "version": 1
 }

@@ -29,7 +29,7 @@ import (
 var (
 	//go:embed alerting-rules/registry-cache.rules.yaml
 	monitoringAlertingRules string
-	//go:embed monitoring/dashboard.yaml
+	//go:embed monitoring/dashboard.json
 	dashboard string
 )
 
