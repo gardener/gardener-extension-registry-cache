@@ -122,7 +122,7 @@ func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Log
 // and the hosts.toml files for the given upstreams are removed.
 // The hosts.toml file(s) and the systemd unit are deleted by the registry-configuration-cleaner DaemonSet.
 //
-// Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io and quay.io.
+// Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io, quay.io and europe-docker.pkg.dev.
 // Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
 func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, expectSystemdUnitDeletion bool, upstreams []string) {
 	nodes := &corev1.NodeList{}

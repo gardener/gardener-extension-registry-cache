@@ -56,7 +56,7 @@ var _ = Describe("RegistryCaches", func() {
 	var (
 		ctx        = context.Background()
 		dockerSize = resource.MustParse("10Gi")
-		gcrSize    = resource.MustParse("20Gi")
+		arSize     = resource.MustParse("20Gi")
 
 		c                     client.Client
 		values                Values
@@ -83,9 +83,9 @@ var _ = Describe("RegistryCaches", func() {
 					},
 				},
 				{
-					Upstream: "eu.gcr.io",
+					Upstream: "europe-docker.pkg.dev",
 					Volume: &api.Volume{
-						Size:             &gcrSize,
+						Size:             &arSize,
 						StorageClassName: pointer.String("premium"),
 					},
 					GarbageCollection: &api.GarbageCollection{
@@ -446,13 +446,13 @@ metadata:
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 
-				gcrConfigSecretName := "registry-eu-gcr-io-config-47e65d2c"
-				gcrConfigSecret := configSecretYAMLFor(gcrConfigSecretName, "registry-eu-gcr-io", "eu.gcr.io", configYAMLFor("https://eu.gcr.io", false, "", ""))
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+gcrConfigSecretName+".yaml"])).To(Equal(gcrConfigSecret))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				gcrStatefulSet := statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", gcrConfigSecretName, "default", pointer.String("premium"))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(gcrStatefulSet))
-				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-3de2cacf"
+				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", false, "", ""))
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
+				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")))
+				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "default", pointer.String("premium"))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
+				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(vpaYAMLFor("registry-europe-docker-pkg-dev")))
 			})
 		})
 
@@ -494,16 +494,16 @@ metadata:
 				dockerConfigSecretName := "registry-docker-io-config-8082c67c"
 				dockerStatefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", dockerConfigSecretName, "registry-cache", nil)
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
-				gcrConfigSecretName := "registry-eu-gcr-io-config-47e65d2c"
-				gcrStatefulSet := statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", gcrConfigSecretName, "registry-cache", pointer.String("premium"))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(gcrStatefulSet))
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-3de2cacf"
+				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "registry-cache", pointer.String("premium"))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
 			})
 		})
 
 		Context("upstream credentials are set", func() {
 			var (
 				dockerSecret *corev1.Secret
-				gcrSecret    *corev1.Secret
+				arSecret     *corev1.Secret
 			)
 
 			BeforeEach(func() {
@@ -517,30 +517,30 @@ metadata:
 						"password": []byte("s3cret"),
 					},
 				}
-				gcrSecret = &corev1.Secret{
+				arSecret = &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace: namespace,
-						Name:      "ref-gcr-creds",
+						Name:      "ref-ar-creds",
 					},
 					Data: map[string][]byte{
-						"username": []byte("gcr-user"),
+						"username": []byte("ar-user"),
 						"password": []byte(`{"foo":"bar"}`),
 					},
 				}
 				values.ResourceReferences = []gardencorev1beta1.NamedResourceReference{
 					{Name: "docker-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "docker-creds", Kind: "Secret"}},
-					{Name: "gcr-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "gcr-creds", Kind: "Secret"}},
+					{Name: "ar-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ar-creds", Kind: "Secret"}},
 				}
 				values.Caches[0].SecretReferenceName = pointer.String("docker-ref")
-				values.Caches[1].SecretReferenceName = pointer.String("gcr-ref")
+				values.Caches[1].SecretReferenceName = pointer.String("ar-ref")
 			})
 
 			JustBeforeEach(func() {
 				if dockerSecret != nil {
 					Expect(c.Create(ctx, dockerSecret)).To(Succeed())
 				}
-				if gcrSecret != nil {
-					Expect(c.Create(ctx, gcrSecret)).To(Succeed())
+				if arSecret != nil {
+					Expect(c.Create(ctx, arSecret)).To(Succeed())
 				}
 			})
 
@@ -560,13 +560,13 @@ metadata:
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 
-				gcrConfigSecretName := "registry-eu-gcr-io-config-55614f89"
-				gcConfigSecret := configSecretYAMLFor(gcrConfigSecretName, "registry-eu-gcr-io", "eu.gcr.io", configYAMLFor("https://eu.gcr.io", false, "gcr-user", `{"foo":"bar"}`))
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+gcrConfigSecretName+".yaml"])).To(Equal(gcConfigSecret))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(serviceYAMLFor("registry-eu-gcr-io", "eu.gcr.io")))
-				gcrStatefulSet := statefulSetYAMLFor("registry-eu-gcr-io", "eu.gcr.io", "https://eu.gcr.io", "20Gi", gcrConfigSecretName, "default", pointer.String("premium"))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(gcrStatefulSet))
-				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-eu-gcr-io.yaml"])).To(Equal(vpaYAMLFor("registry-eu-gcr-io")))
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-e34eccc8"
+				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", false, "ar-user", `{"foo":"bar"}`))
+				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
+				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")))
+				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "default", pointer.String("premium"))
+				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
+				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(vpaYAMLFor("registry-europe-docker-pkg-dev")))
 			})
 
 			When("get secret fails", func() {

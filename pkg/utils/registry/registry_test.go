@@ -35,7 +35,7 @@ var _ = Describe("Registry utils", func() {
 			Expect(registryutils.GetUpstreamURL(upstream)).To(Equal(expected))
 		},
 		Entry("upstream is docker.io", "docker.io", "https://registry-1.docker.io"),
-		Entry("upstream is eu.gcr.io", "eu.gcr.io", "https://eu.gcr.io"),
+		Entry("upstream is europe-docker.pkg.dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
 		Entry("upstream is quay.io", "quay.io", "https://quay.io"),
 	)
 })
