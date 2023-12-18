@@ -83,6 +83,10 @@ type Values struct {
 	Caches []api.RegistryCache
 	// ResourceReferences are the resource references from the Shoot spec (the .spec.resources field).
 	ResourceReferences []gardencorev1beta1.NamedResourceReference
+	// KeepObjectsOnDestroy marks whether the ManagedResource's .spec.keepObjects will be set to true
+	// before ManagedResource deletion during the Destroy operation. When set to true, the deployed
+	// resources by ManagedResources won't be deleted, but the ManagedResource itself will be deleted.
+	KeepObjectsOnDestroy bool
 }
 
 // New creates a new instance of DeployWaiter for registry caches.
@@ -136,6 +140,12 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 
 // Destroy implements component.DeployWaiter.
 func (r *registryCaches) Destroy(ctx context.Context) error {
+	if r.values.KeepObjectsOnDestroy {
+		if err := managedresources.SetKeepObjects(ctx, r.client, r.namespace, managedResourceName, true); err != nil {
+			return err
+		}
+	}
+
 	return managedresources.Delete(ctx, r.client, r.namespace, managedResourceName, false)
 }
 

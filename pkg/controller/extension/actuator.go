@@ -174,7 +174,16 @@ func (a *actuator) Restore(ctx context.Context, log logr.Logger, ex *extensionsv
 }
 
 // Migrate the Extension resource.
-func (a *actuator) Migrate(_ context.Context, _ logr.Logger, _ *extensionsv1alpha1.Extension) error {
+func (a *actuator) Migrate(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
+	namespace := ex.GetNamespace()
+
+	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{
+		KeepObjectsOnDestroy: true,
+	})
+	if err := component.OpDestroyAndWait(registryCaches).Destroy(ctx); err != nil {
+		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
+	}
+
 	return nil
 }
 
