@@ -4,7 +4,7 @@ In order to pull private images through registry cache, it is required to supply
 
 ## How to configure the registry cache to use upstream registry credentials?
 
-1. Create an immutable Secret with the upstream registry credentials
+1. Create an immutable Secret with the upstream registry credentials in the Garden cluster
 
    ```bash
    % kubectl create -f - <<EOF
