@@ -249,11 +249,8 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "image",
-    "cache",
     "registry",
-    "pull through",
-    "pull-through"
+    "cache"
   ],
   "templating": {
     "list": [
@@ -319,7 +316,7 @@
     ]
   },
   "timezone": "utc",
-  "title": "Pull-through cache registries",
+  "title": "Registry Caches",
   "uid": "extension-extension-registry-cache",
   "version": 1
 }
