@@ -29,10 +29,16 @@ import (
 var (
 	//go:embed alerting-rules/registry-cache.rules.yaml
 	monitoringAlertingRules string
+	//go:embed monitoring/dashboard.json
+	dashboard string
 )
 
 func (r *registryCaches) alertingRules() string {
 	return fmt.Sprintf("registry-cache.rules.yaml: |\n  %s\n", utils.Indent(monitoringAlertingRules, 2))
+}
+
+func (r *registryCaches) dashboard() string {
+	return fmt.Sprintf("registry-cache.dashboard.json: '%s'", dashboard)
 }
 
 func (r *registryCaches) deployMonitoringConfigMap(ctx context.Context) error {
@@ -46,7 +52,8 @@ func (r *registryCaches) deployMonitoringConfigMap(ctx context.Context) error {
 		metav1.SetMetaDataLabel(&monitoringConfigMap.ObjectMeta, v1beta1constants.LabelExtensionConfiguration, v1beta1constants.LabelMonitoring)
 
 		monitoringConfigMap.Data = map[string]string{
-			v1beta1constants.PrometheusConfigMapAlertingRules: r.alertingRules(),
+			v1beta1constants.PrometheusConfigMapAlertingRules:  r.alertingRules(),
+			v1beta1constants.PlutonoConfigMapOperatorDashboard: r.dashboard(),
 		}
 
 		return nil

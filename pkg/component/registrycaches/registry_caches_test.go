@@ -605,6 +605,7 @@ metadata:
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(monitoringConfigMap), monitoringConfigMap)).To(Succeed())
 			Expect(monitoringConfigMap.Labels).To(HaveKeyWithValue("extensions.gardener.cloud/configuration", "monitoring"))
 			Expect(monitoringConfigMap.Data).To(HaveKey("alerting_rules"))
+			Expect(monitoringConfigMap.Data).To(HaveKey("dashboard_operators"))
 		})
 	})
 
