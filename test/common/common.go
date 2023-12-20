@@ -39,12 +39,12 @@ import (
 )
 
 const (
-	// DockerNginx1130ImageWithDigest corresponds to the nginx:1.13.0 image.
-	DockerNginx1130ImageWithDigest = "docker.io/library/nginx@sha256:12d30ce421ad530494d588f87b2328ddc3cae666e77ea1ae5ac3a6661e52cde6"
-	// DockerNginx1140ImageWithDigest corresponds to the nginx:1.14.0 image.
-	DockerNginx1140ImageWithDigest = "docker.io/library/nginx@sha256:8b600a4d029481cc5b459f1380b30ff6cb98e27544fc02370de836e397e34030"
-	// DockerNginx1150ImageWithDigest corresponds to the nginx:1.15.0 image.
-	DockerNginx1150ImageWithDigest = "docker.io/library/nginx@sha256:62a095e5da5f977b9f830adaf64d604c614024bf239d21068e4ca826d0d629a4"
+	// DockerNginx1230ImageWithDigest corresponds to the nginx:1.23.0 image.
+	DockerNginx1230ImageWithDigest = "docker.io/library/nginx@sha256:db345982a2f2a4257c6f699a499feb1d79451a1305e8022f16456ddc3ad6b94c"
+	// DockerNginx1240ImageWithDigest corresponds to the nginx:1.24.0 image.
+	DockerNginx1240ImageWithDigest = "docker.io/library/nginx@sha256:066476749f229923b9de29cc9a0738ea2d45923b16a2b388449ea549673f97d8"
+	// DockerNginx1250ImageWithDigest corresponds to the nginx:1.25.0 image.
+	DockerNginx1250ImageWithDigest = "docker.io/library/nginx@sha256:b997b0db9c2bc0a2fb803ced5fb9ff3a757e54903a28ada3e50412cc3ab7822f"
 
 	// ArtifactRegistryNginx1176ImageWithDigest corresponds to the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
 	ArtifactRegistryNginx1176ImageWithDigest = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx@sha256:b2d89d0a210398b4d1120b3e3a7672c16a4ba09c2c4a0395f18b9f7999b768f2"

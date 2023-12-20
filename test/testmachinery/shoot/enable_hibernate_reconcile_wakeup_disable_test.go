@@ -62,9 +62,9 @@ var _ = Describe("Shoot registry cache testing", func() {
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works")
-		// We are using nginx:1.14.0 as nginx:1.13.0 is already used by the "should enable and disable the registry-cache extension" test.
-		// Hence, nginx:1.13.0 will be present in the Node.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1140ImageWithDigest)
+		// We are using nginx:1.24.0 as nginx:1.23.0 is already used by the "should enable and disable the registry-cache extension" test.
+		// Hence, nginx:1.23.0 will be present in the Node.
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1240ImageWithDigest)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
@@ -92,8 +92,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works after wake up")
-		// We are using nginx:1.15.0 as nginx:1.14.0 is already used above and already present in the Node and in the registry cache.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1150ImageWithDigest)
+		// We are using nginx:1.25.0 as nginx:1.24.0 is already used above and already present in the Node and in the registry cache.
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1250ImageWithDigest)
 	}, hibernationTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if v1beta1helper.HibernationIsEnabled(f.Shoot) {
 			By("Wake up Shoot")
