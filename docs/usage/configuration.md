@@ -132,7 +132,7 @@ The registry cache runs with a single replica. This fact may lead to concerns fo
 ## Gotchas
 
 - The used registry implementation ([distribution/distribution](https://github.com/distribution/distribution)) supports mirroring of only one upstream registry. The extension deploys a pull-through cache for each configured upstream.
-- `gcr.io`, `us.gcr.io`, `eu.gcr.io`, and `asia.gcr.io` are different upstreams. Hence, configuring `gcr.io` as upstream won't cache images from `us.gcr.io`, `eu.gcr.io`, or `asia.gcr.io`.
+- `us-docker.pkg.dev`, `europe-docker.pkg.dev`, and `asia-docker.pkg.dev` are different upstreams. Hence, configuring `pkg.dev` as upstream won't cache images from `us-docker.pkg.dev`, `europe-docker.pkg.dev`, or `asia-docker.pkg.dev`.
 
 ## Limitations
 

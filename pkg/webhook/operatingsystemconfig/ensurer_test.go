@@ -256,7 +256,7 @@ var _ = Describe("Ensurer", func() {
 										Endpoint: "http://10.0.0.1:5000",
 									},
 									{
-										Upstream: "eu.gcr.io",
+										Upstream: "europe-docker.pkg.dev",
 										Endpoint: "http://10.0.0.2:5000",
 									},
 								},
@@ -271,7 +271,7 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io eu.gcr.io,http://10.0.0.2:5000,https://eu.gcr.io"),
+				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev"),
 			))
 		})
 
@@ -301,7 +301,7 @@ var _ = Describe("Ensurer", func() {
 										Endpoint: "http://10.0.0.1:5000",
 									},
 									{
-										Upstream: "eu.gcr.io",
+										Upstream: "europe-docker.pkg.dev",
 										Endpoint: "http://10.0.0.2:5000",
 									},
 								},
@@ -320,7 +320,7 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io eu.gcr.io,http://10.0.0.2:5000,https://eu.gcr.io"),
+				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev"),
 			))
 		})
 	})

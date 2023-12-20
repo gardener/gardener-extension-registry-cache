@@ -101,7 +101,7 @@ var _ = Describe("RegistryConfigurationCleaner", func() {
 				PauseImage:        pauseImage,
 				DeleteSystemdUnit: deleteSystemdUnit,
 				PSPDisabled:       pspDisabled,
-				Upstreams:         []string{"docker.io", "eu.gcr.io"},
+				Upstreams:         []string{"docker.io", "europe-docker.pkg.dev"},
 			}
 			cleaner := New(c, namespace, values)
 

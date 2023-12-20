@@ -4,7 +4,7 @@ In order to pull private images through registry cache, it is required to supply
 
 ## How to configure the registry cache to use upstream registry credentials?
 
-1. Create an immutable Secret with the upstream registry credentials
+1. Create an immutable Secret with the upstream registry credentials in the Garden cluster
 
    ```bash
    % kubectl create -f - <<EOF
@@ -21,7 +21,7 @@ In order to pull private images through registry cache, it is required to supply
    EOF
    ```
 
-   For GCR, the username is `_json_key` and the password is the service account key in JSON format. To base64 encode the service account key, copy it and run:
+   For Artifact Registry, the username is `_json_key` and the password is the service account key in JSON format. To base64 encode the service account key, copy it and run:
    ```bash
    % echo -n $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
    ```
@@ -65,4 +65,4 @@ To rotate registry credentials perform the following steps:
 
 ## Gotchas
 
-- The registry cache provides the credentials for every request against the corresponding upstream. In some cases, misconfigured credentials can prevent the registry cache to pull even public images from the upstream (for example:  invalid service account key for GCR). However, this behaviour is controlled by the server-side logic of the upstream registry.
+- The registry cache provides the credentials for every request against the corresponding upstream. In some cases, misconfigured credentials can prevent the registry cache to pull even public images from the upstream (for example: invalid service account key for Artifact Registry). However, this behaviour is controlled by the server-side logic of the upstream registry.

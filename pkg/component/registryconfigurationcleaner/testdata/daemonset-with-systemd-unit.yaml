@@ -35,8 +35,8 @@ spec:
           if [[ -d /host/etc/containerd/certs.d/docker.io ]]; then
             rm -rf /host/etc/containerd/certs.d/docker.io
           fi
-          if [[ -d /host/etc/containerd/certs.d/eu.gcr.io ]]; then
-            rm -rf /host/etc/containerd/certs.d/eu.gcr.io
+          if [[ -d /host/etc/containerd/certs.d/europe-docker.pkg.dev ]]; then
+            rm -rf /host/etc/containerd/certs.d/europe-docker.pkg.dev
           fi
         image: alpine:some-tag
         imagePullPolicy: IfNotPresent

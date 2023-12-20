@@ -33,7 +33,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 	shoot := defaultShoot("e2e-default-ssc")
 	size := resource.MustParse("2Gi")
 	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
-		{Upstream: "eu.gcr.io", Size: &size},
+		{Upstream: "europe-docker.pkg.dev", Size: &size},
 		{Upstream: "quay.io", Size: &size},
 		{Upstream: "registry.k8s.io", Size: &size},
 	})
@@ -54,8 +54,8 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		defer cancel()
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
-		By("[eu.gcr.io] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "eu.gcr.io", common.EuGcrNginx1176ImageWithDigest)
+		By("[europe-docker.pkg.dev] Verify registry-cache works")
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "europe-docker.pkg.dev", common.ArtifactRegistryNginx1176ImageWithDigest)
 
 		By("[registry.k8s.io] Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "registry.k8s.io", common.RegistryK8sNginx1154ImageWithDigest)
