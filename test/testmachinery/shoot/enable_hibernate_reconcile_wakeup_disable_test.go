@@ -44,6 +44,11 @@ var _ = Describe("Shoot registry cache testing", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
+			if shoot.Spec.Provider.Type == "alicloud" {
+				// On AliCloud the minimum size for SSD volumes is 20Gi.
+				size = resource.MustParse("20Gi")
+			}
+
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 				{Upstream: "docker.io", Size: &size},
 			})
