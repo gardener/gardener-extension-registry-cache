@@ -46,8 +46,8 @@ const (
 	// DockerNginx1150ImageWithDigest corresponds to the nginx:1.15.0 image.
 	DockerNginx1150ImageWithDigest = "docker.io/library/nginx@sha256:62a095e5da5f977b9f830adaf64d604c614024bf239d21068e4ca826d0d629a4"
 
-	// EuGcrNginx1176ImageWithDigest corresponds to the eu.gcr.io/gardener-project/3rd/nginx:1.17.6 image.
-	EuGcrNginx1176ImageWithDigest = "eu.gcr.io/gardener-project/3rd/nginx@sha256:b2d89d0a210398b4d1120b3e3a7672c16a4ba09c2c4a0395f18b9f7999b768f2"
+	// ArtifactRegistryNginx1176ImageWithDigest corresponds to the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
+	ArtifactRegistryNginx1176ImageWithDigest = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx@sha256:b2d89d0a210398b4d1120b3e3a7672c16a4ba09c2c4a0395f18b9f7999b768f2"
 	// RegistryK8sNginx1154ImageWithDigest corresponds to the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154ImageWithDigest = "registry.k8s.io/e2e-test-images/nginx@sha256:db048754ae68ae337d8fa96494c96d2a1204c3320f5dcf7e8e71085adec85da6"
 	// PublicEcrAwsNginx1199ImageWithDigest corresponds to the public.ecr.aws/nginx/nginx:1.19.9 image.
