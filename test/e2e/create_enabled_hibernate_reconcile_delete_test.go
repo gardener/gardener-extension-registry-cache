@@ -52,7 +52,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1230ImageWithDigest)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)

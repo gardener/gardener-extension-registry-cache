@@ -58,7 +58,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
 		By("[docker.io] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1130ImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1230ImageWithDigest)
 
 		By("Add the public.ecr.aws upstream to the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
