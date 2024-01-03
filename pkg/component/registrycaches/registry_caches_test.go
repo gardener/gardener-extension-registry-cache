@@ -59,9 +59,8 @@ var _ = Describe("RegistryCaches", func() {
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		values = Values{
-			Image:       image,
-			VPAEnabled:  true,
-			PSPDisabled: true,
+			Image:      image,
+			VPAEnabled: true,
 			Caches: []api.RegistryCache{
 				{
 					Upstream: "docker.io",
@@ -318,71 +317,6 @@ spec:
 status: {}
 `
 			}
-
-			podSecurityPolicyYAML = `apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
-metadata:
-  annotations:
-    seccomp.security.alpha.kubernetes.io/allowedProfileNames: runtime/default
-    seccomp.security.alpha.kubernetes.io/defaultProfileName: runtime/default
-  creationTimestamp: null
-  name: gardener.kube-system.registry-cache
-spec:
-  fsGroup:
-    rule: RunAsAny
-  runAsUser:
-    rule: RunAsAny
-  seLinux:
-    rule: RunAsAny
-  supplementalGroups:
-    rule: RunAsAny
-  volumes:
-  - persistentVolumeClaim
-`
-
-			clusterRolePSPYAML = `apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  creationTimestamp: null
-  name: gardener.cloud:psp:kube-system:registry-cache
-rules:
-- apiGroups:
-  - policy
-  - extensions
-  resourceNames:
-  - gardener.kube-system.registry-cache
-  resources:
-  - podsecuritypolicies
-  verbs:
-  - use
-`
-
-			roleBindingPSPYAML = `apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  annotations:
-    resources.gardener.cloud/delete-on-invalid-update: "true"
-  creationTimestamp: null
-  name: gardener.cloud:psp:registry-cache
-  namespace: kube-system
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: gardener.cloud:psp:kube-system:registry-cache
-subjects:
-- kind: ServiceAccount
-  name: registry-cache
-  namespace: kube-system
-`
-
-			serviceAccountYAML = `apiVersion: v1
-automountServiceAccountToken: false
-kind: ServiceAccount
-metadata:
-  creationTimestamp: null
-  name: registry-cache
-  namespace: kube-system
-`
 		)
 
 		Context("when cache volume size is nil", func() {
@@ -398,7 +332,7 @@ metadata:
 			})
 		})
 
-		Context("when VPA is enabled and PSP is disbaled", func() {
+		Context("when VPA is enabled", func() {
 			It("should successfully deploy the resources", func() {
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 				Expect(registryCaches.Deploy(ctx)).To(Succeed())
@@ -466,33 +400,6 @@ metadata:
 
 				Expect(managedResourceSecret.Data).To(HaveLen(6))
 				Expect(managedResourceSecret.Data).ShouldNot(HaveKey(ContainSubstring("verticalpodautoscaler")))
-			})
-		})
-
-		Context("PSP is not disabled", func() {
-			BeforeEach(func() {
-				values.PSPDisabled = false
-			})
-
-			It("should successfully deploy all resources when PSP is not disabled", func() {
-				Expect(registryCaches.Deploy(ctx)).To(Succeed())
-
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
-
-				Expect(managedResourceSecret.Data).To(HaveLen(12))
-				Expect(string(managedResourceSecret.Data["serviceaccount__kube-system__registry-cache.yaml"])).To(Equal(serviceAccountYAML))
-				Expect(string(managedResourceSecret.Data["podsecuritypolicy____gardener.kube-system.registry-cache.yaml"])).To(Equal(podSecurityPolicyYAML))
-				Expect(string(managedResourceSecret.Data["clusterrole____gardener.cloud_psp_kube-system_registry-cache.yaml"])).To(Equal(clusterRolePSPYAML))
-				Expect(string(managedResourceSecret.Data["rolebinding__kube-system__gardener.cloud_psp_registry-cache.yaml"])).To(Equal(roleBindingPSPYAML))
-
-				dockerConfigSecretName := "registry-docker-io-config-c6f43e93"
-				dockerStatefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", dockerConfigSecretName, "registry-cache", nil)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-f76393a6"
-				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "registry-cache", ptr.To("premium"))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
 			})
 		})
 

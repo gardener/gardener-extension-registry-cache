@@ -98,7 +98,6 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{
 		Image:              image.String(),
 		VPAEnabled:         v1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
-		PSPDisabled:        v1beta1helper.IsPSPDisabled(cluster.Shoot),
 		Caches:             registryConfig.Caches,
 		ResourceReferences: cluster.Shoot.Spec.Resources,
 	})
@@ -258,7 +257,6 @@ func cleanRegistryConfiguration(ctx context.Context, cluster *extensionscontroll
 		AlpineImage:       alpineImage.String(),
 		PauseImage:        pauseImage.String(),
 		DeleteSystemdUnit: deleteSystemdUnit,
-		PSPDisabled:       v1beta1helper.IsPSPDisabled(cluster.Shoot),
 		Upstreams:         upstreams,
 	}
 	cleaner := registryconfigurationcleaner.New(client, namespace, values)
