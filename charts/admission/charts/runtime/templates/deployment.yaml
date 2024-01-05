@@ -15,30 +15,18 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/secret-tls: {{ include (print $.Template.BasePath "/secret-tls.yaml") . | sha256sum }}
         {{- if .Values.global.kubeconfig }}
         checksum/secret-kubeconfig: {{ include (print $.Template.BasePath "/secret-kubeconfig.yaml") . | sha256sum }}
         {{- end }}
       labels:
         networking.gardener.cloud/to-dns: allowed
+        networking.gardener.cloud/to-runtime-apiserver: allowed
         {{- if .Values.global.virtualGarden.enabled }}
         networking.resources.gardener.cloud/to-virtual-garden-kube-apiserver-tcp-443: allowed
-        {{- else }}
-        networking.gardener.cloud/to-runtime-apiserver: allowed
         {{- end }}
 {{ include "labels" . | indent 8 }}
     spec:
-      {{- if not .Values.global.virtualGarden.enabled }}
       serviceAccountName: {{ include "name" . }}
-      {{- else if and .Values.global.virtualGarden.enabled .Values.global.virtualGarden.user.name }}
-        {{- if .Values.global.serviceAccountTokenVolumeProjection.enabled }}
-      serviceAccountName: {{ include "name" . }}
-        {{- else }}
-      serviceAccountName: default
-        {{- end }}
-      {{- else }}
-      serviceAccountName: default
-      {{- end }}
       {{- if .Values.global.kubeconfig }}
       automountServiceAccountToken: false
       {{- end }}
@@ -48,7 +36,13 @@ spec:
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
         args:
         - --webhook-config-server-port={{ .Values.global.webhookConfig.serverPort }}
-        - --webhook-config-cert-dir=/tls
+        {{- if .Values.global.virtualGarden.enabled }}
+        - --webhook-config-mode=url
+        - --webhook-config-url={{ printf "%s.%s" (include "name" .) (.Release.Namespace) }}
+        {{- else }}
+        - --webhook-config-mode=service
+        {{- end}}
+        - --webhook-config-namespace={{ .Release.Namespace }}
         {{- if .Values.global.kubeconfig }}
         - --kubeconfig=/kubeconfig/kubeconfig
         {{- end }}
@@ -59,6 +53,12 @@ spec:
         - --metrics-bind-address=:{{ .Values.global.metricsPort }}
         {{- end }}
         - --health-bind-address=:{{ .Values.global.healthPort }}
+        - --leader-election-id={{ include "leaderelectionid" . }}
+        {{- if .Values.global.virtualGarden.enabled }}
+        env:
+        - name: SOURCE_CLUSTER
+          value: enabled
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /healthz
@@ -80,9 +80,6 @@ spec:
 {{ toYaml .Values.global.resources | nindent 10 }}
 {{- end }}
         volumeMounts:
-        - name: tls
-          mountPath: /tls
-          readOnly: true
         {{- if .Values.global.kubeconfig }}
         - name: kubeconfig
           mountPath: /kubeconfig
@@ -99,10 +96,6 @@ spec:
           readOnly: true
         {{- end }}
       volumes:
-      - name: tls
-        secret:
-          secretName: gardener-extension-registry-cache-admission-tls
-          defaultMode: 420
       {{- if .Values.global.kubeconfig }}
       - name: kubeconfig
         secret:

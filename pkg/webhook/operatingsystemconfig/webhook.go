@@ -54,12 +54,6 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		return nil, err
 	}
 
-	namespaceSelector := &metav1.LabelSelector{
-		MatchExpressions: []metav1.LabelSelectorRequirement{
-			{Key: v1beta1constants.LabelExtensionPrefix + "registry-cache", Operator: metav1.LabelSelectorOpIn, Values: []string{"true"}},
-		},
-	}
-
 	webhook := &extensionswebhook.Webhook{
 		Name:     "operating-system-config",
 		Provider: "",
@@ -67,7 +61,9 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Target:   extensionswebhook.TargetSeed,
 		Path:     "/operating-system-config",
 		Webhook:  &admission.Webhook{Handler: handler},
-		Selector: namespaceSelector,
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{v1beta1constants.LabelExtensionPrefix + "registry-cache": "true"},
+		},
 	}
 
 	return webhook, nil
