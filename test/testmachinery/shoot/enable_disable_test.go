@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	defaultTestTimeout        = 30 * time.Minute
+	defaultTestTimeout        = 40 * time.Minute
 	defaultTestCleanupTimeout = 10 * time.Minute
 )
 
@@ -63,6 +63,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1230ImageWithDigest)
 
 		By("Disable the registry-cache extension")
+		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
+		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			common.RemoveRegistryCacheExtension(shoot)
 

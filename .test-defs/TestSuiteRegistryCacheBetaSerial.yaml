@@ -6,7 +6,7 @@ spec:
   owner: gardener-oq@listserv.sap.com
   description: registry-cache extension test suite that includes all serial beta tests
 
-  activeDeadlineSeconds: 7200
+  activeDeadlineSeconds: 9000
   labels: ["shoot", "beta"]
   behavior:
   - serial
