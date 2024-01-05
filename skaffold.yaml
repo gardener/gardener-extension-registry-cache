@@ -5,7 +5,7 @@ metadata:
   name: extension
 build:
   artifacts:
-    - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache
+    - image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache
       ko:
         dependencies:
           paths:
@@ -48,7 +48,7 @@ metadata:
   name: admission
 build:
   artifacts:
-    - image: eu.gcr.io/gardener-project/gardener/extensions/registry-cache-admission
+    - image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache-admission
       ko:
         dependencies:
           paths:
@@ -77,5 +77,5 @@ deploy:
         valuesFiles:
           - example/admission/values.yaml
         setValueTemplates:
-          runtime.image.repository: '{{.IMAGE_REPO_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
-          runtime.image.tag: '{{.IMAGE_TAG_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_eu_gcr_io_gardener_project_gardener_extensions_registry_cache_admission}}'
+          runtime.image.repository: '{{.IMAGE_REPO_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}'
+          runtime.image.tag: '{{.IMAGE_TAG_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}'

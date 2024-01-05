@@ -1,4 +1,4 @@
-# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (eu.gcr.io/gardener-project/3rd/registry:2.8.3).
+# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:2.8.3).
 version: 0.1
 log:
   fields:

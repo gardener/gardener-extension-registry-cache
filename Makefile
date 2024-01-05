@@ -15,7 +15,7 @@
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
 ADMISSION_NAME              := $(NAME)-admission
-IMAGE                       := eu.gcr.io/gardener-project/gardener/extensions/registry-cache
+IMAGE                       := europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache
 REPO_ROOT                   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 HACK_DIR                    := $(REPO_ROOT)/hack
 VERSION                     := $(shell cat "$(REPO_ROOT)/VERSION")
