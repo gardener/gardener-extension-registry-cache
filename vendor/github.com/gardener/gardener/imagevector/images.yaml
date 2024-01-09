@@ -54,7 +54,7 @@ images:
 - name: etcd-druid
   sourceRepository: github.com/gardener/etcd-druid
   repository: eu.gcr.io/gardener-project/gardener/etcd-druid
-  tag: "v0.20.3"
+  tag: "v0.21.0"
 - name: dependency-watchdog
   sourceRepository: github.com/gardener/dependency-watchdog
   repository: eu.gcr.io/gardener-project/gardener/dependency-watchdog
@@ -541,7 +541,7 @@ images:
 - name: vpa-admission-controller
   sourceRepository: github.com/kubernetes/autoscaler
   repository: registry.k8s.io/autoscaling/vpa-admission-controller
-  tag: "0.14.0"
+  tag: "1.0.0"
   labels:
     - name: 'gardener.cloud/cve-categorisation'
       value:
@@ -554,7 +554,7 @@ images:
 - name: vpa-recommender
   sourceRepository: github.com/kubernetes/autoscaler
   repository: registry.k8s.io/autoscaling/vpa-recommender
-  tag: "0.14.0"
+  tag: "1.0.0"
   labels:
     - name: 'gardener.cloud/cve-categorisation'
       value:
@@ -567,7 +567,7 @@ images:
 - name: vpa-updater
   sourceRepository: github.com/kubernetes/autoscaler
   repository: registry.k8s.io/autoscaling/vpa-updater
-  tag: "0.14.0"
+  tag: "1.0.0"
   labels:
     - name: 'gardener.cloud/cve-categorisation'
       value:
@@ -603,7 +603,7 @@ images:
 - name: istio-proxy
   sourceRepository: github.com/istio/istio
   repository: gcr.io/istio-release/proxyv2
-  tag: "1.17.1-distroless"
+  tag: "1.19.3-distroless"
   labels:
   - name: 'gardener.cloud/cve-categorisation'
     value:
@@ -620,7 +620,7 @@ images:
 - name: istio-istiod
   sourceRepository: github.com/istio/istio
   repository: gcr.io/istio-release/pilot
-  tag: "1.17.1-distroless"
+  tag: "1.19.3-distroless"
   labels:
   - name: 'gardener.cloud/cve-categorisation'
     value:

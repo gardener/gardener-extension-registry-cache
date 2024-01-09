@@ -74,8 +74,6 @@ deploy:
         namespace: garden
         wait: true
         chartPath: charts/admission
-        valuesFiles:
-          - example/admission/values.yaml
         setValueTemplates:
           runtime.image.repository: '{{.IMAGE_REPO_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}'
           runtime.image.tag: '{{.IMAGE_TAG_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}'
