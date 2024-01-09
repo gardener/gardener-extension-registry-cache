@@ -23,5 +23,5 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "leaderelectionid" -}}
-gardener-extension-admission-shoot-dns-service
+gardener-extension-registry-cache-admission
 {{- end -}}

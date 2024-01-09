@@ -55,4 +55,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: {{ include "name" . }}
-  namespace: garden
+  namespace: {{ .Release.Namespace }}
