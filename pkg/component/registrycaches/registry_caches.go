@@ -276,7 +276,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	)
 
 	var (
-		name         = strings.Replace(fmt.Sprintf("registry-%s", cache.Upstream), ".", "-", -1)
+		name         = computeStatefulSetName(cache.Upstream)
 		configValues = map[string]interface{}{
 			"http_addr":              fmt.Sprintf(":%d", constants.RegistryCachePort),
 			"http_debug_addr":        fmt.Sprintf(":%d", debugPort),
@@ -512,4 +512,25 @@ func getLabels(name, upstream string) map[string]string {
 		"app":                       name,
 		constants.UpstreamHostLabel: upstream,
 	}
+}
+
+// computeStatefulSetName returns StatulSet name by given upstream.
+// If length of registry-<escaped_upsteam> is NOT > 52, the name is registry-<escaped_upsteam>.
+// Otherwise it is registry-<truncated_escaped_upsteam>-<hash> where <escaped_upsteam> is truncated at 37 chars.
+// The returned name is at most 52 chars.
+func computeStatefulSetName(upstream string) string {
+	// The StatefulSet name limit is 63 chars. However Pods for a StatefulSet with name > 52 chars cannot be created due to https://github.com/kubernetes/kubernetes/issues/64023.
+	// The "controller-revision-hash" label gets added to the StatefulSet Pod. The label value is in format <stateful_set_name>_<hash> where <hash> is 10 or 11 chars.
+	// A label value limit is 63 chars. That's why a Pod for a StatefulSet with name > 52 chars cannot be created.
+	const statefulSetNameLimit = 52
+
+	escapedUpstream := strings.Replace(upstream, ".", "-", -1)
+	name := "registry-" + escapedUpstream
+	if len(name) > statefulSetNameLimit {
+		hash := utils.ComputeSHA256Hex([]byte(upstream))[:5]
+		upstreamLimit := statefulSetNameLimit - len("registry-") - len(hash) - 1
+		name = fmt.Sprintf("registry-%s-%s", escapedUpstream[:upstreamLimit], hash)
+	}
+
+	return name
 }
