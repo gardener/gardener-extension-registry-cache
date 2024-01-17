@@ -6,8 +6,10 @@ log:
 storage:
   delete:
     enabled: {{ .storage_delete_enabled }}
-  cache:
-    blobdescriptor: inmemory
+  # Mitigate https://github.com/distribution/distribution/issues/2367 by disabling the blobdescriptor cache.
+  # For more details, see https://github.com/distribution/distribution/issues/2367#issuecomment-1874449361.
+  # cache:
+  #  blobdescriptor: inmemory
   filesystem:
     rootdirectory: /var/lib/registry
 http:
