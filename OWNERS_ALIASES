@@ -4,11 +4,9 @@ aliases:
   registry-cache-reviewers:
   - ialidzhikov
   - dimitar-kostadinov
-  - Kostov6
   - oliver-goetz
   - rfranzke
   - timebertt
   registry-cache-approvers:
   - ialidzhikov
   - dimitar-kostadinov
-  - Kostov6
