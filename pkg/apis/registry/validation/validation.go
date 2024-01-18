@@ -64,7 +64,13 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 			if !apiequality.Semantic.DeepEqual(helper.VolumeSize(&oldCache), helper.VolumeSize(&newCache)) {
 				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("volume").Child("size"), helper.VolumeSize(&newCache).String(), "field is immutable"))
 			}
+
 			allErrs = append(allErrs, apivalidation.ValidateImmutableField(helper.VolumeStorageClassName(&newCache), helper.VolumeStorageClassName(&oldCache), cacheFldPath.Child("volume").Child("storageClassName"))...)
+
+			// Mitigation for https://github.com/distribution/distribution/issues/4249
+			if !helper.GarbageCollectionEnabled(&oldCache) && helper.GarbageCollectionEnabled(&newCache) {
+				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("garbageCollection").Child("enabled"), newCache.GarbageCollection, "garbage collection cannot be enabled once it is disabled"))
+			}
 		}
 	}
 

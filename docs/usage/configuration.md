@@ -87,6 +87,7 @@ The `providerConfig.caches[].secretReferenceName` is the name of the reference f
 
 When the registry cache receives a request for an image that is not present in its local store, it fetches the image from the upstream, returns it to the client and stores the image in the local store. The registry cache runs a scheduler that deletes images when their time to live (ttl) expires. When adding an image to the local store, the registry cache also adds a time to live for the image. The ttl value is `7d`. Requesting an image from the registry cache does not extend the time to live of the image. Hence, an image is always garbage collected from the registry cache store after `7d`.
 At the time of writing this document, there is no functionality for garbage collection based on disk size - e.g. garbage collecting images when a certain disk usage threshold is passed.
+The garbage collection cannot be enabled once it is disabled. This constraint is added to mitigate [distribution/distribution#4249](https://github.com/distribution/distribution/issues/4249).
 
 ## Increase the cache disk size
 
