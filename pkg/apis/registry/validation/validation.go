@@ -16,13 +16,13 @@ package validation
 
 import (
 	"fmt"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apivalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -85,18 +85,12 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 }
 
 func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
-	var allErrors field.ErrorList
-
-	const form = "; desired format: host[:port]"
-	if len(upstream) == 0 {
-		allErrors = append(allErrors, field.Required(fldPath, "upstream must be provided"+form))
+	var allErrs field.ErrorList
+	for _, msg := range validation.IsDNS1123Subdomain(upstream) {
+		allErrs = append(allErrs, field.Invalid(fldPath, upstream, msg))
 	}
 
-	if strings.HasPrefix(upstream, "https://") || strings.HasPrefix(upstream, "http://") {
-		allErrors = append(allErrors, field.Invalid(fldPath, upstream, "upstream must not include a scheme"+form))
-	}
-
-	return allErrors
+	return allErrs
 }
 
 // validatePositiveQuantity validates that a Quantity is positive.

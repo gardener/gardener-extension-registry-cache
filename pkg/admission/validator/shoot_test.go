@@ -163,9 +163,9 @@ var _ = Describe("Shoot validator", func() {
 
 				err := shootValidator.Validate(ctx, shoot, nil)
 				Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("spec.extensions[0].providerConfig.caches[0].upstream"),
-					"Detail": ContainSubstring("upstream must not include a scheme"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("spec.extensions[0].providerConfig.caches[0].upstream"),
+					"BadValue": Equal("https://registry.example.com"),
 				}))))
 			})
 

@@ -65,8 +65,8 @@ The `providerConfig` field is required.
 
 The `providerConfig.caches` field contains information about the registry caches to deploy. It is a required field. At least one cache has to be specified.
 
-The `providerConfig.caches[].upstream` field is the remote registry host (and optionally port) to cache. It is a required field.
-The desired format is `host[:port]`. The value must not include a scheme. The configured upstream registry must be accessible by `https` (`https://` is the assumed scheme).
+The `providerConfig.caches[].upstream` field is the remote registry host to cache. It is a required field.
+The value must be a valid DNS subdomain (RFC 1123). It must not include a scheme or port. The configured upstream registry must be accessible by `https` (`https://` is the assumed scheme).
 
 The `providerConfig.caches[].volume` field contains settings for the registry cache volume.
 The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the configured size and StorageClass name.

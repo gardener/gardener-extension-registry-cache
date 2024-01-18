@@ -38,12 +38,14 @@ var _ = Describe("Validation", func() {
 		fldPath = field.NewPath("providerConfig")
 		size := resource.MustParse("5Gi")
 		registryConfig = &api.RegistryConfig{
-			Caches: []api.RegistryCache{{
-				Upstream: "docker.io",
-				Volume: &api.Volume{
-					Size: &size,
+			Caches: []api.RegistryCache{
+				{
+					Upstream: "docker.io",
+					Volume: &api.Volume{
+						Size: &size,
+					},
 				},
-			}},
+			},
 		}
 	})
 
@@ -72,36 +74,49 @@ var _ = Describe("Validation", func() {
 			))
 		})
 
-		It("should require upstream", func() {
+		It("should deny invalid upstreams", func() {
 			registryConfig.Caches[0].Upstream = ""
 
-			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeRequired),
-					"Field":  Equal("providerConfig.caches[0].upstream"),
-					"Detail": ContainSubstring("upstream must be provided"),
-				})),
-			))
-		})
-
-		It("should deny upstream with scheme", func() {
-			cache := api.RegistryCache{
-				Upstream: "http://docker.io",
-			}
-			registryConfig.Caches = append(registryConfig.Caches, cache)
-
-			registryConfig.Caches[0].Upstream = "https://docker.io"
+			registryConfig.Caches = append(registryConfig.Caches,
+				api.RegistryCache{
+					Upstream: "docker.io.",
+				},
+				api.RegistryCache{
+					Upstream: ".docker.io",
+				},
+				api.RegistryCache{
+					Upstream: "https://docker.io",
+				},
+				api.RegistryCache{
+					Upstream: "docker.io:443",
+				},
+			)
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].upstream"),
-					"Detail": ContainSubstring("upstream must not include a scheme"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].upstream"),
+					"BadValue": Equal(""),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[1].upstream"),
-					"Detail": ContainSubstring("upstream must not include a scheme"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[1].upstream"),
+					"BadValue": Equal("docker.io."),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[2].upstream"),
+					"BadValue": Equal(".docker.io"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[3].upstream"),
+					"BadValue": Equal("https://docker.io"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[4].upstream"),
+					"BadValue": Equal("docker.io:443"),
 				})),
 			))
 		})
@@ -109,7 +124,7 @@ var _ = Describe("Validation", func() {
 		It("should deny non-positive cache size", func() {
 			negativeSize := resource.MustParse("-1Gi")
 			cache := api.RegistryCache{
-				Upstream: "quay.io",
+				Upstream: "myproj-releases.common.repositories.cloud.com",
 				Volume: &api.Volume{
 					Size: &negativeSize,
 				},

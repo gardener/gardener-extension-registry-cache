@@ -31,7 +31,8 @@ type RegistryConfig struct {
 
 // RegistryCache represents a registry cache to deploy.
 type RegistryCache struct {
-	// Upstream is the remote registry host (and optionally port) to cache.
+	// Upstream is the remote registry host to cache.
+	// The value must be a valid DNS subdomain (RFC 1123).
 	Upstream string `json:"upstream"`
 	// Size is the size of the registry cache.
 	// Defaults to 10Gi.
@@ -65,7 +66,7 @@ type RegistryStatus struct {
 
 // RegistryCacheStatus represents a deployed registry cache.
 type RegistryCacheStatus struct {
-	// Upstream is the remote registry host (and optionally port).
+	// Upstream is the remote registry host.
 	Upstream string `json:"upstream"`
 	// Endpoint is the registry cache endpoint.
 	// Example: "http://10.4.246.205:5000"
