@@ -209,10 +209,26 @@ var _ = Describe("Validation", func() {
 				})),
 			))
 		})
+
+		It("should deny garbage collection enablement once it is disabled", func() {
+			oldRegistryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+				Enabled: false,
+			}
+			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+				Enabled: true,
+			}
+
+			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("providerConfig.caches[0].garbageCollection.enabled"),
+					"Detail": Equal("garbage collection cannot be enabled once it is disabled"),
+				})),
+			))
+		})
 	})
 
 	Describe("#ValidateUpstreamRegistrySecret", func() {
-
 		var secret *corev1.Secret
 
 		BeforeEach(func() {
