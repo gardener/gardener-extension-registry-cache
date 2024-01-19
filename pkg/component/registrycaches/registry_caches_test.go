@@ -708,9 +708,9 @@ metadata:
 		})
 	})
 
-	DescribeTable("#computeStatefulSetName",
+	DescribeTable("#computeName",
 		func(upstream, expected string) {
-			actual := ComputeStatefulSetName(upstream)
+			actual := ComputeName(upstream)
 			Expect(len(actual)).NotTo(BeNumerically(">", 52))
 			Expect(actual).To(Equal(expected))
 		},

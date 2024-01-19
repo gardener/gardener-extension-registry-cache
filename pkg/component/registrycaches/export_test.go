@@ -14,4 +14,4 @@
 
 package registrycaches
 
-var ComputeStatefulSetName = computeStatefulSetName
+var ComputeName = computeName
