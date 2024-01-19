@@ -276,7 +276,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	)
 
 	var (
-		name         = strings.Replace(fmt.Sprintf("registry-%s", strings.Split(cache.Upstream, ":")[0]), ".", "-", -1)
+		name         = strings.Replace(fmt.Sprintf("registry-%s", cache.Upstream), ".", "-", -1)
 		configValues = map[string]interface{}{
 			"http_addr":              fmt.Sprintf(":%d", constants.RegistryCachePort),
 			"http_debug_addr":        fmt.Sprintf(":%d", debugPort),

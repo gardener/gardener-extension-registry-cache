@@ -65,7 +65,8 @@ string
 </em>
 </td>
 <td>
-<p>Upstream is the remote registry host (and optionally port) to cache.</p>
+<p>Upstream is the remote registry host to cache.
+The value must be a valid DNS subdomain (RFC 1123).</p>
 </td>
 </tr>
 <tr>
@@ -136,7 +137,7 @@ string
 </em>
 </td>
 <td>
-<p>Upstream is the remote registry host (and optionally port).</p>
+<p>Upstream is the remote registry host.</p>
 </td>
 </tr>
 <tr>
