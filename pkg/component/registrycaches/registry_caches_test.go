@@ -707,6 +707,17 @@ metadata:
 			})
 		})
 	})
+
+	DescribeTable("#computeName",
+		func(upstream, expected string) {
+			actual := ComputeName(upstream)
+			Expect(len(actual)).NotTo(BeNumerically(">", 52))
+			Expect(actual).To(Equal(expected))
+		},
+
+		Entry("short upstream", "docker.io", "registry-docker-io"),
+		Entry("long upstream", "myproj-releases.common.repositories.cloud.com", "registry-myproj-releases-common-repositories-c-3f834"),
+	)
 })
 
 func encodeBase64(val string) string {
