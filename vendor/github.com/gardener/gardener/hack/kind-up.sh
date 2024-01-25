@@ -100,7 +100,7 @@ setup_loopback_device() {
   fi
   LOOPBACK_DEVICE=$(ip address | grep LOOPBACK | sed "s/^[0-9]\+: //g" | awk '{print $1}' | sed "s/:$//g")
   LOOPBACK_IP_ADDRESSES=(127.0.0.10 127.0.0.11 127.0.0.12)
-  if [[ "$IPFAMILY" == "ipv6" ]]; then
+  if [[ "$IPFAMILY" == "ipv6" ]] || [[ "$IPFAMILY" == "dual" ]]; then
     LOOPBACK_IP_ADDRESSES+=(::10 ::11 ::12)
   fi
   echo "Checking loopback device ${LOOPBACK_DEVICE}..."
@@ -140,7 +140,7 @@ setup_containerd_registry_mirror() {
   UPSTREAM_SERVER=$3
   MIRROR_HOST=$4
 
-  echo "Setting up containerd registry mirror for host ${UPSTREAM_HOST}.";
+  echo "[${NODE}] Setting up containerd registry mirror for host ${UPSTREAM_HOST}.";
   REGISTRY_DIR="/etc/containerd/certs.d/${UPSTREAM_HOST}"
   docker exec "${NODE}" mkdir -p "${REGISTRY_DIR}"
   cat <<EOF | docker exec -i "${NODE}" cp /dev/stdin "${REGISTRY_DIR}/hosts.toml"
@@ -181,6 +181,9 @@ setup_kind_network
 
 if [[ "$IPFAMILY" == "ipv6" ]]; then
   ADDITIONAL_ARGS="$ADDITIONAL_ARGS --values $CHART/values-ipv6.yaml"
+fi
+if [[ "$IPFAMILY" == "dual" ]]; then
+  ADDITIONAL_ARGS="$ADDITIONAL_ARGS --values $CHART/values-dual.yaml"
 fi
 
 if [[ "$IPFAMILY" == "ipv6" ]] && [[ "$MULTI_ZONAL" == "true" ]]; then
@@ -254,7 +257,7 @@ if [[ "$CLUSTER_NAME" == "gardener-local2-ha-single-zone" ]]; then
 fi
 
 ip_address_field="IPAddress"
-if [[ "$IPFAMILY" == "ipv6" ]]; then
+if [[ "$IPFAMILY" == "ipv6" ]] || [[ "$IPFAMILY" == "dual" ]] ; then
   ip_address_field="GlobalIPv6Address"
 fi
 

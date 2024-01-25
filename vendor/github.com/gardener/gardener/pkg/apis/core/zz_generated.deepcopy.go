@@ -739,6 +739,16 @@ func (in *ClusterAutoscaler) DeepCopyInto(out *ClusterAutoscaler) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.IgnoreDaemonsetsUtilization != nil {
+		in, out := &in.IgnoreDaemonsetsUtilization, &out.IgnoreDaemonsetsUtilization
+		*out = new(bool)
+		**out = **in
+	}
+	if in.Verbosity != nil {
+		in, out := &in.Verbosity, &out.Verbosity
+		*out = new(int32)
+		**out = **in
+	}
 	return
 }
 
@@ -4125,11 +4135,6 @@ func (in *SeedSpec) DeepCopyInto(out *SeedSpec) {
 	in.DNS.DeepCopyInto(&out.DNS)
 	in.Networks.DeepCopyInto(&out.Networks)
 	in.Provider.DeepCopyInto(&out.Provider)
-	if in.SecretRef != nil {
-		in, out := &in.SecretRef, &out.SecretRef
-		*out = new(v1.SecretReference)
-		**out = **in
-	}
 	if in.Settings != nil {
 		in, out := &in.Settings, &out.Settings
 		*out = new(SeedSettings)
