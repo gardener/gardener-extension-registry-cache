@@ -329,6 +329,18 @@ func SetDefaults_ClusterAutoscaler(obj *ClusterAutoscaler) {
 	if obj.MaxGracefulTerminationSeconds == nil {
 		obj.MaxGracefulTerminationSeconds = pointer.Int32(600)
 	}
+	if obj.IgnoreDaemonsetsUtilization == nil {
+		obj.IgnoreDaemonsetsUtilization = pointer.Bool(false)
+	}
+	if obj.Verbosity == nil {
+		obj.Verbosity = pointer.Int32(2)
+	}
+	if obj.NewPodScaleUpDelay == nil {
+		obj.NewPodScaleUpDelay = &metav1.Duration{Duration: 0}
+	}
+	if obj.MaxEmptyBulkDelete == nil {
+		obj.MaxEmptyBulkDelete = pointer.Int32(10)
+	}
 }
 
 // SetDefaults_NginxIngress sets default values for NginxIngress objects.

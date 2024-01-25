@@ -407,13 +407,21 @@ message ClusterAutoscaler {
   // +optional
   repeated string ignoreTaints = 10;
 
-  // NewPodScaleUpDelay specifies how long CA should ignore newly created pods before they have to be considered for scale-up.
+  // NewPodScaleUpDelay specifies how long CA should ignore newly created pods before they have to be considered for scale-up (default: 0s).
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Duration newPodScaleUpDelay = 11;
 
   // MaxEmptyBulkDelete specifies the maximum number of empty nodes that can be deleted at the same time (default: 10).
   // +optional
   optional int32 maxEmptyBulkDelete = 12;
+
+  // IgnoreDaemonsetsUtilization allows CA to ignore DaemonSet pods when calculating resource utilization for scaling down (default: false).
+  // +optional
+  optional bool ignoreDaemonsetsUtilization = 13;
+
+  // Verbosity allows CA to modify its log level (default: 2).
+  // +optional
+  optional int32 verbosity = 14;
 }
 
 // Condition holds the information about the state of a resource.
@@ -2398,14 +2406,6 @@ message SeedSpec {
 
   // Provider defines the provider type and region for this Seed cluster.
   optional SeedProvider provider = 4;
-
-  // SecretRef is a reference to a Secret object containing the Kubeconfig of the Kubernetes
-  // cluster to be registered as Seed.
-  //
-  // Deprecated: This field is deprecated, gardenlet must run in the Seed cluster,
-  // hence it should use the in-cluster rest config via ServiceAccount to communicate with the Seed cluster.
-  // +optional
-  optional k8s.io.api.core.v1.SecretReference secretRef = 5;
 
   // Taints describes taints on the seed.
   // +optional
