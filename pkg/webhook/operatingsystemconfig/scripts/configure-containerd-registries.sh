@@ -10,13 +10,14 @@ function with_backoff {
     exit 1
   fi
 
-  local max_attempts=${MAX_ATTEMPTS-20}
-  local interval=${INTERVAL-1}
-  local max_interval=1024
+  local max_attempts=${MAX_ATTEMPTS-60}
+  local linear_duration=${LINEAR_DURATION-150}
+  local interval=${INTERVAL-3}
+  local max_interval=192
   local attempt=1
   local exit_code=0
 
-  while (( attempt < max_attempts ))
+  while (( attempt <= max_attempts ))
   do
     if "$@"
     then
@@ -28,10 +29,11 @@ function with_backoff {
     echo "[$run_id] Request failed! Retrying in $interval seconds..."
     sleep "$interval"
 
-    attempt=$(( attempt + 1 ))
-    if (( interval * 2 <= max_interval )); then
+    if (( attempt * (interval + 2) >= linear_duration && interval * 2 <= max_interval )); then
       interval=$(( interval * 2 ))
     fi
+    attempt=$(( attempt + 1 ))
+
   done
 
   if [[ $exit_code != 0 ]]
