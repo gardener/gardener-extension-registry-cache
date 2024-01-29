@@ -14,6 +14,9 @@ build:
             - pkg/apis/config
             - pkg/apis/config/v1alpha1
             - pkg/apis/config/validation
+            - pkg/apis/mirror
+            - pkg/apis/mirror/install
+            - pkg/apis/mirror/v1alpha1
             - pkg/apis/registry
             - pkg/apis/registry/helper
             - pkg/apis/registry/install
@@ -23,9 +26,11 @@ build:
             - pkg/component/registrycaches
             - pkg/component/registryconfigurationcleaner
             - pkg/constants
-            - pkg/controller/extension
+            - pkg/controller/cache
+            - pkg/controller/mirror
             - pkg/utils/registry
-            - pkg/webhook/operatingsystemconfig
+            - pkg/webhook/cache
+            - pkg/webhook/mirror
             - vendor
             - VERSION
         ldflags:

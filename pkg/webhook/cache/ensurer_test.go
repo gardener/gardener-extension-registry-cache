@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operatingsystemconfig_test
+package cache_test
 
 import (
 	"context"
@@ -37,12 +37,12 @@ import (
 
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/webhook/operatingsystemconfig"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/webhook/cache"
 )
 
-func TestOperatingSystemConfigWebhook(t *testing.T) {
+func TestRegistryCacheWebhook(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "OperatingSystemConfig Webhook Suite")
+	RunSpecs(t, "Registry Cache Webhook Suite")
 }
 
 var (
@@ -78,18 +78,17 @@ var _ = Describe("Ensurer", func() {
 
 		BeforeEach(func() {
 			files = []extensionsv1alpha1.File{oldFile}
-
 		})
 
 		It("should add additional files to the current ones", func() {
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			Expect(ensurer.EnsureAdditionalFiles(ctx, nil, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(oldFile, configureContainerdRegistriesFile(configureContainerdRegistriesScript)))
 		})
 
 		It("should overwrite existing files of the current ones", func() {
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			files = append(files, configureContainerdRegistriesFile("echo 'foo'"))
 
@@ -118,7 +117,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			gctx := extensionscontextwebhook.NewGardenContext(fakeClient, osc)
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
 			Expect(err).To(HaveOccurred())
@@ -136,7 +135,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit))
@@ -154,7 +153,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit))
@@ -167,7 +166,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
 			Expect(err).To(HaveOccurred())
@@ -194,7 +193,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
 			Expect(err).To(HaveOccurred())
@@ -223,7 +222,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
 			Expect(err).To(HaveOccurred())
@@ -267,7 +266,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit,
@@ -312,7 +311,7 @@ var _ = Describe("Ensurer", func() {
 			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
-			ensurer := operatingsystemconfig.NewEnsurer(fakeClient, decoder, logger)
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			units = append(units,
 				configureContainerdRegistriesUnit("docker.io,foo,bar"),

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operatingsystemconfig
+package cache
 
 import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -28,9 +28,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-var logger = log.Log.WithName("operating-system-config-webhook")
+const (
+	// Name is the webhook name.
+	Name = "registry-cache"
+)
 
-// New returns a new mutating webhook that adds the required containerd registry configuration files to the OperatingSystemConfig resource.
+var logger = log.Log.WithName("registry-cache-webhook")
+
+// New returns a new mutating webhook that for a registry-cache Extension adds the required files and units to the OperatingSystemConfig resource.
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Adding webhook to manager")
 
@@ -55,11 +60,11 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	}
 
 	webhook := &extensionswebhook.Webhook{
-		Name:     "operating-system-config",
+		Name:     Name,
 		Provider: "",
 		Types:    types,
 		Target:   extensionswebhook.TargetSeed,
-		Path:     "/operating-system-config",
+		Path:     "/webhooks/registry-cache",
 		Webhook:  &admission.Webhook{Handler: handler},
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{v1beta1constants.LabelExtensionPrefix + "registry-cache": "true"},

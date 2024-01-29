@@ -43,7 +43,7 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
-// NewActuator returns an actuator responsible for Extension resources.
+// NewActuator returns an actuator responsible for registry-cache Extension resources.
 func NewActuator(client client.Client, decoder runtime.Decoder, config config.Configuration) extension.Actuator {
 	return &actuator{
 		client:  client,

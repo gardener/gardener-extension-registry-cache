@@ -28,9 +28,9 @@ import (
 const (
 	// Type is the type of Extension resource.
 	Type = "registry-cache"
-	// ControllerName is the name of the registry cache service controller.
-	ControllerName = "extension-controller"
-	// FinalizerSuffix is the finalizer suffix for the registry cache service controller.
+	// ControllerName is the name of the registry cache controller.
+	ControllerName = "registry-cache-controller"
+	// FinalizerSuffix is the finalizer suffix for the registry cache controller.
 	FinalizerSuffix = "registry-cache"
 )
 
@@ -39,11 +39,11 @@ var (
 	DefaultAddOptions = AddOptions{}
 )
 
-// AddOptions are options to apply when adding the registry cache service controller to the manager.
+// AddOptions are options to apply when adding the registry cache controller to the manager.
 type AddOptions struct {
 	// ControllerOptions contains options for the controller.
 	ControllerOptions controller.Options
-	// Config contains configuration for the registry cache service.
+	// Config contains configuration for the registry cache controller.
 	Config config.Configuration
 	// IgnoreOperationAnnotation specifies whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool

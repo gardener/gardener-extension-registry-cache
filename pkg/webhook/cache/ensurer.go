@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operatingsystemconfig
+package cache
 
 import (
 	"context"
@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
@@ -40,7 +41,7 @@ var (
 	configureContainerdRegistriesScript string
 )
 
-// NewEnsurer creates a new controlplane ensurer.
+// NewEnsurer creates a new registry cache ensurer.
 func NewEnsurer(client client.Client, decoder runtime.Decoder, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
 		client:  client,
@@ -56,9 +57,9 @@ type ensurer struct {
 	logger  logr.Logger
 }
 
-// EnsureAdditionalFiles ensures that the containerd registry configuration files are added to the <new> files.
+// EnsureAdditionalFiles ensures that the configure-containerd-registries.sh script is added to the <new> files.
 func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
-	appendUniqueFile(new, extensionsv1alpha1.File{
+	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 		Path:        "/opt/bin/configure-containerd-registries.sh",
 		Permissions: pointer.Int32(0744),
 		Content: extensionsv1alpha1.FileContent{
@@ -72,6 +73,7 @@ func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenCont
 	return nil
 }
 
+// EnsureAdditionalUnits ensures that the configure-containerd-registries.service unit is added to the <new> units.
 func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
@@ -136,19 +138,6 @@ ExecStart=/opt/bin/configure-containerd-registries.sh ` + strings.Join(scriptArg
 	appendUniqueUnit(new, unit)
 
 	return nil
-}
-
-// appendUniqueFile appends a unit file only if it does not exist, otherwise overwrite content of previous files
-func appendUniqueFile(files *[]extensionsv1alpha1.File, file extensionsv1alpha1.File) {
-	resFiles := make([]extensionsv1alpha1.File, 0, len(*files))
-
-	for _, f := range *files {
-		if f.Path != file.Path {
-			resFiles = append(resFiles, f)
-		}
-	}
-
-	*files = append(resFiles, file)
 }
 
 // appendUniqueUnit appends a unit only if it does not exist, otherwise overwrite content of previous unit
