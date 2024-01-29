@@ -18,10 +18,16 @@ The make target will then deploy then registry-cache admission component. It wil
 
 ## Creating a `Shoot` Cluster
 
-Once the above step is completed you can create a Shoot cluster. Review the Shoot specification in [`example/shoot.yaml`](../../example/shoot.yaml). Create the Shoot:
+Once the above step is completed you can create a Shoot cluster.
 
+[`example/shoot-registry-cache.yaml`](../../example/shoot-registry-cache.yaml) contains a Shoot specification with the `registry-cache` extension:
 ```bash
-kubectl create -f example/shoot.yaml
+kubectl create -f example/shoot-registry-cache.yaml
+```
+
+[`example/shoot-registry-mirror.yaml`](../../example/shoot-registry-mirror.yaml) contains a Shoot specification with the `registry-mirror` extension:
+```bash
+kubectl create -f example/shoot-registry-mirror.yaml
 ```
 
 ## Tearing Down the Dev Environment
