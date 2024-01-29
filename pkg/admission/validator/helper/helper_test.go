@@ -12,32 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator_test
+package helper_test
 
 import (
+	"testing"
+
 	"github.com/gardener/gardener/pkg/apis/core"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/helper"
 )
+
+func TestHelper(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Validator Helper Suite")
+}
 
 var _ = Describe("Helpers", func() {
 
-	DescribeTable("#FindRegistryCacheExtension",
-		func(extensions []core.Extension, expectedI int, expectedExt core.Extension) {
-			i, ext := validator.FindRegistryCacheExtension(extensions)
+	DescribeTable("#FindExtension",
+		func(extensions []core.Extension, extensionType string, expectedI int, expectedExt core.Extension) {
+			i, ext := helper.FindExtension(extensions, extensionType)
 			Expect(i).To(Equal(expectedI))
 			Expect(ext).To(Equal(expectedExt))
 		},
 
 		Entry("extensions is nil",
 			nil,
+			"registry-cache",
 			-1, core.Extension{},
 		),
 		Entry("extensions is empty",
 			[]core.Extension{},
+			"registry-cache",
 			-1, core.Extension{},
 		),
 		Entry("no registry-cache extension",
@@ -46,6 +55,7 @@ var _ = Describe("Helpers", func() {
 				{Type: "bar"},
 				{Type: "baz"},
 			},
+			"registry-cache",
 			-1, core.Extension{},
 		),
 		Entry("with registry-cache extension",
@@ -55,6 +65,7 @@ var _ = Describe("Helpers", func() {
 				{Type: "registry-cache", ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"one": "two"}`)}},
 				{Type: "baz"},
 			},
+			"registry-cache",
 			2, core.Extension{Type: "registry-cache", ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"one": "two"}`)}},
 		),
 	)

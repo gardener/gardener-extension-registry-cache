@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator_test
+package cache_test
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"testing"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
@@ -36,10 +37,15 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 )
+
+func TestRegistryCacheValidator(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Registry Cache Validator Suite")
+}
 
 var _ = Describe("Shoot validator", func() {
 
@@ -64,7 +70,7 @@ var _ = Describe("Shoot validator", func() {
 			ctrl = gomock.NewController(GinkgoT())
 			apiReader = mockclient.NewMockReader(ctrl)
 
-			shootValidator = validator.NewShootValidator(apiReader, decoder)
+			shootValidator = cache.NewShootValidator(apiReader, decoder)
 
 			shoot = &core.Shoot{
 				ObjectMeta: metav1.ObjectMeta{
@@ -230,7 +236,6 @@ var _ = Describe("Shoot validator", func() {
 		})
 
 		Context("Upstream credentials", func() {
-
 			var (
 				fakeErr error
 				secret  *corev1.Secret

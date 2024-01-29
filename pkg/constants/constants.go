@@ -15,8 +15,10 @@
 package constants
 
 const (
-	// ExtensionType is the name of the extension type.
-	ExtensionType = "registry-cache"
+	// RegistryCacheExtensionType is the name of the registry-cache Extension type.
+	RegistryCacheExtensionType = "registry-cache"
+	// RegistryMirrorExtensionType is the name of the registry-mirror Extension type.
+	RegistryMirrorExtensionType = "registry-mirror"
 	// Origin is the origin used for the registry cache ManagedResources.
 	Origin = "registry-cache"
 

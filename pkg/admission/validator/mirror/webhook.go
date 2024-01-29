@@ -1,4 +1,4 @@
-// Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright (c) 2024 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package mirror
 
 import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -27,28 +27,27 @@ import (
 
 const (
 	// Name is a name for a validation webhook.
-	Name = "validator"
+	Name = "registry-mirror-validator"
 )
 
-var logger = log.Log.WithName("registry-cache-validator-webhook")
+var logger = log.Log.WithName("registry-mirror-validator-webhook")
 
 // New creates a new webhook that validates Shoot and CloudProfile resources.
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Setting up webhook", "name", Name)
 
 	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
-	apiReader := mgr.GetAPIReader()
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
-		Provider: constants.ExtensionType,
+		Provider: constants.RegistryCacheExtensionType,
 		Name:     Name,
-		Path:     "/webhooks/validate",
+		Path:     "/webhooks/registry-config",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewShootValidator(apiReader, decoder): {{Obj: &core.Shoot{}}},
+			NewShootValidator(decoder): {{Obj: &core.Shoot{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{"extensions.extensions.gardener.cloud/registry-cache": "true"},
+			MatchLabels: map[string]string{"extensions.extensions.gardener.cloud/registry-mirror": "true"},
 		},
 	})
 }

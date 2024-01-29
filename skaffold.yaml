@@ -59,7 +59,13 @@ build:
           paths:
             - cmd/gardener-extension-registry-cache-admission/app
             - pkg/admission/cmd
-            - pkg/admission/validator
+            - pkg/admission/validator/cache
+            - pkg/admission/validator/helper
+            - pkg/admission/validator/mirror
+            - pkg/apis/mirror
+            - pkg/apis/mirror/install
+            - pkg/apis/mirror/v1alpha1
+            - pkg/apis/mirror/validation
             - pkg/apis/registry
             - pkg/apis/registry/helper
             - pkg/apis/registry/install

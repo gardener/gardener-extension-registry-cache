@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator
+package cache
 
 import (
 	"context"
@@ -27,8 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/helper"
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 // shoot validates shoots
@@ -52,7 +54,7 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 		return fmt.Errorf("wrong object type %T", new)
 	}
 
-	i, ext := FindRegistryCacheExtension(shoot.Spec.Extensions)
+	i, ext := helper.FindExtension(shoot.Spec.Extensions, constants.RegistryCacheExtensionType)
 	if i == -1 {
 		return nil
 	}
@@ -81,7 +83,7 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 			return fmt.Errorf("wrong object type %T for old object", old)
 		}
 
-		oldI, oldExt := FindRegistryCacheExtension(oldShoot.Spec.Extensions)
+		oldI, oldExt := helper.FindExtension(oldShoot.Spec.Extensions, constants.RegistryCacheExtensionType)
 		if oldI != -1 {
 			if oldExt.ProviderConfig == nil {
 				return fmt.Errorf("providerConfig is not available on old Shoot")

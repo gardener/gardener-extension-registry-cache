@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package validator_test
+package validation_test
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestValidator(t *testing.T) {
+func TestMirrorValidation(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Validator Suite")
+	RunSpecs(t, "Mirror Validation Suite")
 }

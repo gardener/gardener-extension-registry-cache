@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestTypeValidation(t *testing.T) {
+func TestRegistryValidation(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Types Validation Suite")
+	RunSpecs(t, "Registry Validation Suite")
 }
