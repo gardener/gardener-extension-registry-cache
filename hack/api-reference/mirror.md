@@ -109,8 +109,33 @@ string
 <p>Host is the mirror host.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>capabilities</code></br>
+<em>
+<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorHostCapability">
+[]MirrorHostCapability
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Capabilities are the operations a host is capable of performing.
+This also represents the set of operations for which the mirror host may be trusted to perform.
+Defaults to [&ldquo;pull&rdquo;].</p>
+</td>
+</tr>
 </tbody>
 </table>
+<h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorHostCapability">MirrorHostCapability
+(<code>string</code> alias)</p></h3>
+<p>
+(<em>Appears on:</em>
+<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorHost">MirrorHost</a>)
+</p>
+<p>
+<p>MirrorHostCapability represents a mirror host capability.</p>
+</p>
 <hr/>
 <p><em>
 Generated with <a href="https://github.com/ahmetb/gen-crd-api-reference-docs">gen-crd-api-reference-docs</a>

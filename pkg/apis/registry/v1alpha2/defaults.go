@@ -16,12 +16,7 @@ package v1alpha2
 
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/runtime"
 )
-
-func addDefaultingFuncs(scheme *runtime.Scheme) error {
-	return RegisterDefaults(scheme)
-}
 
 // SetDefaults_RegistryCache sets the defaults for a RegistryCache.
 func SetDefaults_RegistryCache(cache *RegistryCache) {

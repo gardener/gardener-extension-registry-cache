@@ -24,6 +24,11 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 )
 
+var supportedCapabilities = sets.New[string](
+	string(mirror.MirrorHostCapabilityPull),
+	string(mirror.MirrorHostCapabilityResolve),
+)
+
 // ValidateMirrorConfig validates the passed configuration instance.
 func ValidateMirrorConfig(mirrorConfig *mirror.MirrorConfig, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
@@ -69,6 +74,12 @@ func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *fie
 			allErrs = append(allErrs, field.Duplicate(hostFldPath.Child("host"), host.Host))
 		} else {
 			hosts.Insert(host.Host)
+		}
+
+		for _, capability := range host.Capabilities {
+			if !supportedCapabilities.Has(string(capability)) {
+				allErrs = append(allErrs, field.NotSupported(hostFldPath.Child("capabilities"), string(capability), sets.List(supportedCapabilities)))
+			}
 		}
 	}
 

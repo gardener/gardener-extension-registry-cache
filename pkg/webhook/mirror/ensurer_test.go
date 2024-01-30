@@ -201,7 +201,10 @@ var _ = Describe("Ensurer", func() {
 									{
 										Upstream: "docker.io",
 										Hosts: []v1alpha1.MirrorHost{
-											{Host: "https://mirror.gcr.io"},
+											{
+												Host:         "https://mirror.gcr.io",
+												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+											},
 										},
 									},
 								},
@@ -216,7 +219,7 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(oldFile,
-				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "https://mirror.gcr.io"),
+				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "https://mirror.gcr.io", `["pull", "resolve"]`),
 			))
 		})
 
@@ -244,7 +247,10 @@ var _ = Describe("Ensurer", func() {
 									{
 										Upstream: "docker.io",
 										Hosts: []v1alpha1.MirrorHost{
-											{Host: "https://mirror.gcr.io"},
+											{
+												Host:         "https://mirror.gcr.io",
+												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+											},
 										},
 									},
 								},
@@ -258,18 +264,18 @@ var _ = Describe("Ensurer", func() {
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
 			files = append(files,
-				hostsTOMLFile("docker.io", "foo", "bar"),
+				hostsTOMLFile("docker.io", "foo", "bar", "baz"),
 			)
 
 			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(oldFile,
-				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "https://mirror.gcr.io"),
+				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "https://mirror.gcr.io", `["pull", "resolve"]`),
 			))
 		})
 	})
 })
 
-func hostsTOMLFile(upstream, upstreamServer, mirrorHost string) extensionsv1alpha1.File {
+func hostsTOMLFile(upstream, upstreamServer, mirrorHost, capabilities string) extensionsv1alpha1.File {
 	return extensionsv1alpha1.File{
 		Path:        filepath.Join("/etc/containerd/certs.d/", upstream, "hosts.toml"),
 		Permissions: pointer.Int32(0644),
@@ -278,7 +284,8 @@ func hostsTOMLFile(upstream, upstreamServer, mirrorHost string) extensionsv1alph
 				Data: fmt.Sprintf(`server = "%s"
 
 [host."%s"]
-`, upstreamServer, mirrorHost),
+  capabilities = %s
+`, upstreamServer, mirrorHost, capabilities),
 			},
 		},
 	}

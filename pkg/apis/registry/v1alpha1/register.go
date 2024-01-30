@@ -31,7 +31,7 @@ func Resource(resource string) schema.GroupResource {
 }
 
 var (
-	localSchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, addDefaultingFuncs)
+	localSchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, RegisterDefaults)
 	// AddToScheme is a pointer to SchemeBuilder.AddToScheme.
 	AddToScheme = localSchemeBuilder.AddToScheme
 )

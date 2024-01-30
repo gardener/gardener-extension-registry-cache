@@ -40,4 +40,17 @@ type MirrorConfiguration struct {
 type MirrorHost struct {
 	// Host is the mirror host.
 	Host string
+	// Capabilities are the operations a host is capable of performing.
+	// This also represents the set of operations for which the mirror host may be trusted to perform.
+	Capabilities []MirrorHostCapability
 }
+
+// MirrorHostCapability represents a mirror host capability.
+type MirrorHostCapability string
+
+const (
+	// MirrorHostCapabilityPull represents the capability to fetch manifests and blobs by digest.
+	MirrorHostCapabilityPull MirrorHostCapability = "pull"
+	// MirrorHostCapabilityResolve represents the capability to fetch manifests by name.
+	MirrorHostCapabilityResolve = "resolve"
+)

@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
@@ -53,6 +54,7 @@ func init() {
 	var err error
 	hostsTOMLTpl, err = template.
 		New("hosts.toml.tpl").
+		Funcs(sprig.TxtFuncMap()).
 		Parse(hostsTOMLContentTpl)
 	utilruntime.Must(err)
 }

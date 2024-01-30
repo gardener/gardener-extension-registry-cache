@@ -37,7 +37,10 @@ var _ = Describe("Validation", func() {
 				{
 					Upstream: "docker.io",
 					Hosts: []api.MirrorHost{
-						{Host: "https://mirror.gcr.io"},
+						{
+							Host:         "https://mirror.gcr.io",
+							Capabilities: []api.MirrorHostCapability{api.MirrorHostCapabilityPull, api.MirrorHostCapabilityResolve},
+						},
 					},
 				},
 			},
@@ -178,6 +181,31 @@ var _ = Describe("Validation", func() {
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":  Equal(field.ErrorTypeDuplicate),
 					"Field": Equal("providerConfig.mirrors[0].hosts[1].host"),
+				})),
+			))
+		})
+
+		It("should deny invalid mirror host capability", func() {
+			mirrorConfig = &api.MirrorConfig{
+				Mirrors: []api.MirrorConfiguration{
+					{
+						Upstream: "docker.io",
+						Hosts: []api.MirrorHost{
+							{
+								Host:         "https://mirror.gcr.io",
+								Capabilities: []api.MirrorHostCapability{"foo"},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeNotSupported),
+					"Field":    Equal("providerConfig.mirrors[0].hosts[0].capabilities"),
+					"BadValue": Equal("foo"),
+					"Detail":   Equal(`supported values: "pull", "resolve"`),
 				})),
 			))
 		})

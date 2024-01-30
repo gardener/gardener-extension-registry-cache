@@ -40,6 +40,7 @@ spec:
       - upstream: docker.io
         hosts:
         - host: "https://mirror.gcr.io"
+          capabilities: ["pull"]
 ```
 
 The `providerConfig` field is required.
@@ -53,3 +54,6 @@ The `providerConfig.mirror[].hosts` field represents the mirror hosts to be used
 
 The `providerConfig.mirror[].hosts.host` field is the mirror host. It is a required field.
 The value must include a scheme - `http://` or `https://`.
+
+The `providerConfig.mirror[].hosts.capabilities` field represents the operations a host is capable of performing. This also represents the set of operations for which the mirror host may be trusted to perform. Defaults to `["pull"]`.
+See the [capabilities field documentation](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md#capabilities-field) for more information which operations are considered trusted ones against public/private mirrors.
