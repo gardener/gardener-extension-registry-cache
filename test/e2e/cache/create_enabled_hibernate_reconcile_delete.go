@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e_test
+package cache
 
 import (
 	"context"
@@ -26,13 +26,14 @@ import (
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
+	"github.com/gardener/gardener-extension-registry-cache/test/e2e"
 )
 
-var _ = Describe("Registry Cache Extension Tests", func() {
+var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	parentCtx := context.Background()
 
-	f := defaultShootCreationFramework()
-	shoot := defaultShoot("e2e-hib")
+	f := e2e.DefaultShootCreationFramework()
+	shoot := e2e.DefaultShoot("e2e-cache-hib")
 	size := resource.MustParse("2Gi")
 	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
 		{Upstream: "docker.io", Size: &size},
@@ -49,7 +50,7 @@ var _ = Describe("Registry Cache Extension Tests", func() {
 		By("Wait until the registry configuration is applied")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
 		defer cancel()
-		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
+		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
 		By("Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, "docker.io", common.DockerNginx1230ImageWithDigest)

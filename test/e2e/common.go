@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e_test
+package e2e
 
 import (
 	"os"
@@ -28,7 +28,8 @@ const (
 	projectNamespace = "garden-local"
 )
 
-func defaultShootCreationFramework() *framework.ShootCreationFramework {
+// DefaultShootCreationFramework returns default Shoot creation framework for e2e tests.
+func DefaultShootCreationFramework() *framework.ShootCreationFramework {
 	kubeconfigPath := os.Getenv("KUBECONFIG")
 	return framework.NewShootCreationFramework(&framework.ShootCreationConfig{
 		GardenerConfig: &framework.GardenerConfig{
@@ -40,7 +41,8 @@ func defaultShootCreationFramework() *framework.ShootCreationFramework {
 	})
 }
 
-func defaultShoot(generateName string) *gardencorev1beta1.Shoot {
+// DefaultShoot returns a Shoot object with default values for the e2e tests.
+func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 	purpose := gardencorev1beta1.ShootPurposeTesting
 
 	return &gardencorev1beta1.Shoot{

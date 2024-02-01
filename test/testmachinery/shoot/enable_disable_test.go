@@ -57,7 +57,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Wait until the registry configuration is applied")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
 		defer cancel()
-		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
+		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1230ImageWithDigest)
@@ -66,7 +66,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
-			common.RemoveRegistryCacheExtension(shoot)
+			common.RemoveExtension(shoot, "registry-cache")
 
 			return nil
 		})).To(Succeed())
@@ -74,12 +74,12 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyRegistryConfigurationsAreRemoved(ctx, f.Logger, f.ShootClient, true, []string{"docker.io"})
+		common.VerifyRegistryCacheConfigurationsAreRemoved(ctx, f.Logger, f.ShootClient, true, []string{"docker.io"})
 	}, defaultTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if common.HasRegistryCacheExtension(f.Shoot) {
 			By("Disable the registry-cache extension")
 			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
-				common.RemoveRegistryCacheExtension(shoot)
+				common.RemoveExtension(shoot, "registry-cache")
 
 				return nil
 			})).To(Succeed())
