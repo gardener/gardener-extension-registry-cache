@@ -228,7 +228,10 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: ` + image + `
+      - env:
+        - name: OTEL_TRACES_EXPORTER
+          value: none
+        image: ` + image + `
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 6

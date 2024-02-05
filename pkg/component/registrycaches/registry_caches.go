@@ -394,6 +394,13 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 									Name:          "debug",
 								},
 							},
+							Env: []corev1.EnvVar{
+								// Mitigation for https://github.com/distribution/distribution/issues/4270.
+								{
+									Name:  "OTEL_TRACES_EXPORTER",
+									Value: "none",
+								},
+							},
 							LivenessProbe: &corev1.Probe{
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
