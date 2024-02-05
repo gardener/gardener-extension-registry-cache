@@ -134,7 +134,7 @@ metadata:
 			}
 
 			configYAMLFor = func(upstreamURL string, garbageCollectionEnabled bool, username, password string) string {
-				config := `# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:2.8.3).
+				config := `# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-alpha.1).
 version: 0.1
 log:
   fields:
@@ -440,7 +440,7 @@ metadata:
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
 				Expect(managedResourceSecret.Data).To(HaveLen(8))
-				dockerConfigSecretName := "registry-docker-io-config-e2bc0812"
+				dockerConfigSecretName := "registry-docker-io-config-c6b33c48"
 				dockerConfigSecret := configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", true, "", ""))
 				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerConfigSecretName+".yaml"])).To(Equal(dockerConfigSecret))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
@@ -448,7 +448,7 @@ metadata:
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-c8fad413"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-902c1c88"
 				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", false, "", ""))
 				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")))
@@ -493,10 +493,10 @@ metadata:
 				Expect(string(managedResourceSecret.Data["clusterrole____gardener.cloud_psp_kube-system_registry-cache.yaml"])).To(Equal(clusterRolePSPYAML))
 				Expect(string(managedResourceSecret.Data["rolebinding__kube-system__gardener.cloud_psp_registry-cache.yaml"])).To(Equal(roleBindingPSPYAML))
 
-				dockerConfigSecretName := "registry-docker-io-config-e2bc0812"
+				dockerConfigSecretName := "registry-docker-io-config-c6b33c48"
 				dockerStatefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", dockerConfigSecretName, "registry-cache", nil)
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-c8fad413"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-902c1c88"
 				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "registry-cache", pointer.String("premium"))
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
 			})
@@ -554,7 +554,7 @@ metadata:
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
 				Expect(managedResourceSecret.Data).To(HaveLen(8))
-				dockerConfigSecretName := "registry-docker-io-config-fc0731b8"
+				dockerConfigSecretName := "registry-docker-io-config-239fe378"
 				dockerConfigSecret := configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", true, "docker-user", "s3cret"))
 				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerConfigSecretName+".yaml"])).To(Equal(dockerConfigSecret))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io")))
@@ -562,7 +562,7 @@ metadata:
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
 
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-17b7acfe"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-4bafab19"
 				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", false, "ar-user", `{"foo":"bar"}`))
 				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")))
