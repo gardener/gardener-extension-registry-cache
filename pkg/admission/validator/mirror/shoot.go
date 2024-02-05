@@ -103,7 +103,7 @@ func validateMirrorConfigAgainstRegistryCache(mirrorConfig *mirrorapi.MirrorConf
 		configFldPath := fldPath.Child("mirrors").Index(i)
 
 		if upstreams.Has(mirror.Upstream) {
-			allErrs = append(allErrs, field.Duplicate(configFldPath.Child("upstream"), mirror.Upstream))
+			allErrs = append(allErrs, field.Invalid(configFldPath.Child("upstream"), mirror.Upstream, fmt.Sprintf("upstream host '%s' is also configured as a registry cache upstream", mirror.Upstream)))
 		} else {
 			upstreams.Insert(mirror.Upstream)
 		}

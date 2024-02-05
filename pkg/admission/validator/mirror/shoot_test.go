@@ -214,9 +214,10 @@ var _ = Describe("Shoot validator", func() {
 
 			err := shootValidator.Validate(ctx, shoot, nil)
 			Expect(err).To(ConsistOf(PointTo(MatchFields(IgnoreExtras, Fields{
-				"Type":     Equal(field.ErrorTypeDuplicate),
+				"Type":     Equal(field.ErrorTypeInvalid),
 				"Field":    Equal("spec.extensions[0].providerConfig.mirrors[0].upstream"),
 				"BadValue": Equal("docker.io"),
+				"Detail":   Equal("upstream host 'docker.io' is also configured as a registry cache upstream"),
 			}))))
 		})
 

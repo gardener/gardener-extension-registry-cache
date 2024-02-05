@@ -6,7 +6,7 @@
 </ul>
 <h2 id="config.registry.extensions.gardener.cloud/v1alpha1">config.registry.extensions.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the Registry Cache Service extension configuration.</p>
+<p>Package v1alpha1 is a version of the API.</p>
 </p>
 Resource Types:
 <ul></ul>

@@ -76,11 +76,7 @@ func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *fie
 			hosts.Insert(host.Host)
 		}
 
-		for _, capability := range host.Capabilities {
-			if !supportedCapabilities.Has(string(capability)) {
-				allErrs = append(allErrs, field.NotSupported(hostFldPath.Child("capabilities"), string(capability), sets.List(supportedCapabilities)))
-			}
-		}
+		allErrs = append(allErrs, validateCapabilities(hostFldPath.Child("capabilities"), host.Capabilities)...)
 	}
 
 	return allErrs
@@ -90,6 +86,27 @@ func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	var allErrs field.ErrorList
 	for _, msg := range validation.IsDNS1123Subdomain(upstream) {
 		allErrs = append(allErrs, field.Invalid(fldPath, upstream, msg))
+	}
+
+	return allErrs
+}
+
+func validateCapabilities(fldPath *field.Path, capabilities []mirror.MirrorHostCapability) field.ErrorList {
+	var allErrs field.ErrorList
+
+	capabilitiesFound := sets.New[string]()
+	for i, capability := range capabilities {
+		capabilityAsString := string(capability)
+
+		if !supportedCapabilities.Has(capabilityAsString) {
+			allErrs = append(allErrs, field.NotSupported(fldPath, capabilityAsString, sets.List(supportedCapabilities)))
+		}
+
+		if capabilitiesFound.Has(capabilityAsString) {
+			allErrs = append(allErrs, field.Duplicate(fldPath.Index(i), capabilityAsString))
+		} else {
+			capabilitiesFound.Insert(capabilityAsString)
+		}
 	}
 
 	return allErrs

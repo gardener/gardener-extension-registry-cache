@@ -6,7 +6,7 @@
 </ul>
 <h2 id="mirror.extensions.gardener.cloud/v1alpha1">mirror.extensions.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 contains the Registry Cache Service extension configuration.</p>
+<p>Package v1alpha1 is a version of the API.</p>
 </p>
 Resource Types:
 <ul></ul>
@@ -122,6 +122,7 @@ string
 <em>(Optional)</em>
 <p>Capabilities are the operations a host is capable of performing.
 This also represents the set of operations for which the mirror host may be trusted to perform.
+The supported values are &ldquo;pull&rdquo; and &ldquo;resolve&rdquo;.
 Defaults to [&ldquo;pull&rdquo;].</p>
 </td>
 </tr>

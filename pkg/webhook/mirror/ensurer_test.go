@@ -107,7 +107,7 @@ var _ = Describe("Ensurer", func() {
 			Expect(files).To(ConsistOf(oldFile))
 		})
 
-		It("return err when it fails to get the extesion", func() {
+		It("return err when it fails to get the extension", func() {
 			cluster := &extensions.Cluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
 				Shoot:      &gardencorev1beta1.Shoot{},

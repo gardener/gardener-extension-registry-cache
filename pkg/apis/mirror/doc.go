@@ -15,6 +15,4 @@
 // +k8s:deepcopy-gen=package
 // +groupName="mirror.extensions.gardener.cloud"
 
-//go:generate ../../../hack/update-codegen.sh
-
 package mirror // import "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"

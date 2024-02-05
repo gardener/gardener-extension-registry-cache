@@ -42,6 +42,7 @@ type MirrorHost struct {
 	Host string `json:"host"`
 	// Capabilities are the operations a host is capable of performing.
 	// This also represents the set of operations for which the mirror host may be trusted to perform.
+	// The supported values are "pull" and "resolve".
 	// Defaults to ["pull"].
 	// +optional
 	Capabilities []MirrorHostCapability `json:"capabilities"`
@@ -54,5 +55,5 @@ const (
 	// MirrorHostCapabilityPull represents the capability to fetch manifests and blobs by digest.
 	MirrorHostCapabilityPull MirrorHostCapability = "pull"
 	// MirrorHostCapabilityResolve represents the capability to fetch manifests by name.
-	MirrorHostCapabilityResolve = "resolve"
+	MirrorHostCapabilityResolve MirrorHostCapability = "resolve"
 )

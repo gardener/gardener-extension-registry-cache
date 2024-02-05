@@ -210,6 +210,30 @@ var _ = Describe("Validation", func() {
 			))
 		})
 
+		It("should deny duplicate mirror host capability", func() {
+			mirrorConfig = &api.MirrorConfig{
+				Mirrors: []api.MirrorConfiguration{
+					{
+						Upstream: "docker.io",
+						Hosts: []api.MirrorHost{
+							{
+								Host:         "https://mirror.gcr.io",
+								Capabilities: []api.MirrorHostCapability{"pull", "resolve", "pull"},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeDuplicate),
+					"Field":    Equal("providerConfig.mirrors[0].hosts[0].capabilities[2]"),
+					"BadValue": Equal("pull"),
+				})),
+			))
+		})
+
 		It("should deny duplicate mirror upstreams", func() {
 			mirrorConfig.Mirrors = append(mirrorConfig.Mirrors, *mirrorConfig.Mirrors[0].DeepCopy())
 
