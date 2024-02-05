@@ -135,6 +135,7 @@ Type=simple
 ExecStart=/opt/bin/configure-containerd-registries.sh ` + strings.Join(scriptArgs, " ")),
 	}
 
+	// TODO(ialidzhikov): Use "extensionswebhook.EnsureUnitWithName" when vendoring gardener/gardener that contains https://github.com/gardener/gardener/pull/9121.
 	appendUniqueUnit(new, unit)
 
 	return nil
