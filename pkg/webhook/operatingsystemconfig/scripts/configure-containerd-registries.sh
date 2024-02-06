@@ -4,20 +4,29 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-function with_backoff {
+# The with_retry retries a command until success or retry attempts exceeds MAX_TOTAL_ATTEMPTS
+# First MAX_LINEAR_ATTEMPTS retries are performed on every INTERVAL seconds
+# The rest retry attempts are executed with exponential backoff with base INTERVAL and factor 2
+function with_retry {
   if [[ -z "$run_id" ]]; then
     echo "run_id is required!"
     exit 1
   fi
 
-  local max_attempts=${MAX_ATTEMPTS-60}
-  local linear_duration=${LINEAR_DURATION-150}
-  local interval=${INTERVAL-3}
-  local max_interval=192
+  local -r max_total_attempts=${MAX_TOTAL_ATTEMPTS-50}
+  local -r max_linear_attempts=${MAX_LINEAR_ATTEMPTS-30}
+  local -r interval=${INTERVAL-3}
+
+  if [[ $max_total_attempts -lt $max_linear_attempts ]]; then
+    echo "MAX_TOTAL_ATTEMPTS must be not be less than MAX_LINEAR_ATTEMPTS"
+    exit 1
+  fi
+
+  local delay=$interval
   local attempt=1
   local exit_code=0
 
-  while (( attempt <= max_attempts ))
+  while (( attempt <= max_total_attempts ))
   do
     if "$@"
     then
@@ -26,19 +35,19 @@ function with_backoff {
       exit_code=$?
     fi
 
-    echo "[$run_id] Request failed! Retrying in $interval seconds..."
-    sleep "$interval"
+    echo "[$run_id] Request failed! Retrying in $delay seconds..."
+    sleep "$delay"
 
-    if (( attempt * (interval + 2) >= linear_duration && interval * 2 <= max_interval )); then
-      interval=$(( interval * 2 ))
-    fi
     attempt=$(( attempt + 1 ))
-
+    if (( attempt > max_linear_attempts )); then
+      exponential_attempt=$(( attempt - max_linear_attempts ))
+      delay=$(( ( exponential_attempt ** 2 ) * interval ))
+    fi
   done
 
   if [[ $exit_code != 0 ]]
   then
-    echo "[$run_id] Request failed for $max_attempts time!" 1>&2
+    echo "[$run_id] Request failed for $max_total_attempts time!" 1>&2
   fi
 
   return $exit_code
@@ -49,7 +58,7 @@ function configure_registry {
   registry_cache_endpoint=$2
   upstream_url=$3
 
-  if ! run_id=$upstream_host with_backoff curl --silent --show-error --connect-timeout 2 "$registry_cache_endpoint"
+  if ! run_id=$upstream_host with_retry curl --silent --show-error --connect-timeout 2 "$registry_cache_endpoint"
   then
     echo "[$upstream_host] Failed why waiting registry to be available. Exiting..."
     exit 1
