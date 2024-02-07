@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 )
 
@@ -47,8 +47,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 				size = resource.MustParse("20Gi")
 			}
 
-			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
-				{Upstream: "docker.io", Size: &size},
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha2.RegistryCache{
+				{Upstream: "docker.io", Volume: &v1alpha2.Volume{Size: &size}},
 			})
 
 			return nil
