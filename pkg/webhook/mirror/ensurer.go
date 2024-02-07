@@ -31,7 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
@@ -116,7 +116,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 
 		*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 			Path:        filepath.Join(containerdRegistryHostsDirectory, mirror.Upstream, "hosts.toml"),
-			Permissions: pointer.Int32(0644),
+			Permissions: ptr.To(int32(0644)),
 			Content: extensionsv1alpha1.FileContent{
 				Inline: &extensionsv1alpha1.FileContentInline{
 					Data: hostsTOML.String(),

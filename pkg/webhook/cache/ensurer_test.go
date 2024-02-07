@@ -31,7 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -146,7 +146,7 @@ var _ = Describe("Ensurer", func() {
 				Shoot: &gardencorev1beta1.Shoot{
 					Spec: gardencorev1beta1.ShootSpec{
 						Hibernation: &gardencorev1beta1.Hibernation{
-							Enabled: pointer.Bool(true),
+							Enabled: ptr.To(true),
 						},
 					},
 				},
@@ -328,7 +328,7 @@ var _ = Describe("Ensurer", func() {
 func configureContainerdRegistriesFile(script string) extensionsv1alpha1.File {
 	return extensionsv1alpha1.File{
 		Path:        "/opt/bin/configure-containerd-registries.sh",
-		Permissions: pointer.Int32(0744),
+		Permissions: ptr.To(int32(0744)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",
@@ -342,8 +342,8 @@ func configureContainerdRegistriesUnit(args string) extensionsv1alpha1.Unit {
 	return extensionsv1alpha1.Unit{
 		Name:    "configure-containerd-registries.service",
 		Command: extensionsv1alpha1.UnitCommandPtr(extensionsv1alpha1.CommandStart),
-		Enable:  pointer.Bool(true),
-		Content: pointer.String(`[Unit]
+		Enable:  ptr.To(true),
+		Content: ptr.To(`[Unit]
 Description=Configures containerd registries
 
 [Install]

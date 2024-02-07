@@ -31,7 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -278,7 +278,7 @@ var _ = Describe("Ensurer", func() {
 func hostsTOMLFile(upstream, upstreamServer, mirrorHost, capabilities string) extensionsv1alpha1.File {
 	return extensionsv1alpha1.File{
 		Path:        filepath.Join("/etc/containerd/certs.d/", upstream, "hosts.toml"),
-		Permissions: pointer.Int32(0644),
+		Permissions: ptr.To(int32(0644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Data: fmt.Sprintf(`server = "%s"

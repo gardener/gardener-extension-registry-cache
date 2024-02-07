@@ -29,7 +29,7 @@ import (
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -61,7 +61,7 @@ type ensurer struct {
 func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
 	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
 		Path:        "/opt/bin/configure-containerd-registries.sh",
-		Permissions: pointer.Int32(0744),
+		Permissions: ptr.To(int32(0744)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",
@@ -119,8 +119,8 @@ func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.Garde
 	unit := extensionsv1alpha1.Unit{
 		Name:    "configure-containerd-registries.service",
 		Command: extensionsv1alpha1.UnitCommandPtr(extensionsv1alpha1.CommandStart),
-		Enable:  pointer.Bool(true),
-		Content: pointer.String(`[Unit]
+		Enable:  ptr.To(true),
+		Content: ptr.To(`[Unit]
 Description=Configures containerd registries
 
 [Install]

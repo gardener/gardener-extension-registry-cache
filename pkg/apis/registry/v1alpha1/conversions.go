@@ -16,7 +16,7 @@ package v1alpha1
 
 import (
 	conversion "k8s.io/apimachinery/pkg/conversion"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	registry "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
@@ -33,7 +33,7 @@ func Convert_v1alpha1_RegistryCache_To_registry_RegistryCache(in *RegistryCache,
 		// To preserve backwards-compatibility we set the StorageClassName field to "default".
 		// There are already many StatefulSets created according to the v1alpha1 RegistryConfig and for the the registry-cache extension set the
 		// StorageClass name in the StatefulSet to "default". The corresponding StatetulSet field is immutable.
-		StorageClassName: pointer.String("default"),
+		StorageClassName: ptr.To("default"),
 	}
 
 	return nil

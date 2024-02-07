@@ -19,7 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
@@ -49,7 +49,7 @@ var _ = Describe("Conversions", func() {
 						GarbageCollection: &v1alpha1.GarbageCollection{
 							Enabled: true,
 						},
-						SecretReferenceName: pointer.String("docker-credentials"),
+						SecretReferenceName: ptr.To("docker-credentials"),
 					},
 				},
 			}
@@ -63,12 +63,12 @@ var _ = Describe("Conversions", func() {
 						Upstream: "docker.io",
 						Volume: &registry.Volume{
 							Size:             &size,
-							StorageClassName: pointer.String("default"),
+							StorageClassName: ptr.To("default"),
 						},
 						GarbageCollection: &registry.GarbageCollection{
 							Enabled: true,
 						},
-						SecretReferenceName: pointer.String("docker-credentials"),
+						SecretReferenceName: ptr.To("docker-credentials"),
 					},
 				},
 			}
@@ -85,13 +85,13 @@ var _ = Describe("Conversions", func() {
 						GarbageCollection: &registry.GarbageCollection{
 							Enabled: true,
 						},
-						SecretReferenceName: pointer.String("docker-credentials"),
+						SecretReferenceName: ptr.To("docker-credentials"),
 					},
 					{
 						Upstream: "quay.io",
 						Volume: &registry.Volume{
 							Size:             &size,
-							StorageClassName: pointer.String("premium"),
+							StorageClassName: ptr.To("premium"),
 						},
 					},
 				},
@@ -107,7 +107,7 @@ var _ = Describe("Conversions", func() {
 						GarbageCollection: &v1alpha1.GarbageCollection{
 							Enabled: true,
 						},
-						SecretReferenceName: pointer.String("docker-credentials"),
+						SecretReferenceName: ptr.To("docker-credentials"),
 					},
 					{
 						Upstream: "quay.io",

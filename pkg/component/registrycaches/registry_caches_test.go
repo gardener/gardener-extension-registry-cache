@@ -37,7 +37,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -86,7 +86,7 @@ var _ = Describe("RegistryCaches", func() {
 					Upstream: "europe-docker.pkg.dev",
 					Volume: &api.Volume{
 						Size:             &arSize,
-						StorageClassName: pointer.String("premium"),
+						StorageClassName: ptr.To("premium"),
 					},
 					GarbageCollection: &api.GarbageCollection{
 						Enabled: false,
@@ -425,12 +425,12 @@ metadata:
 						Labels:          map[string]string{"origin": "registry-cache"},
 					},
 					Spec: resourcesv1alpha1.ManagedResourceSpec{
-						DeletePersistentVolumeClaims: pointer.Bool(true),
+						DeletePersistentVolumeClaims: ptr.To(true),
 						InjectLabels:                 map[string]string{"shoot.gardener.cloud/no-cleanup": "true"},
 						SecretRefs: []corev1.LocalObjectReference{{
 							Name: managedResource.Spec.SecretRefs[0].Name,
 						}},
-						KeepObjects: pointer.Bool(false),
+						KeepObjects: ptr.To(false),
 					},
 				}
 				utilruntime.Must(references.InjectAnnotations(expectedMr))
@@ -439,7 +439,7 @@ metadata:
 				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 				Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
-				Expect(managedResourceSecret.Immutable).To(Equal(pointer.Bool(true)))
+				Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
 				Expect(managedResourceSecret.Data).To(HaveLen(8))
@@ -455,7 +455,7 @@ metadata:
 				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", false, "", ""))
 				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")))
-				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "default", pointer.String("premium"))
+				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "default", ptr.To("premium"))
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(vpaYAMLFor("registry-europe-docker-pkg-dev")))
 			})
@@ -500,7 +500,7 @@ metadata:
 				dockerStatefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "10Gi", dockerConfigSecretName, "registry-cache", nil)
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-902c1c88"
-				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "registry-cache", pointer.String("premium"))
+				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "registry-cache", ptr.To("premium"))
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
 			})
 		})
@@ -536,8 +536,8 @@ metadata:
 					{Name: "docker-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "docker-creds", Kind: "Secret"}},
 					{Name: "ar-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ar-creds", Kind: "Secret"}},
 				}
-				values.Caches[0].SecretReferenceName = pointer.String("docker-ref")
-				values.Caches[1].SecretReferenceName = pointer.String("ar-ref")
+				values.Caches[0].SecretReferenceName = ptr.To("docker-ref")
+				values.Caches[1].SecretReferenceName = ptr.To("ar-ref")
 			})
 
 			JustBeforeEach(func() {
@@ -569,7 +569,7 @@ metadata:
 				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", false, "ar-user", `{"foo":"bar"}`))
 				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
 				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")))
-				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "default", pointer.String("premium"))
+				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "20Gi", arConfigSecretName, "default", ptr.To("premium"))
 				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
 				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(vpaYAMLFor("registry-europe-docker-pkg-dev")))
 			})
