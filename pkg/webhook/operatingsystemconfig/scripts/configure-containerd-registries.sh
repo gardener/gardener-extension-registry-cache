@@ -4,9 +4,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# The with_retry retries a command until success or retry attempts exceeds MAX_TOTAL_ATTEMPTS
-# First MAX_LINEAR_ATTEMPTS retries are performed on every INTERVAL seconds
-# The rest retry attempts are executed with exponential backoff with base INTERVAL and factor 2
+# with_retry retries the given command until success or until the retry attempts exceed MAX_TOTAL_ATTEMPTS.
+# First, MAX_LINEAR_ATTEMPTS amount of retries are performed on every INTERVAL seconds.
+# After, the rest of the retry attempts are executed with exponential backoff with base INTERVAL and factor 2.
 function with_retry {
   if [[ -z "$run_id" ]]; then
     echo "run_id is required!"
