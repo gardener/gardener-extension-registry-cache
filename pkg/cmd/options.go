@@ -29,8 +29,10 @@ import (
 	configapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config/validation"
-	extensioncontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/extension"
-	oscwebhook "github.com/gardener/gardener-extension-registry-cache/pkg/webhook/operatingsystemconfig"
+	cachecontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/cache"
+	mirrorcontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/mirror"
+	cachewebhook "github.com/gardener/gardener-extension-registry-cache/pkg/webhook/cache"
+	mirrorwebhook "github.com/gardener/gardener-extension-registry-cache/pkg/webhook/mirror"
 )
 
 var (
@@ -102,16 +104,16 @@ func (c *RegistryServiceConfig) Apply(config *configapi.Configuration) {
 // ControllerSwitches are the cmd.SwitchOptions for the provider controllers.
 func ControllerSwitches() *cmd.SwitchOptions {
 	return cmd.NewSwitchOptions(
-		cmd.Switch(extensioncontroller.ControllerName, extensioncontroller.AddToManager),
+		cmd.Switch(cachecontroller.ControllerName, cachecontroller.AddToManager),
+		cmd.Switch(mirrorcontroller.ControllerName, mirrorcontroller.AddToManager),
 		cmd.Switch(extensionsheartbeatcontroller.ControllerName, extensionsheartbeatcontroller.AddToManager),
 	)
 }
 
-const webhookName = "registry-cache"
-
 // WebhookSwitchOptions are the webhookcmd.SwitchOptions for the registry-cache webhook.
 func WebhookSwitchOptions() *webhookcmd.SwitchOptions {
 	return webhookcmd.NewSwitchOptions(
-		webhookcmd.Switch(webhookName, oscwebhook.New),
+		webhookcmd.Switch(cachewebhook.Name, cachewebhook.New),
+		webhookcmd.Switch(mirrorwebhook.Name, mirrorwebhook.New),
 	)
 }

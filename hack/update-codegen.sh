@@ -47,5 +47,13 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gardener/gardener-extension-registry-cache/pkg/client \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
+  "mirror:v1alpha1" \
+  --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
+
+bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \
+  deepcopy,defaulter,conversion \
+  github.com/gardener/gardener-extension-registry-cache/pkg/client \
+  github.com/gardener/gardener-extension-registry-cache/pkg/apis \
+  github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   "config:v1alpha1" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"

@@ -17,6 +17,6 @@
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:openapi-gen=true
 
-// Package v1alpha1 contains the registry service extension.
+// Package v1alpha1 is a version of the API.
 // +groupName=registry.extensions.gardener.cloud
 package v1alpha1 // import "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"

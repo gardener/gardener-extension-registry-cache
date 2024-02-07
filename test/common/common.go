@@ -35,7 +35,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	mirrorv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
+	registryv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
 )
 
 const (
@@ -55,10 +56,10 @@ const (
 )
 
 // AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
-func AddOrUpdateRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []v1alpha1.RegistryCache) {
-	providerConfig := &v1alpha1.RegistryConfig{
+func AddOrUpdateRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []registryv1alpha1.RegistryCache) {
+	providerConfig := &registryv1alpha1.RegistryConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: registryv1alpha1.SchemeGroupVersion.String(),
 			Kind:       "RegistryConfig",
 		},
 		Caches: caches,
@@ -83,6 +84,35 @@ func AddOrUpdateRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []
 	}
 }
 
+// AddOrUpdateRegistryMirrorExtension adds or updates registry-mirror extension with the given mirrors to the given Shoot.
+func AddOrUpdateRegistryMirrorExtension(shoot *gardencorev1beta1.Shoot, mirrors []mirrorv1alpha1.MirrorConfiguration) {
+	providerConfig := &mirrorv1alpha1.MirrorConfig{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: mirrorv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "MirrorConfig",
+		},
+		Mirrors: mirrors,
+	}
+	providerConfigJSON, err := json.Marshal(&providerConfig)
+	utilruntime.Must(err)
+
+	extension := gardencorev1beta1.Extension{
+		Type: "registry-mirror",
+		ProviderConfig: &runtime.RawExtension{
+			Raw: providerConfigJSON,
+		},
+	}
+
+	i := slices.IndexFunc(shoot.Spec.Extensions, func(ext gardencorev1beta1.Extension) bool {
+		return ext.Type == "registry-mirror"
+	})
+	if i == -1 {
+		shoot.Spec.Extensions = append(shoot.Spec.Extensions, extension)
+	} else {
+		shoot.Spec.Extensions[i] = extension
+	}
+}
+
 // HasRegistryCacheExtension returns whether the Shoot has an extension of type registry-cache.
 func HasRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) bool {
 	return slices.ContainsFunc(shoot.Spec.Extensions, func(ext gardencorev1beta1.Extension) bool {
@@ -90,16 +120,16 @@ func HasRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) bool {
 	})
 }
 
-// RemoveRegistryCacheExtension removes registry caches extensions from given Shoot.
-func RemoveRegistryCacheExtension(shoot *gardencorev1beta1.Shoot) {
+// RemoveExtension removes the extension with the given type from given Shoot.
+func RemoveExtension(shoot *gardencorev1beta1.Shoot, extensionType string) {
 	shoot.Spec.Extensions = slices.DeleteFunc(shoot.Spec.Extensions, func(extension gardencorev1beta1.Extension) bool {
-		return extension.Type == "registry-cache"
+		return extension.Type == extensionType
 	})
 }
 
-// WaitUntilRegistryConfigurationsAreApplied waits until the configure-containerd-registries.service systemd unit gets inactive on the Nodes.
+// WaitUntilRegistryCacheConfigurationsAreApplied waits until the configure-containerd-registries.service systemd unit gets inactive on the Nodes.
 // The unit will be in active state until it configures all registry caches.
-func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface) {
+func WaitUntilRegistryCacheConfigurationsAreApplied(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface) {
 	nodes := &corev1.NodeList{}
 	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
 
@@ -118,13 +148,10 @@ func WaitUntilRegistryConfigurationsAreApplied(ctx context.Context, log logr.Log
 	}
 }
 
-// VerifyRegistryConfigurationsAreRemoved verifies that configure-containerd-registries.service systemd unit gets deleted (if expectSystemdUnitDeletion is true)
+// VerifyRegistryCacheConfigurationsAreRemoved verifies that configure-containerd-registries.service systemd unit gets deleted (if expectSystemdUnitDeletion is true)
 // and the hosts.toml files for the given upstreams are removed.
 // The hosts.toml file(s) and the systemd unit are deleted by the registry-configuration-cleaner DaemonSet.
-//
-// Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io, quay.io and europe-docker.pkg.dev.
-// Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
-func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, expectSystemdUnitDeletion bool, upstreams []string) {
+func VerifyRegistryCacheConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, expectSystemdUnitDeletion bool, upstreams []string) {
 	nodes := &corev1.NodeList{}
 	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
 
@@ -141,17 +168,62 @@ func VerifyRegistryConfigurationsAreRemoved(ctx context.Context, log logr.Logger
 			}).WithPolling(10*time.Second).Should(Equal("unit not found\n"), fmt.Sprintf("Expected the configure-containerd-registries.service systemd unit on node %s to be deleted", node.Name))
 		}
 
-		for _, upstream := range upstreams {
-			EventuallyWithOffset(1, ctx, func(g Gomega) string {
-				command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
+		VerifyHostsTOMLFilesDeletedForNode(ctx, rootPodExecutor, upstreams, node.Name)
+
+		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
+	}
+}
+
+// VerifyHostsTOMLFilesCreatedForAllNodes verifies that hosts.toml files for the given upstreams are created for all Nodes
+// with the given hosts.toml file content.
+func VerifyHostsTOMLFilesCreatedForAllNodes(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstreamToHostsTOML map[string]string) {
+	nodes := &corev1.NodeList{}
+	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
+
+	for _, node := range nodes.Items {
+		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
+
+		for upstream, hostsTOML := range upstreamToHostsTOML {
+			EventuallyWithOffset(1, ctx, func() string {
+				command := fmt.Sprintf("cat /etc/containerd/certs.d/%s/hosts.toml", upstream)
 				// err is ignored intentionally to reduce flakes from transient network errors in prow.
 				response, _ := rootPodExecutor.Execute(ctx, command)
 
 				return string(response)
-			}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", node.Name, upstream))
+			}).WithPolling(10 * time.Second).Should(Equal(hostsTOML))
 		}
 
 		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
+	}
+}
+
+// VerifyHostsTOMLFilesDeletedForAllNodes verifies that hosts.toml files for the given upstreams are deleted from all Nodes.
+func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstreams []string) {
+	nodes := &corev1.NodeList{}
+	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
+
+	for _, node := range nodes.Items {
+		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
+
+		VerifyHostsTOMLFilesDeletedForNode(ctx, rootPodExecutor, upstreams, node.Name)
+
+		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
+	}
+}
+
+// VerifyHostsTOMLFilesDeletedForNode verifies that hosts.toml files for the given upstreams are deleted for a Node.
+//
+// Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io, quay.io and europe-docker.pkg.dev.
+// Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
+func VerifyHostsTOMLFilesDeletedForNode(ctx context.Context, rootPodExecutor framework.RootPodExecutor, upstreams []string, nodeName string) {
+	for _, upstream := range upstreams {
+		EventuallyWithOffset(2, ctx, func(g Gomega) string {
+			command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
+			// err is ignored intentionally to reduce flakes from transient network errors in prow.
+			response, _ := rootPodExecutor.Execute(ctx, command)
+
+			return string(response)
+		}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", nodeName, upstream))
 	}
 }
 

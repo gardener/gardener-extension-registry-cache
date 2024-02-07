@@ -59,7 +59,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Wait until the registry configuration is applied")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
 		defer cancel()
-		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
+		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works")
 		// We are using nginx:1.24.0 as nginx:1.23.0 is already used by the "should enable and disable the registry-cache extension" test.
@@ -89,7 +89,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Wait until the registry configuration is applied")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
 		defer cancel()
-		common.WaitUntilRegistryConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
+		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works after wake up")
 		// We are using nginx:1.25.0 as nginx:1.24.0 is already used above and already present in the Node and in the registry cache.
@@ -103,7 +103,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		if common.HasRegistryCacheExtension(f.Shoot) {
 			By("Disable the registry-cache extension")
 			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
-				common.RemoveRegistryCacheExtension(shoot)
+				common.RemoveExtension(shoot, "registry-cache")
 
 				return nil
 			})).To(Succeed())

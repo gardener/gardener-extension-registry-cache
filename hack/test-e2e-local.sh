@@ -24,10 +24,11 @@ echo "> E2E Tests"
 seed_name="local"
 
 shoot_names=(
-  e2e-default.local
-  e2e-hib.local
-  e2e-default-ssc.local
-  e2e-force-delete.local
+  e2e-cache-def.local
+  e2e-cache-hib.local
+  e2e-cache-ssc.local
+  e2e-cache-fd.local
+  e2e-mirror-def.local
 )
 
 if [ -n "${CI:-}" ]; then

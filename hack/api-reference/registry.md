@@ -6,7 +6,7 @@
 </ul>
 <h2 id="registry.extensions.gardener.cloud/v1alpha2">registry.extensions.gardener.cloud/v1alpha2</h2>
 <p>
-<p>Package v1alpha2 contains the registry service extension.</p>
+<p>Package v1alpha2 is a version of the API.</p>
 </p>
 Resource Types:
 <ul></ul>

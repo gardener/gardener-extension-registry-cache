@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	admissioncmd "github.com/gardener/gardener-extension-registry-cache/pkg/admission/cmd"
+	mirrorinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/install"
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
@@ -80,7 +81,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use: fmt.Sprintf("gardener-extension-%s-admission", constants.ExtensionType),
+		Use: fmt.Sprintf("gardener-extension-%s-admission", constants.RegistryCacheExtensionType),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			verflag.PrintAndExitIfRequested()
@@ -124,6 +125,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 
 			coreinstall.Install(mgr.GetScheme())
 			registryinstall.Install(mgr.GetScheme())
+			mirrorinstall.Install(mgr.GetScheme())
 
 			var sourceCluster cluster.Cluster
 			if sourceClusterConfig != nil {

@@ -32,8 +32,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	mirrorinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/install"
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
-	extensioncontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/extension"
+	cachecontroller "github.com/gardener/gardener-extension-registry-cache/pkg/controller/cache"
 )
 
 var log = logf.Log.WithName("gardener-extension-registry-cache")
@@ -96,15 +97,17 @@ func (o *Options) run(ctx context.Context) error {
 	if err := extensionscontroller.AddToScheme(mgr.GetScheme()); err != nil {
 		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
-
 	if err := registryinstall.AddToScheme(mgr.GetScheme()); err != nil {
+		return fmt.Errorf("could not update manager scheme: %w", err)
+	}
+	if err := mirrorinstall.AddToScheme(mgr.GetScheme()); err != nil {
 		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
 
 	ctrlConfig := o.registryOptions.Completed()
-	ctrlConfig.Apply(&extensioncontroller.DefaultAddOptions.Config)
-	o.controllerOptions.Completed().Apply(&extensioncontroller.DefaultAddOptions.ControllerOptions)
-	o.reconcileOptions.Completed().Apply(&extensioncontroller.DefaultAddOptions.IgnoreOperationAnnotation)
+	ctrlConfig.Apply(&cachecontroller.DefaultAddOptions.Config)
+	o.controllerOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.ControllerOptions)
+	o.reconcileOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.IgnoreOperationAnnotation)
 	o.heartbeatOptions.Completed().Apply(&heartbeatcontroller.DefaultAddOptions)
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
