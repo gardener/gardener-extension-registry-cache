@@ -20,7 +20,6 @@ build:
             - pkg/apis/registry
             - pkg/apis/registry/helper
             - pkg/apis/registry/install
-            - pkg/apis/registry/v1alpha1
             - pkg/apis/registry/v1alpha2
             - pkg/cmd
             - pkg/component/registrycaches
@@ -69,7 +68,6 @@ build:
             - pkg/apis/registry
             - pkg/apis/registry/helper
             - pkg/apis/registry/install
-            - pkg/apis/registry/v1alpha1
             - pkg/apis/registry/v1alpha2
             - pkg/apis/registry/validation
             - pkg/constants

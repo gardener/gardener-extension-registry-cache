@@ -9,7 +9,6 @@ Gardener extension controller which deploys pull-through caches for container re
 
 - [Configuring the Registry Cache Extension](docs/usage/registry-cache/configuration.md) - learn what is the use-case for a pull-through cache, how to enable it and configure it
 - [How to provide credentials for upstream repository?](docs/usage/registry-cache/upstream-credentials.md)
-- [Migration from `v1alpha1` to `v1alpha2`](docs/usage/registry-cache/migration-from-v1alpha1-to-v1alpha2.md) - learn how to migrate from the `v1alpha1` API version of the `RegistryConfig` to `v1alpha2`
 - [Configuring the Registry Mirror Extension](docs/usage/registry-mirror/configuration.md) - learn what is the use-case for a registry mirror, how to enable and configure it
 
 ## Local setup and development
