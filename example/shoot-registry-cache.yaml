@@ -15,7 +15,7 @@ spec:
   extensions:
   - type: registry-cache
     providerConfig:
-      apiVersion: registry.extensions.gardener.cloud/v1alpha2
+      apiVersion: registry.extensions.gardener.cloud/v1alpha3
       kind: RegistryConfig
       caches:
       - upstream: docker.io
@@ -24,7 +24,7 @@ spec:
       - upstream: ghcr.io
       - upstream: quay.io
         garbageCollection:
-          enabled: false
+          ttl: 0s
   networking:
     type: calico
   provider:
