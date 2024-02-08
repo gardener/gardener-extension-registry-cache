@@ -38,7 +38,7 @@ In order to pull private images through registry cache, it is required to supply
      extensions:
      - type: registry-cache
        providerConfig:
-         apiVersion: registry.extensions.gardener.cloud/v1alpha2
+         apiVersion: registry.extensions.gardener.cloud/v1alpha3
          kind: RegistryConfig
          caches:
          - upstream: docker.io
