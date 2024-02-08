@@ -5,7 +5,7 @@ log:
     service: registry
 storage:
   delete:
-    enabled: {{ .storage_delete_enabled }}
+    enabled: true
   # Mitigate https://github.com/distribution/distribution/issues/2367 by disabling the blobdescriptor cache.
   # For more details, see https://github.com/distribution/distribution/issues/2367#issuecomment-1874449361.
   # cache:
@@ -28,6 +28,7 @@ health:
     threshold: 3
 proxy:
   remoteurl: {{ .proxy_remoteurl }}
+  ttl: {{ .proxy_ttl }}
   {{- if and .proxy_username .proxy_password }}
   username: {{ .proxy_username }}
   password: '{{ .proxy_password }}'

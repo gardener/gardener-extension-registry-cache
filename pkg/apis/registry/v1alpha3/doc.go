@@ -17,6 +17,8 @@
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:openapi-gen=true
 
-// Package v1alpha2 is a version of the API.
+//go:generate gen-crd-api-reference-docs -api-dir . -config ../../../../hack/api-reference/registry.json -template-dir ../../../../vendor/github.com/gardener/gardener/hack/api-reference/template -out-file ../../../../hack/api-reference/registry.md
+
+// Package v1alpha3 is a version of the API.
 // +groupName=registry.extensions.gardener.cloud
-package v1alpha2 // import "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+package v1alpha3 // import "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"

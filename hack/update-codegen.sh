@@ -39,7 +39,7 @@ bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh 
   github.com/gardener/gardener-extension-registry-cache/pkg/client \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
-  "registry:v1alpha2" \
+  "registry:v1alpha2,v1alpha3" \
   --go-header-file "${PROJECT_ROOT}/vendor/github.com/gardener/gardener/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${PROJECT_ROOT}"/vendor/k8s.io/code-generator/generate-internal-groups.sh \

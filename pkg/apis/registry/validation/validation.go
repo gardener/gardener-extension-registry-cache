@@ -69,7 +69,7 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 
 			// Mitigation for https://github.com/distribution/distribution/issues/4249
 			if !helper.GarbageCollectionEnabled(&oldCache) && helper.GarbageCollectionEnabled(&newCache) {
-				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("garbageCollection").Child("enabled"), newCache.GarbageCollection, "garbage collection cannot be enabled once it is disabled"))
+				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("garbageCollection").Child("ttl"), newCache.GarbageCollection, "garbage collection cannot be enabled (ttl > 0) once it is disabled (ttl = 0)"))
 			}
 		}
 	}
@@ -84,6 +84,11 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 	if cache.Volume != nil {
 		if cache.Volume.Size != nil {
 			allErrs = append(allErrs, validatePositiveQuantity(*cache.Volume.Size, fldPath.Child("volume", "size"))...)
+		}
+	}
+	if cache.GarbageCollection != nil {
+		if ttl := cache.GarbageCollection.TTL; ttl.Duration < 0 {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("garbageCollection").Child("ttl"), ttl.Duration.String(), "ttl must be a non-negative duration"))
 		}
 	}
 

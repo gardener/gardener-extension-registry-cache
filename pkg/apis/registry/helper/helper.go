@@ -16,13 +16,23 @@ package helper
 
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
-// GarbageCollectionEnabled returns whether the garbage collection is enabled for the given cache.
+// GarbageCollectionEnabled returns whether the garbage collection is enabled (ttl > 0) for the given cache.
 func GarbageCollectionEnabled(cache *registry.RegistryCache) bool {
-	return cache.GarbageCollection == nil || cache.GarbageCollection.Enabled
+	return GarbageCollectionTTL(cache).Duration > 0
+}
+
+// GarbageCollectionTTL returns the time to live of a blob in the given cache.
+func GarbageCollectionTTL(cache *registry.RegistryCache) metav1.Duration {
+	if cache.GarbageCollection == nil {
+		return registry.DefaultTTL
+	}
+
+	return cache.GarbageCollection.TTL
 }
 
 // FindCacheByUpstream finds a cache by upstream.

@@ -20,11 +20,13 @@ import (
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 )
 
 var (
 	schemeBuilder = runtime.NewSchemeBuilder(
 		v1alpha2.AddToScheme,
+		v1alpha3.AddToScheme,
 		registry.AddToScheme,
 		setVersionPriority,
 	)
@@ -34,7 +36,7 @@ var (
 )
 
 func setVersionPriority(scheme *runtime.Scheme) error {
-	return scheme.SetVersionPriority(v1alpha2.SchemeGroupVersion)
+	return scheme.SetVersionPriority(v1alpha3.SchemeGroupVersion, v1alpha2.SchemeGroupVersion)
 }
 
 // Install installs all APIs in the scheme.

@@ -1,20 +1,20 @@
 <p>Packages:</p>
 <ul>
 <li>
-<a href="#registry.extensions.gardener.cloud%2fv1alpha2">registry.extensions.gardener.cloud/v1alpha2</a>
+<a href="#registry.extensions.gardener.cloud%2fv1alpha3">registry.extensions.gardener.cloud/v1alpha3</a>
 </li>
 </ul>
-<h2 id="registry.extensions.gardener.cloud/v1alpha2">registry.extensions.gardener.cloud/v1alpha2</h2>
+<h2 id="registry.extensions.gardener.cloud/v1alpha3">registry.extensions.gardener.cloud/v1alpha3</h2>
 <p>
-<p>Package v1alpha2 is a version of the API.</p>
+<p>Package v1alpha3 is a version of the API.</p>
 </p>
 Resource Types:
 <ul></ul>
-<h3 id="registry.extensions.gardener.cloud/v1alpha2.GarbageCollection">GarbageCollection
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.GarbageCollection">GarbageCollection
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCache">RegistryCache</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache</a>)
 </p>
 <p>
 <p>GarbageCollection contains settings for the garbage collection of content from the cache.</p>
@@ -29,22 +29,26 @@ Resource Types:
 <tbody>
 <tr>
 <td>
-<code>enabled</code></br>
+<code>ttl</code></br>
 <em>
-bool
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#duration-v1-meta">
+Kubernetes meta/v1.Duration
+</a>
 </em>
 </td>
 <td>
-<p>Enabled indicates whether the garbage collection is enabled.</p>
+<p>TTL is the time to live of a blob in the cache.
+Set to 0s to disable the garbage collection.
+Defaults to 168h (7 days).</p>
 </td>
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryCache">RegistryCache
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryConfig">RegistryConfig</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryConfig">RegistryConfig</a>)
 </p>
 <p>
 <p>RegistryCache represents a registry cache to deploy.</p>
@@ -73,7 +77,7 @@ The value must be a valid DNS subdomain (RFC 1123).</p>
 <td>
 <code>volume</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.Volume">
+<a href="#registry.extensions.gardener.cloud/v1alpha3.Volume">
 Volume
 </a>
 </em>
@@ -87,7 +91,7 @@ Volume
 <td>
 <code>garbageCollection</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.GarbageCollection">
+<a href="#registry.extensions.gardener.cloud/v1alpha3.GarbageCollection">
 GarbageCollection
 </a>
 </em>
@@ -112,11 +116,11 @@ string
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryCacheStatus">RegistryCacheStatus
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCacheStatus">RegistryCacheStatus
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryStatus">RegistryStatus</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryStatus">RegistryStatus</a>)
 </p>
 <p>
 <p>RegistryCacheStatus represents a deployed registry cache.</p>
@@ -154,7 +158,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryConfig">RegistryConfig
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryConfig">RegistryConfig
 </h3>
 <p>
 <p>RegistryConfig contains information about registry caches to deploy.</p>
@@ -171,7 +175,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 <td>
 <code>caches</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCache">
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">
 []RegistryCache
 </a>
 </em>
@@ -182,7 +186,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha2.RegistryStatus">RegistryStatus
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryStatus">RegistryStatus
 </h3>
 <p>
 <p>RegistryStatus contains information about deployed registry caches.</p>
@@ -199,7 +203,7 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 <td>
 <code>caches</code></br>
 <em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCacheStatus">
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCacheStatus">
 []RegistryCacheStatus
 </a>
 </em>
@@ -210,11 +214,11 @@ Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:500
 </tr>
 </tbody>
 </table>
-<h3 id="registry.extensions.gardener.cloud/v1alpha2.Volume">Volume
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.Volume">Volume
 </h3>
 <p>
 (<em>Appears on:</em>
-<a href="#registry.extensions.gardener.cloud/v1alpha2.RegistryCache">RegistryCache</a>)
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache</a>)
 </p>
 <p>
 <p>Volume contains settings for the registry cache volume.</p>
