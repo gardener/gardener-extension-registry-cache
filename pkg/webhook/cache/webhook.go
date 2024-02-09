@@ -66,7 +66,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Target:   extensionswebhook.TargetSeed,
 		Path:     "/webhooks/registry-cache",
 		Webhook:  &admission.Webhook{Handler: handler},
-		Selector: &metav1.LabelSelector{
+		NamespaceSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{v1beta1constants.LabelExtensionPrefix + "registry-cache": "true"},
 		},
 	}

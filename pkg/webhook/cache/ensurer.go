@@ -118,7 +118,7 @@ func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.Garde
 
 	unit := extensionsv1alpha1.Unit{
 		Name:    "configure-containerd-registries.service",
-		Command: extensionsv1alpha1.UnitCommandPtr(extensionsv1alpha1.CommandStart),
+		Command: ptr.To(extensionsv1alpha1.CommandStart),
 		Enable:  ptr.To(true),
 		Content: ptr.To(`[Unit]
 Description=Configures containerd registries
@@ -135,21 +135,7 @@ Type=simple
 ExecStart=/opt/bin/configure-containerd-registries.sh ` + strings.Join(scriptArgs, " ")),
 	}
 
-	// TODO(ialidzhikov): Use "extensionswebhook.EnsureUnitWithName" when vendoring gardener/gardener that contains https://github.com/gardener/gardener/pull/9121.
-	appendUniqueUnit(new, unit)
+	*new = extensionswebhook.EnsureUnitWithName(*new, unit)
 
 	return nil
-}
-
-// appendUniqueUnit appends a unit only if it does not exist, otherwise overwrite content of previous unit
-func appendUniqueUnit(units *[]extensionsv1alpha1.Unit, unit extensionsv1alpha1.Unit) {
-	resFiles := make([]extensionsv1alpha1.Unit, 0, len(*units))
-
-	for _, f := range *units {
-		if f.Name != unit.Name {
-			resFiles = append(resFiles, f)
-		}
-	}
-
-	*units = append(resFiles, unit)
 }

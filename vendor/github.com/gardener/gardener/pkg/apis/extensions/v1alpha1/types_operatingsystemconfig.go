@@ -138,11 +138,6 @@ const (
 	CommandStop UnitCommand = "stop"
 )
 
-// UnitCommandPtr returns a pointer to the provided unit command.
-func UnitCommandPtr(c UnitCommand) *UnitCommand {
-	return &c
-}
-
 // DropIn is a drop-in configuration for a systemd unit.
 type DropIn struct {
 	// Name is the name of the drop-in.
@@ -278,8 +273,6 @@ type CRIName string
 const (
 	// CRINameContainerD is a constant for ContainerD CRI name
 	CRINameContainerD CRIName = "containerd"
-	// CRINameDocker is a constant for Docker CRI name
-	CRINameDocker CRIName = "docker"
 )
 
 // ContainerDRuntimeContainersBinFolder is the folder where Container Runtime binaries should be saved for ContainerD usage

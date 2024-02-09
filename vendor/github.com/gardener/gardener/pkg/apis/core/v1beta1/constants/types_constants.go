@@ -435,6 +435,8 @@ const (
 
 	// LabelSecretBindingReference is used to identify secrets which are referred by a SecretBinding (not necessarily in the same namespace).
 	LabelSecretBindingReference = "reference.gardener.cloud/secretbinding"
+	// LabelPrefixSeedName is the prefix for the label key describing the name of a seed, e.g. seed.gardener.cloud/my-seed=true.
+	LabelPrefixSeedName = "seed.gardener.cloud/"
 
 	// LabelExtensionExtensionTypePrefix is used to prefix extension label for extension types.
 	LabelExtensionExtensionTypePrefix = "extensions.extensions.gardener.cloud/"
@@ -512,6 +514,14 @@ const (
 	// need to initiate the communication with a target API server (e.g., shoot API server or virtual garden API
 	// server).
 	LabelNetworkPolicyAccessTargetAPIServer = "networking.gardener.cloud/access-target-apiserver"
+
+	// LabelAuthorizationExtensionsServiceAccountSelector is a constant for an annotation key on ClusterRoles in the
+	// garden cluster which can be used to describe a selector for labels on ServiceAccounts which are allowed to get
+	// bound to this ClusterRole.
+	LabelAuthorizationExtensionsServiceAccountSelector = "authorization.gardener.cloud/extensions-serviceaccount-selector"
+	// LabelAuthorizationCustomExtensionsPermissions is a constant for a label key on ClusterRoles in the garden
+	// cluster which can be used to describe that this ClusterRole contains custom permissions for extensions.
+	LabelAuthorizationCustomExtensionsPermissions = "authorization.gardener.cloud/custom-extensions-permissions"
 
 	// LabelApp is a constant for a label key.
 	LabelApp = "app"

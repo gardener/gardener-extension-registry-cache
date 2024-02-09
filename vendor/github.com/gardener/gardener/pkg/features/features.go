@@ -58,13 +58,6 @@ const (
 	// alpha: v1.64.0
 	MutableShootSpecNetworkingNodes featuregate.Feature = "MutableShootSpecNetworkingNodes"
 
-	// WorkerlessShoots allows creation of Shoot clusters with no worker pools.
-	// owner: @acumino @ary1992 @shafeeqes
-	// alpha: v1.70.0
-	// beta: v1.79.0
-	// GA: v1.86.0
-	WorkerlessShoots featuregate.Feature = "WorkerlessShoots"
-
 	// ShootForceDeletion allows force deletion of Shoots.
 	// See https://github.com/gardener/gardener/blob/master/docs/usage/shoot_operations.md#shoot-force-deletion for more details.
 	// owner: @acumino @ary1992 @shafeeqes
@@ -81,23 +74,6 @@ const (
 	// TODO(scheererj): Do not remove this feature gate before v1.90 to give extensions enough time to adopt v1.83.
 	// Otherwise, extensions might end up believing they need to manage MCM again when the feature gate is removed.
 	MachineControllerManagerDeployment featuregate.Feature = "MachineControllerManagerDeployment"
-
-	// ContainerdRegistryHostsDir enables registry configuration in containerd based on the hosts directory pattern.
-	// The hosts directory pattern is the new way of configuring registries/mirrors in containerd.
-	// Ref https://github.com/containerd/containerd/blob/main/docs/hosts.md.
-	// When this feature gate is enabled, gardenlet adds the following config to containerd's config.toml:
-	//
-	// [plugins."io.containerd.grpc.v1.cri".registry] # gardener-managed
-	//   config_path = "/etc/containerd/certs.d"
-	//
-	// This config allows registries to be configured by creating new hosts.toml files under the predefined
-	// /etc/containerd/certs.d directory.
-	//
-	// owner: @ialidzhikov, @dimitar-kostadinov
-	// alpha: v1.77.0
-	// beta: v1.86.0
-	// GA: v1.87.0
-	ContainerdRegistryHostsDir featuregate.Feature = "ContainerdRegistryHostsDir"
 
 	// APIServerFastRollout enables fast rollouts for Shoot kube-apiservers on the given Seed.
 	// When enabled, maxSurge for Shoot kube-apiserver deployments is set to 100%.
@@ -143,10 +119,8 @@ var AllFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 	CoreDNSQueryRewriting:              {Default: false, PreRelease: featuregate.Alpha},
 	IPv6SingleStack:                    {Default: false, PreRelease: featuregate.Alpha},
 	MutableShootSpecNetworkingNodes:    {Default: false, PreRelease: featuregate.Alpha},
-	WorkerlessShoots:                   {Default: true, PreRelease: featuregate.GA, LockToDefault: true},
 	ShootForceDeletion:                 {Default: false, PreRelease: featuregate.Alpha},
 	MachineControllerManagerDeployment: {Default: true, PreRelease: featuregate.GA, LockToDefault: true},
-	ContainerdRegistryHostsDir:         {Default: true, PreRelease: featuregate.GA, LockToDefault: true},
 	APIServerFastRollout:               {Default: true, PreRelease: featuregate.Beta},
 	UseGardenerNodeAgent:               {Default: false, PreRelease: featuregate.Alpha},
 }
