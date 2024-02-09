@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
@@ -84,6 +84,6 @@ var _ = Describe("Helpers", func() {
 			Expect(helper.VolumeStorageClassName(cache)).To(Equal(expected))
 		},
 		Entry("volume is nil", &registry.RegistryCache{Volume: nil}, nil),
-		Entry("volume.storageClassname is not nil", &registry.RegistryCache{Volume: &registry.Volume{StorageClassName: pointer.String("foo")}}, pointer.String("foo")),
+		Entry("volume.storageClassname is not nil", &registry.RegistryCache{Volume: &registry.Volume{StorageClassName: ptr.To("foo")}}, ptr.To("foo")),
 	)
 })

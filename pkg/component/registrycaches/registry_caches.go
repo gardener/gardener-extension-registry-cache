@@ -44,7 +44,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -181,7 +181,7 @@ func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][
 				Name:      serviceAccountName,
 				Namespace: metav1.NamespaceSystem,
 			},
-			AutomountServiceAccountToken: pointer.Bool(false),
+			AutomountServiceAccountToken: ptr.To(false),
 		}
 		podSecurityPolicy := &policyv1beta1.PodSecurityPolicy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -356,7 +356,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Selector: &metav1.LabelSelector{
 				MatchLabels: getLabels(name, cache.Upstream),
 			},
-			Replicas: pointer.Int32(1),
+			Replicas: ptr.To(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.MergeStringMaps(getLabels(name, cache.Upstream), map[string]string{
@@ -365,7 +365,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 					}),
 				},
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: pointer.Bool(false),
+					AutomountServiceAccountToken: ptr.To(false),
 					ServiceAccountName:           serviceAccountName,
 					PriorityClassName:            "system-cluster-critical",
 					SecurityContext: &corev1.PodSecurityContext{

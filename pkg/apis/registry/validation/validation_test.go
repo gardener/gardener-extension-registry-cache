@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
@@ -198,13 +198,13 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny cache volume storageClassName update", func() {
-			registryConfig.Caches[0].Volume.StorageClassName = pointer.String("foo")
+			registryConfig.Caches[0].Volume.StorageClassName = ptr.To("foo")
 
 			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].volume.storageClassName"),
-					"BadValue": Equal(pointer.String("foo")),
+					"BadValue": Equal(ptr.To("foo")),
 					"Detail":   Equal("field is immutable"),
 				})),
 			))
@@ -242,7 +242,7 @@ var _ = Describe("Validation", func() {
 					"username": []byte("john"),
 					"password": []byte("swordfish"),
 				},
-				Immutable: pointer.Bool(true),
+				Immutable: ptr.To(true),
 			}
 		})
 
@@ -263,7 +263,7 @@ var _ = Describe("Validation", func() {
 				))
 			},
 			Entry("when immutable field is nil", nil),
-			Entry("when immutable field is false", pointer.Bool(false)),
+			Entry("when immutable field is false", ptr.To(false)),
 		)
 
 		DescribeTable("should have only two data entries",

@@ -34,7 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
@@ -252,7 +252,7 @@ var _ = Describe("Shoot validator", func() {
 						Namespace: "garden-tst",
 						Name:      "ro-docker-creds",
 					},
-					Immutable: pointer.Bool(true),
+					Immutable: ptr.To(true),
 					Data: map[string][]byte{
 						"username": []byte("john"),
 						"password": []byte("swordfish"),
@@ -279,7 +279,7 @@ var _ = Describe("Shoot validator", func() {
 								Volume: &v1alpha2.Volume{
 									Size: &size,
 								},
-								SecretReferenceName: pointer.String("docker-creds"),
+								SecretReferenceName: ptr.To("docker-creds"),
 							},
 						},
 					}),
@@ -327,7 +327,7 @@ var _ = Describe("Shoot validator", func() {
 			})
 
 			It("should return err when secret is invalid", func() {
-				secret.Immutable = pointer.Bool(false)
+				secret.Immutable = ptr.To(false)
 				delete(secret.Data, "password")
 				apiReader.EXPECT().Get(ctx, client.ObjectKey{Namespace: "garden-tst", Name: "ro-docker-creds"}, gomock.AssignableToTypeOf(&corev1.Secret{})).
 					DoAndReturn(func(_ context.Context, _ client.ObjectKey, obj *corev1.Secret, _ ...client.GetOption) error {
