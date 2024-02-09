@@ -35,7 +35,7 @@ import (
 	mirrorinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/install"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
-	registryv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	registryv1alpha2 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
 )
 
 func TestRegistryMirrorValidator(t *testing.T) {
@@ -197,15 +197,17 @@ var _ = Describe("Shoot validator", func() {
 			shoot.Spec.Extensions = append(shoot.Spec.Extensions, core.Extension{
 				Type: "registry-cache",
 				ProviderConfig: &runtime.RawExtension{
-					Raw: encode(&registryv1alpha1.RegistryConfig{
+					Raw: encode(&registryv1alpha2.RegistryConfig{
 						TypeMeta: metav1.TypeMeta{
-							APIVersion: registryv1alpha1.SchemeGroupVersion.String(),
+							APIVersion: registryv1alpha2.SchemeGroupVersion.String(),
 							Kind:       "RegistryConfig",
 						},
-						Caches: []registryv1alpha1.RegistryCache{
+						Caches: []registryv1alpha2.RegistryCache{
 							{
 								Upstream: "docker.io",
-								Size:     &size,
+								Volume: &registryv1alpha2.Volume{
+									Size: &size,
+								},
 							},
 						},
 					}),

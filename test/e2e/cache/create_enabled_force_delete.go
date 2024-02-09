@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 	"github.com/gardener/gardener-extension-registry-cache/test/e2e"
 )
@@ -33,8 +33,8 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	f := e2e.DefaultShootCreationFramework()
 	shoot := e2e.DefaultShoot("e2e-cache-fd")
 	size := resource.MustParse("2Gi")
-	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha1.RegistryCache{
-		{Upstream: "docker.io", Size: &size},
+	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha2.RegistryCache{
+		{Upstream: "docker.io", Volume: &v1alpha2.Volume{Size: &size}},
 	})
 	f.Shoot = shoot
 

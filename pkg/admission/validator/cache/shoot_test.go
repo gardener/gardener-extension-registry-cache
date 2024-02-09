@@ -39,7 +39,7 @@ import (
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha1"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
 )
 
 func TestRegistryCacheValidator(t *testing.T) {
@@ -64,7 +64,7 @@ var _ = Describe("Shoot validator", func() {
 		BeforeEach(func() {
 			scheme := runtime.NewScheme()
 			Expect(api.AddToScheme(scheme)).To(Succeed())
-			Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
+			Expect(v1alpha2.AddToScheme(scheme)).To(Succeed())
 
 			decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 			ctrl = gomock.NewController(GinkgoT())
@@ -82,15 +82,17 @@ var _ = Describe("Shoot validator", func() {
 						{
 							Type: "registry-cache",
 							ProviderConfig: &runtime.RawExtension{
-								Raw: encode(&v1alpha1.RegistryConfig{
+								Raw: encode(&v1alpha2.RegistryConfig{
 									TypeMeta: metav1.TypeMeta{
-										APIVersion: v1alpha1.SchemeGroupVersion.String(),
+										APIVersion: v1alpha2.SchemeGroupVersion.String(),
 										Kind:       "RegistryConfig",
 									},
-									Caches: []v1alpha1.RegistryCache{
+									Caches: []v1alpha2.RegistryCache{
 										{
 											Upstream: "docker.io",
-											Size:     &size,
+											Volume: &v1alpha2.Volume{
+												Size: &size,
+											},
 										},
 									},
 								}),
@@ -154,12 +156,12 @@ var _ = Describe("Shoot validator", func() {
 
 			It("should return err when registry-cache providerConfig is invalid", func() {
 				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-					Raw: encode(&v1alpha1.RegistryConfig{
+					Raw: encode(&v1alpha2.RegistryConfig{
 						TypeMeta: metav1.TypeMeta{
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							APIVersion: v1alpha2.SchemeGroupVersion.String(),
 							Kind:       "RegistryConfig",
 						},
-						Caches: []v1alpha1.RegistryCache{
+						Caches: []v1alpha2.RegistryCache{
 							{
 								Upstream: "https://registry.example.com",
 							},
@@ -211,15 +213,17 @@ var _ = Describe("Shoot validator", func() {
 			It("should return err when registry-cache providerConfig update is invalid", func() {
 				newSize := resource.MustParse("42Gi")
 				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-					Raw: encode(&v1alpha1.RegistryConfig{
+					Raw: encode(&v1alpha2.RegistryConfig{
 						TypeMeta: metav1.TypeMeta{
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							APIVersion: v1alpha2.SchemeGroupVersion.String(),
 							Kind:       "RegistryConfig",
 						},
-						Caches: []v1alpha1.RegistryCache{
+						Caches: []v1alpha2.RegistryCache{
 							{
 								Upstream: "docker.io",
-								Size:     &newSize,
+								Volume: &v1alpha2.Volume{
+									Size: &newSize,
+								},
 							},
 						},
 					}),
@@ -264,15 +268,17 @@ var _ = Describe("Shoot validator", func() {
 					},
 				}
 				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
-					Raw: encode(&v1alpha1.RegistryConfig{
+					Raw: encode(&v1alpha2.RegistryConfig{
 						TypeMeta: metav1.TypeMeta{
-							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							APIVersion: v1alpha2.SchemeGroupVersion.String(),
 							Kind:       "RegistryConfig",
 						},
-						Caches: []v1alpha1.RegistryCache{
+						Caches: []v1alpha2.RegistryCache{
 							{
-								Upstream:            "docker.io",
-								Size:                &size,
+								Upstream: "docker.io",
+								Volume: &v1alpha2.Volume{
+									Size: &size,
+								},
 								SecretReferenceName: pointer.String("docker-creds"),
 							},
 						},
