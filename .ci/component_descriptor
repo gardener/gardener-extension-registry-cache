@@ -4,4 +4,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"$(dirname $0)"/../vendor/github.com/gardener/gardener/hack/.ci/component_descriptor "$(dirname $0)"/..
+"$(dirname $0)"/third_party/component_descriptor "$(dirname $0)"/..
