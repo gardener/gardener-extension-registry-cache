@@ -1,6 +1,6 @@
 module github.com/gardener/gardener-extension-registry-cache
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.3
