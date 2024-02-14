@@ -4,6 +4,15 @@ images:
   sourceRepository: github.com/distribution/distribution
   repository: europe-docker.pkg.dev/gardener-project/releases/3rd/registry
   tag: 3.0.0-alpha.1
+  labels:
+  - name: gardener.cloud/cve-categorisation
+    value:
+      network_exposure: protected
+      authentication_enforced: false
+      user_interaction: end-user
+      confidentiality_requirement: high
+      integrity_requirement: high
+      availability_requirement: low
 # registry-configuration-cleaner DaemonSet
 - name: alpine
   repository: europe-docker.pkg.dev/gardener-project/releases/3rd/alpine
