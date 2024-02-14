@@ -76,8 +76,9 @@ The value must be a valid DNS subdomain (RFC 1123). It must not include a scheme
 The `providerConfig.caches[].volume` field contains settings for the registry cache volume.
 The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the configured size and StorageClass name.
 
-The `providerConfig.caches[].volume.size` field is the size of the registry cache. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
+The `providerConfig.caches[].volume.size` field is the size of the registry cache volume. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
 This field is immutable. See [Increase the cache disk size](#increase-the-cache-disk-size) on how to resize the disk.
+The extension defines [alerts](../../../pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml) for the volume. See [Alerting for Users](https://github.com/gardener/gardener/blob/v1.82.0/docs/monitoring/alerting.md#alerting-for-users) on how to enable notifications for Shoot cluster alerts.
 
 The `providerConfig.caches[].volume.storageClassName` field is the name of the StorageClass used by the registry cache volume.
 This field is immutable. If the field is not specified, then the [default StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/#default-storageclass) will be used.
