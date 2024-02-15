@@ -52,8 +52,8 @@ The value must be a valid DNS subdomain (RFC 1123). It must not include a scheme
 
 The `providerConfig.mirror[].hosts` field represents the mirror hosts to be used for the upstream. At least one mirror host has to be specified.
 
-The `providerConfig.mirror[].hosts.host` field is the mirror host. It is a required field.
+The `providerConfig.mirror[].hosts[].host` field is the mirror host. It is a required field.
 The value must include a scheme - `http://` or `https://`.
 
-The `providerConfig.mirror[].hosts.capabilities` field represents the operations a host is capable of performing. This also represents the set of operations for which the mirror host may be trusted to perform. Defaults to `["pull"]`. The supported values are `pull` and `resolve`.
+The `providerConfig.mirror[].hosts[].capabilities` field represents the operations a host is capable of performing. This also represents the set of operations for which the mirror host may be trusted to perform. Defaults to `["pull"]`. The supported values are `pull` and `resolve`.
 See the [capabilities field documentation](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md#capabilities-field) for more information which operations are considered trusted ones against public/private mirrors.
