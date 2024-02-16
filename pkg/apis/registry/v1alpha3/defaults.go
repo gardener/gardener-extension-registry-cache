@@ -12,11 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +k8s:deepcopy-gen=package
-// +k8s:conversion-gen=github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry
-// +k8s:defaulter-gen=TypeMeta
-// +k8s:openapi-gen=true
+package v1alpha3
 
-// Package v1alpha2 is a version of the API.
-// +groupName=registry.extensions.gardener.cloud
-package v1alpha2 // import "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+import (
+	"k8s.io/apimachinery/pkg/api/resource"
+)
+
+// SetDefaults_RegistryCache sets the defaults for a RegistryCache.
+func SetDefaults_RegistryCache(cache *RegistryCache) {
+	if cache.Volume == nil {
+		cache.Volume = &Volume{}
+	}
+
+	if cache.GarbageCollection == nil {
+		cache.GarbageCollection = &GarbageCollection{
+			TTL: DefaultTTL,
+		}
+	}
+}
+
+// SetDefaults_Volume sets the defaults for a Volume.
+func SetDefaults_Volume(volume *Volume) {
+	if volume.Size == nil {
+		defaultCacheSize := resource.MustParse("10Gi")
+		volume.Size = &defaultCacheSize
+	}
+}

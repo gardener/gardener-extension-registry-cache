@@ -15,6 +15,8 @@
 package validation_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -148,6 +150,20 @@ var _ = Describe("Validation", func() {
 			))
 		})
 
+		It("should deny negative garbage collection ttl duration", func() {
+			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+				TTL: metav1.Duration{Duration: -1 * time.Hour},
+			}
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":   Equal(field.ErrorTypeInvalid),
+					"Field":  Equal("providerConfig.caches[0].garbageCollection.ttl"),
+					"Detail": ContainSubstring("ttl must be a non-negative duration"),
+				})),
+			))
+		})
+
 		It("should deny duplicate cache upstreams", func() {
 			registryConfig.Caches = append(registryConfig.Caches, *registryConfig.Caches[0].DeepCopy())
 
@@ -175,7 +191,7 @@ var _ = Describe("Validation", func() {
 					Size: &size,
 				},
 				GarbageCollection: &api.GarbageCollection{
-					Enabled: true,
+					TTL: metav1.Duration{Duration: 14 * 24 * time.Hour},
 				},
 			}
 			registryConfig.Caches = append(registryConfig.Caches, newCache)
@@ -210,19 +226,19 @@ var _ = Describe("Validation", func() {
 			))
 		})
 
-		It("should deny garbage collection enablement once it is disabled", func() {
+		It("should deny garbage collection enablement (ttl > 0) once it is disabled (ttl = 0)", func() {
 			oldRegistryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
-				Enabled: false,
+				TTL: metav1.Duration{Duration: 0},
 			}
 			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
-				Enabled: true,
+				TTL: metav1.Duration{Duration: 7 * 24 * time.Hour},
 			}
 
 			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].garbageCollection.enabled"),
-					"Detail": Equal("garbage collection cannot be enabled once it is disabled"),
+					"Field":  Equal("providerConfig.caches[0].garbageCollection.ttl"),
+					"Detail": Equal("garbage collection cannot be enabled (ttl > 0) once it is disabled (ttl = 0)"),
 				})),
 			))
 		})

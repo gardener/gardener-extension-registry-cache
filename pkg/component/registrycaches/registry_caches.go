@@ -19,7 +19,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -278,10 +277,10 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	var (
 		name         = computeName(cache.Upstream)
 		configValues = map[string]interface{}{
-			"http_addr":              fmt.Sprintf(":%d", constants.RegistryCachePort),
-			"http_debug_addr":        fmt.Sprintf(":%d", debugPort),
-			"proxy_remoteurl":        registryutils.GetUpstreamURL(cache.Upstream),
-			"storage_delete_enabled": strconv.FormatBool(helper.GarbageCollectionEnabled(cache)),
+			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCachePort),
+			"http_debug_addr": fmt.Sprintf(":%d", debugPort),
+			"proxy_remoteurl": registryutils.GetUpstreamURL(cache.Upstream),
+			"proxy_ttl":       helper.GarbageCollectionTTL(cache).Duration.String(),
 		}
 	)
 

@@ -16,10 +16,12 @@ package helper_test
 
 import (
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -38,9 +40,36 @@ var _ = Describe("Helpers", func() {
 		func(cache *registry.RegistryCache, expected bool) {
 			Expect(helper.GarbageCollectionEnabled(cache)).To(Equal(expected))
 		},
-		Entry("garbageCollection is nil", &registry.RegistryCache{GarbageCollection: nil}, true),
-		Entry("garbageCollection.enabled is false", &registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{Enabled: false}}, false),
-		Entry("garbageCollection.enabled is true", &registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{Enabled: true}}, true),
+		Entry("garbageCollection is nil",
+			&registry.RegistryCache{GarbageCollection: nil},
+			true,
+		),
+		Entry("garbageCollection.ttl is zero",
+			&registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{TTL: metav1.Duration{Duration: 0}}},
+			false,
+		),
+		Entry("garbageCollection.ttl is a positive duration",
+			&registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{TTL: metav1.Duration{Duration: 30 * 24 * time.Hour}}},
+			true,
+		),
+	)
+
+	DescribeTable("#GarbageCollectionTTL",
+		func(cache *registry.RegistryCache, expected metav1.Duration) {
+			Expect(helper.GarbageCollectionTTL(cache)).To(Equal(expected))
+		},
+		Entry("garbageCollection is nil",
+			&registry.RegistryCache{GarbageCollection: nil},
+			metav1.Duration{Duration: 7 * 24 * time.Hour},
+		),
+		Entry("garbageCollection.ttl is zero",
+			&registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{TTL: metav1.Duration{Duration: 0}}},
+			metav1.Duration{Duration: 0},
+		),
+		Entry("garbageCollection.ttl is a positive duration",
+			&registry.RegistryCache{GarbageCollection: &registry.GarbageCollection{TTL: metav1.Duration{Duration: 30 * 24 * time.Hour}}},
+			metav1.Duration{Duration: 30 * 24 * time.Hour},
+		),
 	)
 
 	DescribeTable("#FindCacheByUpstream",

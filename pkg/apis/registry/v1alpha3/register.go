@@ -1,4 +1,4 @@
-// Copyright (c) 2022 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
+// Copyright (c) 2024 SAP SE or an SAP affiliate company. All rights reserved. This file is licensed under the Apache Software License, v. 2 except as noted otherwise in the LICENSE file
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1alpha2
+package v1alpha3
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,7 +23,7 @@ import (
 const GroupName = "registry.extensions.gardener.cloud"
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha2"}
+var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha3"}
 
 var (
 	localSchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, RegisterDefaults)
