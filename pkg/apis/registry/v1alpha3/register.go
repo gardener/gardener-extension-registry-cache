@@ -25,11 +25,6 @@ const GroupName = "registry.extensions.gardener.cloud"
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha3"}
 
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
-func Resource(resource string) schema.GroupResource {
-	return SchemeGroupVersion.WithResource(resource).GroupResource()
-}
-
 var (
 	localSchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, RegisterDefaults)
 	// AddToScheme is a pointer to SchemeBuilder.AddToScheme.

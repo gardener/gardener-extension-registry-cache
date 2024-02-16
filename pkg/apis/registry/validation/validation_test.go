@@ -191,7 +191,7 @@ var _ = Describe("Validation", func() {
 					Size: &size,
 				},
 				GarbageCollection: &api.GarbageCollection{
-					TTL: metav1.Duration{Duration: 14 * 7 * time.Hour},
+					TTL: metav1.Duration{Duration: 14 * 24 * time.Hour},
 				},
 			}
 			registryConfig.Caches = append(registryConfig.Caches, newCache)
