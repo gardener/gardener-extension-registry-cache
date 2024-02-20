@@ -1,3 +1,8 @@
+---
+title: Configuring the Registry Cache Extension
+description: Learn what is the use-case for a pull-through cache, how to enable it and configure it
+---
+
 # Configuring the Registry Cache Extension
 
 ## Introduction

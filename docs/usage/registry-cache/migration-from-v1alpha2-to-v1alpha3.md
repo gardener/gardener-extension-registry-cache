@@ -1,3 +1,8 @@
+---
+title: Migration from `v1alpha2` to `v1alpha3`
+description: Learn how to migrate from the `v1alpha2` API version of the `RegistryConfig` to `v1alpha3`
+---
+
 # Migration from `v1alpha2` to `v1alpha3`
 
 This document descibres how to migrate from API version `registry.extensions.gardener.cloud/v1alpha2` of the `RegistryConfig` to `registry.extensions.gardener.cloud/v1alpha3`.
