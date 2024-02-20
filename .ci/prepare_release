@@ -4,4 +4,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"$(dirname $0)"/../vendor/github.com/gardener/gardener/hack/.ci/prepare_release "$(dirname $0)"/.. github.com/gardener gardener-extension-registry-cache
+"$(dirname $0)"/third_party/prepare_release "$(dirname $0)"/.. github.com/gardener gardener-extension-registry-cache

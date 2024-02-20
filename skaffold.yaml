@@ -31,7 +31,6 @@ build:
             - pkg/utils/registry
             - pkg/webhook/cache
             - pkg/webhook/mirror
-            - vendor
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'
@@ -73,7 +72,6 @@ build:
             - pkg/apis/registry/v1alpha3
             - pkg/apis/registry/validation
             - pkg/constants
-            - vendor
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'

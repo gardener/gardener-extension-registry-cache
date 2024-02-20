@@ -11,10 +11,9 @@ operation="${1:-check}"
 echo "> ${operation^} Skaffold Dependencies"
 
 success=true
-repo_root="$(git rev-parse --show-toplevel)"
 
 function run() {
-  if ! "$repo_root"/vendor/github.com/gardener/gardener/hack/check-skaffold-deps-for-binary.sh "$operation" --skaffold-file "$1" --binary "$2" --skaffold-config "$3"; then
+  if ! bash "$GARDENER_HACK_DIR"/check-skaffold-deps-for-binary.sh "$operation" --skaffold-file "$1" --binary "$2" --skaffold-config "$3"; then
     success=false
   fi
 }

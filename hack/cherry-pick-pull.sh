@@ -1,1 +1,0 @@
-../vendor/github.com/gardener/gardener/hack/cherry-pick-pull.sh
