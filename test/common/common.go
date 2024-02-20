@@ -26,7 +26,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	mirrorv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
-	registryv1alpha2 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+	registryv1alpha3 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 )
 
 const (
@@ -46,10 +46,10 @@ const (
 )
 
 // AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
-func AddOrUpdateRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []registryv1alpha2.RegistryCache) {
-	providerConfig := &registryv1alpha2.RegistryConfig{
+func AddOrUpdateRegistryCacheExtension(shoot *gardencorev1beta1.Shoot, caches []registryv1alpha3.RegistryCache) {
+	providerConfig := &registryv1alpha3.RegistryConfig{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: registryv1alpha2.SchemeGroupVersion.String(),
+			APIVersion: registryv1alpha3.SchemeGroupVersion.String(),
 			Kind:       "RegistryConfig",
 		},
 		Caches: caches,
