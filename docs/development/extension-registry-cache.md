@@ -1,3 +1,8 @@
+---
+title: Developer Docs for Gardener Extension Registry Cache
+description: Learn about the inner workings
+---
+
 # Developer Docs for Gardener Extension Registry Cache
 
 This document outlines how the Shoot reconciliation and deletion work for a Shoot with the registry-cache extension enabled.
@@ -11,7 +16,7 @@ This section outlines how the reconciliation works for a Shoot with the registry
 This section outlines how the extension enablement/reconciliation works, e.g the extension has beeen added to the Shoot spec.
 
 1. As part of the Shoot reconciliation flow, gardenlet deploys the [Extension](https://github.com/gardener/gardener/blob/v1.82.0/docs/extensions/extension.md) resource.
-1. The registry-cache extension reconciles the Extension resource. [pkg/controller/extension/actuator.go](../../pkg/controller/extension/actuator.go) contains the implementation of the [extension.Actuator](https://github.com/gardener/gardener/blob/v1.82.0/extensions/pkg/controller/extension/actuator.go) interface. The reconciliation of an Extension of type `registry-cache` consists of the following steps:
+1. The registry-cache extension reconciles the Extension resource. [pkg/controller/cache/actuator.go](../../pkg/controller/cache/actuator.go) contains the implementation of the [extension.Actuator](https://github.com/gardener/gardener/blob/v1.82.0/extensions/pkg/controller/extension/actuator.go) interface. The reconciliation of an Extension of type `registry-cache` consists of the following steps:
    1. The extension checks if a registry has been removed (by comparing the status and the spec of the Extension). If an upstream is being removed, then it deploys the [`registry-cleaner` DaemonSet](../../pkg/component/registryconfigurationcleaner/registry_configuration_cleaner.go) to the Shoot cluster to clean up the existing configuration for the upstream that has to be removed.
    1. The registry-cache extension deploys resources to the Shoot cluster via ManagedResource. For every configured upstream it creates a StatefulSet (with PVC), Service and other resources.
    1. It lists all Services from the `kube-system` namespace having the `upstream-host` label. It will return an error (and retry in exponential backoff) until the Services count matches the configured registries count.

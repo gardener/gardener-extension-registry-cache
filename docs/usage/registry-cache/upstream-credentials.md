@@ -1,3 +1,7 @@
+---
+title: How to provide credentials for upstream registry?
+---
+
 # How to provide credentials for upstream registry?
 
 In order to pull private images through registry cache, it is required to supply credentials for the private upstream registry.

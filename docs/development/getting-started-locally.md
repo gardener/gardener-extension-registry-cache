@@ -1,3 +1,8 @@
+---
+title: Deploying Registry Cache Extension Locally
+description: Learn how to set up a local development environment
+---
+
 # Deploying Registry Cache Extension Locally
 
 ## Prerequisites

@@ -1,3 +1,8 @@
+---
+title: Configuring the Registry Mirror Extension
+description: Learn what is the use-case for a registry mirror, how to enable and configure it
+---
+
 # Configuring the Registry Mirror Extension
 
 ## Introduction
