@@ -21,7 +21,7 @@ The registry-mirror extension allows registry mirror configuration to be configu
 
 When the extension is enabled, the containerd daemon on the Shoot cluster Nodes gets configured to use as a mirror the requested mirrors. For example, if for upstream `docker.io` the mirror `https://mirror.gcr.io` is configured in the Shoot spec, then containerd gets configured to first pull the image from the mirror (`https://mirror.gcr.io` in that case). If this image pull operation fails, containerd falls back to the upstream itself (`docker.io` in that case).
 
-The extension is based on the contract described in [`containerd` Registry Configuration](https://github.com/gardener/gardener/blob/v1.87.0/docs/usage/containerd-registry-configuration.md). The corresponding upstream documentation in containerd is [Registry Configuration - Introduction](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md).
+The extension is based on the contract described in [`containerd` Registry Configuration](https://github.com/gardener/gardener/blob/master/docs/usage/containerd-registry-configuration.md). The corresponding upstream documentation in containerd is [Registry Configuration - Introduction](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md).
 
 ## Shoot Configuration
 

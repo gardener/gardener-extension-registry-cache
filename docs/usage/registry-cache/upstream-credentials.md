@@ -65,14 +65,14 @@ This document describe how to supply credentials for the private upstream regist
 ## How to rotate the registry credentials?
 
 To rotate registry credentials perform the following steps:
-1. Generate new pair of credentials in the cloud provider account. Do not invalidate the old ones.
+1. Generate a new pair of credentials in the cloud provider account. Do not invalidate the old ones.
 1. Create a new Secret (e.g. `ro-docker-secret-v2`) with the newly generated credentials as described step 1. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
 1. Update the Shoot spec with newly created Secret as described step 2. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
-1 The above step will trigger a Shoot reconciliation. Wait for the Shoot reconciliation to complete.
+1. The above step will trigger a Shoot reconciliation. Wait for the Shoot reconciliation to complete.
 1. Make sure that the old Secret is no longer referenced by any Shoot cluster. Finally, delete the Secret containing the old credentials (e.g. `ro-docker-secret-v1`).
 1. Delete the corresponding old credentials from the cloud provider account.
 
 ## Gotchas
 
-- The registry cache is not protected by any authentication/authorization mechanism. The caches images (incl. private images) can be fetched from the registry cache without authentication/authorization. Note that the registry cache itself is not exposed publicly.
+- The registry cache is not protected by any authentication/authorization mechanism. The cached images (incl. private images) can be fetched from the registry cache without authentication/authorization. Note that the registry cache itself is not exposed publicly.
 - The registry cache provides the credentials for every request against the corresponding upstream. In some cases, misconfigured credentials can prevent the registry cache to pull even public images from the upstream (for example: invalid service account key for Artifact Registry). However, this behaviour is controlled by the server-side logic of the upstream registry.
