@@ -4,7 +4,12 @@ title: How to provide credentials for upstream registry?
 
 # How to provide credentials for upstream registry?
 
-In order to pull private images through registry cache, it is required to supply credentials for the private upstream registry.
+In Kubernetes, to pull images from private container image registries you either have to specify an image pull Secret (see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)) or you have to configure kubelet to dynamically retrieve credentials using a credential provider plugin (see [Configure a kubelet image credential provider](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider/)). When pulling an image, kubelet is providing the credentials to the CRI implementation. The CRI implementation uses the provided credentials against the upstream registry to pull the image.
+
+The registry-cache extension is using the [Distribution project](https://github.com/distribution/distribution) as pull through cache implementation. The Distribution project does not use the provided credentials from the CRI implementation while fetching an image from the upstream. Hence, the above-described scenarios such as configuring image pull Secret for a Pod or configuring kubelet credential provider plugins don't work out of the box with the pull through cache provided by the registry-cache extension.
+Instead, the Distribution project supports configuring only one set of credentials for a given pull through cache instance (for a given upstream).
+
+This document describe how to supply credentials for the private upstream registry in order to pull private image with the registry cache.
 
 ## How to configure the registry cache to use upstream registry credentials?
 
@@ -69,4 +74,5 @@ To rotate registry credentials perform the following steps:
 
 ## Gotchas
 
+- The registry cache is not protected by any authentication/authorization mechanism. The caches images (incl. private images) can be fetched from the registry cache without authentication/authorization. Note that the registry cache itself is not exposed publicly.
 - The registry cache provides the credentials for every request against the corresponding upstream. In some cases, misconfigured credentials can prevent the registry cache to pull even public images from the upstream (for example: invalid service account key for Artifact Registry). However, this behaviour is controlled by the server-side logic of the upstream registry.
