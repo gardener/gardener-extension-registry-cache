@@ -14,7 +14,7 @@ spec:
   command: [bash, -c]
   args:
     - >-
-      go test -timeout=0 -mod=vendor ./test/testmachinery/shoot
+      go test -timeout=0 ./test/testmachinery/shoot
       --v -ginkgo.v -ginkgo.show-node-events -ginkgo.no-color
       -kubecfg=$TM_KUBECONFIG_PATH/gardener.config
       -project-namespace=$PROJECT_NAMESPACE
