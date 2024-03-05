@@ -36,17 +36,6 @@ var (
 	daemonSetWithSystemdUnit string
 	//go:embed testdata/daemonset-without-systemd-unit.yaml
 	daemonSetWithoutSystemdUnit string
-	//go:embed testdata/daemonset-with-psp-enabled.yaml
-	daemonSetWithPSPEnabled string
-
-	//go:embed testdata/serviceaccount.yaml
-	serviceAccountYAML string
-	//go:embed testdata/podsecuritypolicy.yaml
-	podSecurityPolicyYAML string
-	//go:embed testdata/clusterrole-psp.yaml
-	clusterRolePSPYAML string
-	//go:embed testdata/rolebinding-psp.yaml
-	roleBindingPSPYAML string
 )
 
 var _ = Describe("RegistryConfigurationCleaner", func() {
@@ -85,12 +74,11 @@ var _ = Describe("RegistryConfigurationCleaner", func() {
 	})
 
 	DescribeTable("#Deploy",
-		func(deleteSystemdUnit, pspDisabled bool, daemonSet string) {
+		func(deleteSystemdUnit bool, daemonSet string) {
 			values := Values{
 				AlpineImage:       alpineImage,
 				PauseImage:        pauseImage,
 				DeleteSystemdUnit: deleteSystemdUnit,
-				PSPDisabled:       pspDisabled,
 				Upstreams:         []string{"docker.io", "europe-docker.pkg.dev"},
 			}
 			cleaner := New(c, namespace, values)
@@ -127,31 +115,16 @@ var _ = Describe("RegistryConfigurationCleaner", func() {
 			Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 			Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 			Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-			if pspDisabled {
-				Expect(managedResourceSecret.Data).To(HaveLen(1))
-				Expect(string(managedResourceSecret.Data["daemonset__kube-system__registry-configuration-cleaner.yaml"])).To(Equal(daemonSet))
-			} else {
-				Expect(managedResourceSecret.Data).To(HaveLen(5))
-				Expect(string(managedResourceSecret.Data["serviceaccount__kube-system__registry-configuration-cleaner.yaml"])).To(Equal(serviceAccountYAML))
-				Expect(string(managedResourceSecret.Data["podsecuritypolicy____gardener.kube-system.registry-configuration-cleaner.yaml"])).To(Equal(podSecurityPolicyYAML))
-				Expect(string(managedResourceSecret.Data["clusterrole____gardener.cloud_psp_kube-system_registry-configuration-cleaner.yaml"])).To(Equal(clusterRolePSPYAML))
-				Expect(string(managedResourceSecret.Data["rolebinding__kube-system__gardener.cloud_psp_registry-configuration-cleaner.yaml"])).To(Equal(roleBindingPSPYAML))
-				Expect(string(managedResourceSecret.Data["daemonset__kube-system__registry-configuration-cleaner.yaml"])).To(Equal(daemonSet))
-			}
+			Expect(managedResourceSecret.Data).To(HaveLen(1))
+			Expect(string(managedResourceSecret.Data["daemonset__kube-system__registry-configuration-cleaner.yaml"])).To(Equal(daemonSet))
 		},
 
 		Entry("should successfully deploy the resources (with systemd unit cleanup)",
 			true,
-			true,
 			daemonSetWithSystemdUnit),
 		Entry("should successfully deploy the resources (without systemd unit cleanup)",
 			false,
-			true,
 			daemonSetWithoutSystemdUnit),
-		Entry("should successfully deploy the resources (with systemd unit cleanup and PSP disabled)",
-			true,
-			false,
-			daemonSetWithPSPEnabled),
 	)
 
 	Describe("#Destroy", func() {

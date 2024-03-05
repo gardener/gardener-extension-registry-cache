@@ -51,7 +51,6 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: default
       volumes:
       - hostPath:
           path: /
