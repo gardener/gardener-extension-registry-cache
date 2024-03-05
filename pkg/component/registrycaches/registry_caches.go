@@ -272,7 +272,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: ptr.To(false),
-					ServiceAccountName:           "default",
 					PriorityClassName:            "system-cluster-critical",
 					SecurityContext: &corev1.PodSecurityContext{
 						SeccompProfile: &corev1.SeccompProfile{
