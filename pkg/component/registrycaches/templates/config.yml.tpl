@@ -19,6 +19,7 @@ http:
     prometheus:
       enabled: true
       path: /metrics
+  draintimeout: 25s
   headers:
     X-Content-Type-Options: [nosniff]
 health:
