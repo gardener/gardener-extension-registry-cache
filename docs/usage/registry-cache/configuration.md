@@ -24,7 +24,7 @@ When the extension is enabled, a registry cache for each configured upstream is 
 
 The first time an image is requested from the pull-through cache, it pulls the image from the configured upstream registry and stores it locally, before handing it back to the client. On subsequent requests, the pull-through cache is able to serve the image from its own storage.
 
-> Note: The used registry implementation ([distribution/distribution](https://github.com/distribution/distribution)) supports the mirroring of only one upstream registry.
+> Note: The used registry implementation ([distribution/distribution](https://github.com/distribution/distribution)) supports mirroring of only one upstream registry.
 
 The following diagram shows a rough outline of how an image pull looks like for a Shoot cluster **with registry cache**:
 ![shoot-cluster-with-registry-cache](./images/shoot-cluster-with-registry-cache.png)
@@ -85,7 +85,7 @@ This field is immutable. If the field is not specified, then the [default Storag
 
 The `providerConfig.caches[].garbageCollection.ttl` field is the time to live of a blob in the cache. If the field is set to `0s`, the garbage collection is disabled. Defaults to `168h` (7 days). See the [Garbage Collection section](#garbage-collection) for more details.
 
-The `providerConfig.caches[].secretReferenceName` is the name of the reference for the secret containing the upstream registry credentials. To cache images from a private registry, credentials to the upstream registry should be supplied. For more details, see [How to provide credentials for upstream registry](upstream-credentials.md#how-to-provide-credentials-for-upstream-registry).
+The `providerConfig.caches[].secretReferenceName` is the name of the reference for the Secret containing the upstream registry credentials. To cache images from a private registry, credentials to the upstream registry should be supplied. For more details, see [How to provide credentials for upstream registry](upstream-credentials.md#how-to-provide-credentials-for-upstream-registry).
 
 > **Note**: It is only possible to provide one set of credentials for one private upstream registry.
 
@@ -108,21 +108,21 @@ To enlarge the PVC's size, perform the following steps:
 
 2. Find the PVC name to resize for the desired upstream. The below example fetches the PVC for the `docker.io` upstream:
 
-```bash
-kubectl -n kube-system get pvc -l upstream-host=docker.io
-```
+   ```bash
+   kubectl -n kube-system get pvc -l upstream-host=docker.io
+   ```
 
 3. Patch the PVC's size to the desired size. The below example patches the size of a PVC to `10Gi`:
 
-```bash
-kubectl -n kube-system patch pvc $PVC_NAME --type merge -p '{"spec":{"resources":{"requests": {"storage": "10Gi"}}}}'
-```
+   ```bash
+   kubectl -n kube-system patch pvc $PVC_NAME --type merge -p '{"spec":{"resources":{"requests": {"storage": "10Gi"}}}}'
+   ```
 
 4. Make sure that the PVC gets resized. Describe the PVC to check the resize operation result:
 
-```bash
-kubectl -n kube-system describe pvc -l upstream-host=docker.io
-```
+   ```bash
+   kubectl -n kube-system describe pvc -l upstream-host=docker.io
+   ```
 
 > Drawback of this approach: The cache's size in the Shoot spec (`providerConfig.caches[].size`) diverges from the PVC's size.
 
@@ -145,7 +145,7 @@ The registry cache runs with a single replica. This fact may lead to concerns fo
 
 1. Images that are pulled before a registry cache Pod is running or before a registry cache Service is reachable from the corresponding Node won't be cached - containerd will pull these images directly from the upstream.
 
-   The reasoning behind this limitation is that a registry cache Pod is running in the Shoot cluster. To have a registry cache's Service cluster IP reachable from containerd running on the Node, the registry cache Pod has to be running and kube-proxy has to configure iptables/IPVS rules for the registry cache Service. If kube-proxy hasn't configured iptables/IPVS rules for the registry cache Service, then the image pull times (and new Node bootstrap times) will be increased significantly. For more detailed explanations, see point 2. and [PR #68 at gardener/gardener-extension-registry-cache](https://github.com/gardener/gardener-extension-registry-cache/pull/68).
+   The reasoning behind this limitation is that a registry cache Pod is running in the Shoot cluster. To have a registry cache's Service cluster IP reachable from containerd running on the Node, the registry cache Pod has to be running and kube-proxy has to configure iptables/IPVS rules for the registry cache Service. If kube-proxy hasn't configured iptables/IPVS rules for the registry cache Service, then the image pull times (and new Node bootstrap times) will be increased significantly. For more detailed explanations, see point 2. and [gardener/gardener-extension-registry-cache#68](https://github.com/gardener/gardener-extension-registry-cache/pull/68).
    
    That's why the registry configuration on a Node is applied only after the registry cache Service is reachable from the Node. The `configure-containerd-registries.service` systemd unit sends requests to the registry cache's Service. Once the registry cache responds with `HTTP 200`, the unit creates the needed registry configuration file (`hosts.toml`).
 

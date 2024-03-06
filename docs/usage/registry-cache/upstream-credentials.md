@@ -4,7 +4,7 @@ title: How to provide credentials for upstream registry?
 
 # How to provide credentials for upstream registry?
 
-In Kubernetes, to pull images from private container image registries you either have to specify an image pull Secret (see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)) or you have to configure the kubelet to dynamically retrieve credentials using a credential provider plugin (see [Configure a kubelet Image Credential Provider](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider/)). When pulling an image, the kubelet is providing the credentials to the CRI implementation. The CRI implementation uses the provided credentials against the upstream registry to pull the image.
+In Kubernetes, to pull images from private container image registries you either have to specify an image pull Secret (see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)) or you have to configure the kubelet to dynamically retrieve credentials using a credential provider plugin (see [Configure a kubelet image credential provider](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider/)). When pulling an image, the kubelet is providing the credentials to the CRI implementation. The CRI implementation uses the provided credentials against the upstream registry to pull the image.
 
 The registry-cache extension is using the [Distribution project](https://github.com/distribution/distribution) as pull through cache implementation. The Distribution project does not use the provided credentials from the CRI implementation while fetching an image from the upstream. Hence, the above-described scenarios such as configuring image pull Secret for a Pod or configuring kubelet credential provider plugins don't work out of the box with the pull through cache provided by the registry-cache extension.
 Instead, the Distribution project supports configuring only one set of credentials for a given pull through cache instance (for a given upstream).
@@ -16,7 +16,7 @@ This document describe how to supply credentials for the private upstream regist
 1. Create an immutable Secret with the upstream registry credentials in the Garden cluster:
 
    ```bash
-   % kubectl create -f - <<EOF
+   kubectl create -f - <<EOF
    apiVersion: v1
    kind: Secret
    metadata:
@@ -33,7 +33,7 @@ This document describe how to supply credentials for the private upstream regist
    For Artifact Registry, the username is `_json_key` and the password is the service account key in JSON format. To base64 encode the service account key, copy it and run:
 
    ```bash
-   % echo -n $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
+   echo -n $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
    ```
 
 1. Add the newly created Secret as a reference to the Shoot spec, and then to the registry-cache extension configuration.

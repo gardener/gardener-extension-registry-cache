@@ -17,9 +17,9 @@ Make sure that your `KUBECONFIG` environment variable is targeting the local Gar
 make extension-up
 ```
 
-The corresponding `make` target will build the extension image, load it into the kind cluster Nodes, and deploy the registry-cache ControllerDeployment and ControllerRegistration resources. The container image in the ControllerDeployment will be the image that was build and loaded into the kind cluster Nodes.
+The corresponding make target will build the extension image, load it into the kind cluster Nodes, and deploy the registry-cache ControllerDeployment and ControllerRegistration resources. The container image in the ControllerDeployment will be the image that was build and loaded into the kind cluster Nodes.
 
-The `make` target will then deploy the registry-cache admission component. It will build the admission image, load it into the kind cluster Nodes, and finally install the admission component charts to the kind cluster.
+The make target will then deploy the registry-cache admission component. It will build the admission image, load it into the kind cluster Nodes, and finally install the admission component charts to the kind cluster.
 
 ## Creating a Shoot Cluster
 
@@ -43,4 +43,4 @@ To tear down the development environment, delete the Shoot cluster or disable th
 make extension-down
 ```
 
-The `make` target will delete the ControllerDeployment and ControllerRegistration of the extension, and the registry-cache admission helm deployment.
+The make target will delete the ControllerDeployment and ControllerRegistration of the extension, and the registry-cache admission helm deployment.

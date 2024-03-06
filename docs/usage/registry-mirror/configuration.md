@@ -61,5 +61,4 @@ The `providerConfig.mirror[].hosts[].host` field is the mirror host. It is a req
 The value must include a scheme - `http://` or `https://`.
 
 The `providerConfig.mirror[].hosts[].capabilities` field represents the operations a host is capable of performing. This also represents the set of operations for which the mirror host may be trusted to perform. Defaults to `["pull"]`. The supported values are `pull` and `resolve`.
-
 See the [capabilities field documentation](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md#capabilities-field) for more information on which operations are considered trusted ones against public/private mirrors.
