@@ -27,7 +27,7 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/imagevector"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registryconfigurationcleaner"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
@@ -191,7 +191,7 @@ func (a *actuator) ForceDelete(ctx context.Context, _ logr.Logger, ex *extension
 	return nil
 }
 
-func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *api.RegistryConfig, namespace string) (*v1alpha2.RegistryStatus, error) {
+func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *api.RegistryConfig, namespace string) (*v1alpha3.RegistryStatus, error) {
 	// get service IPs from shoot
 	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfig.RESTOptions{})
 	if err != nil {
@@ -215,24 +215,24 @@ func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *ap
 		return nil, fmt.Errorf("not all services for all configured caches exist")
 	}
 
-	caches := []v1alpha2.RegistryCacheStatus{}
+	caches := []v1alpha3.RegistryCacheStatus{}
 	for _, service := range services.Items {
-		caches = append(caches, v1alpha2.RegistryCacheStatus{
+		caches = append(caches, v1alpha3.RegistryCacheStatus{
 			Upstream: service.Labels[constants.UpstreamHostLabel],
 			Endpoint: fmt.Sprintf("http://%s:%d", service.Spec.ClusterIP, constants.RegistryCachePort),
 		})
 	}
 
-	return &v1alpha2.RegistryStatus{
+	return &v1alpha3.RegistryStatus{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha2.SchemeGroupVersion.String(),
+			APIVersion: v1alpha3.SchemeGroupVersion.String(),
 			Kind:       "RegistryStatus",
 		},
 		Caches: caches,
 	}, nil
 }
 
-func (a *actuator) updateProviderStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, registryStatus *v1alpha2.RegistryStatus) error {
+func (a *actuator) updateProviderStatus(ctx context.Context, ex *extensionsv1alpha1.Extension, registryStatus *v1alpha3.RegistryStatus) error {
 	patch := client.MergeFrom(ex.DeepCopy())
 	ex.Status.ProviderStatus = &runtime.RawExtension{Object: registryStatus}
 	return a.client.Status().Patch(ctx, ex, patch)

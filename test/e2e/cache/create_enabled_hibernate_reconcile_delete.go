@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
 	"github.com/gardener/gardener-extension-registry-cache/test/e2e"
 )
@@ -25,8 +25,8 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	f := e2e.DefaultShootCreationFramework()
 	shoot := e2e.DefaultShoot("e2e-cache-hib")
 	size := resource.MustParse("2Gi")
-	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha2.RegistryCache{
-		{Upstream: "docker.io", Volume: &v1alpha2.Volume{Size: &size}},
+	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
+		{Upstream: "docker.io", Volume: &v1alpha3.Volume{Size: &size}},
 	})
 	f.Shoot = shoot
 

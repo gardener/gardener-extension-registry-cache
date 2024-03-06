@@ -26,7 +26,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	registryinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/install"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha2"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/webhook/cache"
 )
 
@@ -234,12 +234,12 @@ var _ = Describe("Ensurer", func() {
 				Status: extensionsv1alpha1.ExtensionStatus{
 					DefaultStatus: extensionsv1alpha1.DefaultStatus{
 						ProviderStatus: &runtime.RawExtension{
-							Object: &v1alpha2.RegistryStatus{
+							Object: &v1alpha3.RegistryStatus{
 								TypeMeta: metav1.TypeMeta{
-									APIVersion: v1alpha2.SchemeGroupVersion.String(),
+									APIVersion: v1alpha3.SchemeGroupVersion.String(),
 									Kind:       "RegistryStatus",
 								},
-								Caches: []v1alpha2.RegistryCacheStatus{
+								Caches: []v1alpha3.RegistryCacheStatus{
 									{
 										Upstream: "docker.io",
 										Endpoint: "http://10.0.0.1:5000",
@@ -279,12 +279,12 @@ var _ = Describe("Ensurer", func() {
 				Status: extensionsv1alpha1.ExtensionStatus{
 					DefaultStatus: extensionsv1alpha1.DefaultStatus{
 						ProviderStatus: &runtime.RawExtension{
-							Object: &v1alpha2.RegistryStatus{
+							Object: &v1alpha3.RegistryStatus{
 								TypeMeta: metav1.TypeMeta{
-									APIVersion: v1alpha2.SchemeGroupVersion.String(),
+									APIVersion: v1alpha3.SchemeGroupVersion.String(),
 									Kind:       "RegistryStatus",
 								},
-								Caches: []v1alpha2.RegistryCacheStatus{
+								Caches: []v1alpha3.RegistryCacheStatus{
 									{
 										Upstream: "docker.io",
 										Endpoint: "http://10.0.0.1:5000",
