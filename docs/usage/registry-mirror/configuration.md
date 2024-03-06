@@ -15,19 +15,19 @@ containerd allows registry mirrors to be configured. Use cases are:
 
 ### Solution
 
-The registry-mirror extension allows the registry mirror configuration to be configured via the shoot spec directly.
+The registry-mirror extension allows the registry mirror configuration to be configured via the Shoot spec directly.
 
 ### How does it work?
 
-When the extension is enabled, the containerd daemon on the shoot cluster nodes gets configured to use the requested mirrors as a mirror. For example, if for the upstream `docker.io` the mirror `https://mirror.gcr.io` is configured in the shoot spec, then containerd gets configured to first pull the image from the mirror (`https://mirror.gcr.io` in that case). If this image pull operation fails, containerd falls back to the upstream itself (`docker.io` in that case).
+When the extension is enabled, the containerd daemon on the Shoot cluster Nodes gets configured to use the requested mirrors as a mirror. For example, if for the upstream `docker.io` the mirror `https://mirror.gcr.io` is configured in the Shoot spec, then containerd gets configured to first pull the image from the mirror (`https://mirror.gcr.io` in that case). If this image pull operation fails, containerd falls back to the upstream itself (`docker.io` in that case).
 
 The extension is based on the contract described in [`containerd` Registry Configuration](https://github.com/gardener/gardener/blob/master/docs/usage/containerd-registry-configuration.md). The corresponding upstream documentation in containerd is [Registry Configuration - Introduction](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md).
 
 ## Shoot Configuration
 
-The shoot specification has to be adapted to include the `registry-mirror` extension configuration.
+The Shoot specification has to be adapted to include the `registry-mirror` extension configuration.
 
-Below is an example of `registry-mirror` extension configuration as part of the shoot spec:
+Below is an example of `registry-mirror` extension configuration as part of the Shoot spec:
 
 ```yaml
 apiVersion: core.gardener.cloud/v1beta1

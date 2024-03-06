@@ -9,31 +9,31 @@ description: Learn what is the use-case for a pull-through cache, how to enable 
 
 ### Use Case
 
-For a shoot cluster, the containerd daemon of every node goes to the internet and fetches an image that it doesn't have locally in the node's image cache. New nodes are often created due to events such as auto-scaling (scale up), rolling update, or replacement of unhealthy node. Such a new node would need to pull all of the images of the pods running on it from the internet because the node's cache is initially empty. Pulling an image from a registry produces network traffic and registry costs. To avoid these network traffic and registry costs, you can use the registry-cache extension to run a registry as pull-through cache.
+For a Shoot cluster, the containerd daemon of every Node goes to the internet and fetches an image that it doesn't have locally in the Node's image cache. New Nodes are often created due to events such as auto-scaling (scale up), rolling update, or replacement of unhealthy Node. Such a new Node would need to pull all of the images of the Pods running on it from the internet because the Node's cache is initially empty. Pulling an image from a registry produces network traffic and registry costs. To avoid these network traffic and registry costs, you can use the registry-cache extension to run a registry as pull-through cache.
 
-The following diagram shows a rough outline of how an image pull looks like for a shoot cluster **without registry cache**:
+The following diagram shows a rough outline of how an image pull looks like for a Shoot cluster **without registry cache**:
 ![shoot-cluster-without-registry-cache](./images/shoot-cluster-without-registry-cache.png)
 
 ### Solution
 
-The registry-cache extension deploys and manages a registry in the shoot cluster that runs as pull-through cache. The used registry implementation is [distribution/distribution](https://github.com/distribution/distribution).
+The registry-cache extension deploys and manages a registry in the Shoot cluster that runs as pull-through cache. The used registry implementation is [distribution/distribution](https://github.com/distribution/distribution).
 
 ### How does it work?
 
-When the extension is enabled, a registry cache for each configured upstream is deployed to the shoot cluster. Along with this, the containerd daemon on the shoot cluster nodes gets configured to use as a mirror the service IP address of the deployed registry cache. For example, if a registry cache for upstream `docker.io` is requested via the shoot spec, then containerd gets configured to first pull the image from the deployed cache in the shoot cluster. If this image pull operation fails, containerd falls back to the upstream itself (`docker.io` in that case).
+When the extension is enabled, a registry cache for each configured upstream is deployed to the Shoot cluster. Along with this, the containerd daemon on the Shoot cluster Nodes gets configured to use as a mirror the Service IP address of the deployed registry cache. For example, if a registry cache for upstream `docker.io` is requested via the Shoot spec, then containerd gets configured to first pull the image from the deployed cache in the Shoot cluster. If this image pull operation fails, containerd falls back to the upstream itself (`docker.io` in that case).
 
 The first time an image is requested from the pull-through cache, it pulls the image from the configured upstream registry and stores it locally, before handing it back to the client. On subsequent requests, the pull-through cache is able to serve the image from its own storage.
 
 > Note: The used registry implementation ([distribution/distribution](https://github.com/distribution/distribution)) supports the mirroring of only one upstream registry.
 
-The following diagram shows a rough outline of how an image pull looks like for a shoot cluster **with registry cache**:
+The following diagram shows a rough outline of how an image pull looks like for a Shoot cluster **with registry cache**:
 ![shoot-cluster-with-registry-cache](./images/shoot-cluster-with-registry-cache.png)
 
 ## Shoot Configuration
 
-The extension is not globally enabled and must be configured per shoot cluster. The shoot specification has to be adapted to include the `registry-cache` extension configuration.
+The extension is not globally enabled and must be configured per Shoot cluster. The Shoot specification has to be adapted to include the `registry-cache` extension configuration.
 
-Below is an example of `registry-cache` extension configuration as part of the shoot spec:
+Below is an example of `registry-cache` extension configuration as part of the Shoot spec:
 
 ```yaml
 apiVersion: core.gardener.cloud/v1beta1
@@ -78,7 +78,7 @@ The registry-cache extension deploys a StatefulSet with a volume claim template.
 
 The `providerConfig.caches[].volume.size` field is the size of the registry cache volume. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
 This field is immutable. See [Increase the cache disk size](#increase-the-cache-disk-size) on how to resize the disk.
-The extension defines [alerts](../../../pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml) for the volume. See [Alerting for Users](https://github.com/gardener/gardener/blob/master/docs/monitoring/alerting.md#alerting-for-users) on how to enable notifications for shoot cluster alerts.
+The extension defines [alerts](../../../pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml) for the volume. See [Alerting for Users](https://github.com/gardener/gardener/blob/master/docs/monitoring/alerting.md#alerting-for-users) on how to enable notifications for Shoot cluster alerts.
 
 The `providerConfig.caches[].volume.storageClassName` field is the name of the StorageClass used by the registry cache volume.
 This field is immutable. If the field is not specified, then the [default StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/#default-storageclass) will be used.
@@ -104,7 +104,7 @@ There are two alternatives to enlarge the cache's disk size:
 ### [Alternative 1] Resize the PVC
 
 To enlarge the PVC's size, perform the following steps:
-1. Make sure that the `KUBECONFIG` environment variable is targeting the correct shoot cluster.
+1. Make sure that the `KUBECONFIG` environment variable is targeting the correct Shoot cluster.
 
 2. Find the PVC name to resize for the desired upstream. The below example fetches the PVC for the `docker.io` upstream:
 
@@ -124,11 +124,11 @@ kubectl -n kube-system patch pvc $PVC_NAME --type merge -p '{"spec":{"resources"
 kubectl -n kube-system describe pvc -l upstream-host=docker.io
 ```
 
-> Drawback of this approach: The cache's size in the shoot spec (`providerConfig.caches[].size`) diverges from the PVC's size.
+> Drawback of this approach: The cache's size in the Shoot spec (`providerConfig.caches[].size`) diverges from the PVC's size.
 
 ### [Alternative 2] Remove and Readd the Cache
 
-There is always the option to remove the cache from the shoot spec and to readd it again with the updated size.
+There is always the option to remove the cache from the Shoot spec and to readd it again with the updated size.
 
 > Drawback of this approach: The already cached images get lost and the cache starts with an empty disk.
 
@@ -143,20 +143,20 @@ The registry cache runs with a single replica. This fact may lead to concerns fo
 
 ## Limitations
 
-1. Images that are pulled before a registry cache pod is running or before a registry cache service is reachable from the corresponding node won't be cached - containerd will pull these images directly from the upstream.
+1. Images that are pulled before a registry cache Pod is running or before a registry cache Service is reachable from the corresponding Node won't be cached - containerd will pull these images directly from the upstream.
 
-   The reasoning behind this limitation is that a registry cache pod is running in the shoot cluster. To have a registry cache's service cluster IP reachable from containerd running on the node, the registry cache pod has to be running and kube-proxy has to configure iptables/IPVS rules for the registry cache service. If kube-proxy hasn't configured iptables/IPVS rules for the registry cache service, then the image pull times (and new node bootstrap times) will be increased significantly. For more detailed explanations, see point 2. and [PR #68 at gardener/gardener-extension-registry-cache](https://github.com/gardener/gardener-extension-registry-cache/pull/68).
+   The reasoning behind this limitation is that a registry cache Pod is running in the Shoot cluster. To have a registry cache's Service cluster IP reachable from containerd running on the Node, the registry cache Pod has to be running and kube-proxy has to configure iptables/IPVS rules for the registry cache Service. If kube-proxy hasn't configured iptables/IPVS rules for the registry cache Service, then the image pull times (and new Node bootstrap times) will be increased significantly. For more detailed explanations, see point 2. and [PR #68 at gardener/gardener-extension-registry-cache](https://github.com/gardener/gardener-extension-registry-cache/pull/68).
    
-   That's why the registry configuration on a node is applied only after the registry cache service is reachable from the node. The `configure-containerd-registries.service` systemd unit sends requests to the registry cache's service. Once the registry cache responds with `HTTP 200`, the unit creates the needed registry configuration file (`hosts.toml`).
+   That's why the registry configuration on a Node is applied only after the registry cache Service is reachable from the Node. The `configure-containerd-registries.service` systemd unit sends requests to the registry cache's Service. Once the registry cache responds with `HTTP 200`, the unit creates the needed registry configuration file (`hosts.toml`).
 
-   As a result, for images from shoot system components:
-   - On shoot creation with the registry cache extension enabled, a registry cache is unable to cache all of the images from the shoot system components. Usually, until the registry cache pod is running, containerd pulls from upstream the images from shoot system components (before the registry configuration gets applied).
-   - On new node creation for existing shoot with the registry cache extension enabled, a registry cache is unable to cache most of the images from shoot system components. The reachability of the registry cache service requires the service network to be set up, i.e., the kube-proxy for that new node to be running and to have set up iptables/IPVS configuration for the registry cache service.
+   As a result, for images from Shoot system components:
+   - On Shoot creation with the registry cache extension enabled, a registry cache is unable to cache all of the images from the Shoot system components. Usually, until the registry cache Pod is running, containerd pulls from upstream the images from Shoot system components (before the registry configuration gets applied).
+   - On new Node creation for existing Shoot with the registry cache extension enabled, a registry cache is unable to cache most of the images from Shoot system components. The reachability of the registry cache Service requires the Service network to be set up, i.e., the kube-proxy for that new Node to be running and to have set up iptables/IPVS configuration for the registry cache Service.
 
-2. containerd requests will time out in 30s in case kube-proxy hasn't configured iptables/IPVS rules for the registry cache service - the image pull times will increase significantly.
+2. containerd requests will time out in 30s in case kube-proxy hasn't configured iptables/IPVS rules for the registry cache Service - the image pull times will increase significantly.
 
-   containerd is configured to fall back to the upstream itself if a request against the cache fails. However, if the cluster IP of the registry cache service does not exist or if kube-proxy hasn't configured iptables/IPVS rules for the registry cache service, then containerd requests against the registry cache time out in 30 seconds. This significantly increases the image pull times because containerd does multiple requests as part of the image pull (HEAD request to resolve the manifest by tag, GET request for the manifest by SHA, GET requests for blobs)
+   containerd is configured to fall back to the upstream itself if a request against the cache fails. However, if the cluster IP of the registry cache Service does not exist or if kube-proxy hasn't configured iptables/IPVS rules for the registry cache Service, then containerd requests against the registry cache time out in 30 seconds. This significantly increases the image pull times because containerd does multiple requests as part of the image pull (HEAD request to resolve the manifest by tag, GET request for the manifest by SHA, GET requests for blobs)
 
-   Example: If the service of a registry cache is deleted, then a new service will be created. containerd's registry config will still contain the old service's cluster IP. containerd requests against the old service's cluster IP will time out and containerd will fall back to upstream.
+   Example: If the Service of a registry cache is deleted, then a new Service will be created. containerd's registry config will still contain the old Service's cluster IP. containerd requests against the old Service's cluster IP will time out and containerd will fall back to upstream.
    - Image pull of `docker.io/library/alpine:3.13.2` from the upstream takes ~2s while image pull of the same image with invalid registry cache cluster IP takes ~2m.2s.
    - Image pull of `eu.gcr.io/gardener-project/gardener/ops-toolbelt:0.18.0` from the upstream takes ~10s while image pull of the same image with invalid registry cache cluster IP takes ~3m.10s.

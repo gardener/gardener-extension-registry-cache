@@ -4,16 +4,16 @@ title: How to provide credentials for upstream registry?
 
 # How to provide credentials for upstream registry?
 
-In Kubernetes, to pull images from private container image registries you either have to specify an image pull secret (see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)) or you have to configure the kubelet to dynamically retrieve credentials using a credential provider plugin (see [Configure a kubelet Image Credential Provider](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider/)). When pulling an image, the kubelet is providing the credentials to the CRI implementation. The CRI implementation uses the provided credentials against the upstream registry to pull the image.
+In Kubernetes, to pull images from private container image registries you either have to specify an image pull Secret (see [Pull an Image from a Private Registry](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)) or you have to configure the kubelet to dynamically retrieve credentials using a credential provider plugin (see [Configure a kubelet Image Credential Provider](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-credential-provider/)). When pulling an image, the kubelet is providing the credentials to the CRI implementation. The CRI implementation uses the provided credentials against the upstream registry to pull the image.
 
-The registry-cache extension is using the [Distribution project](https://github.com/distribution/distribution) as pull through cache implementation. The Distribution project does not use the provided credentials from the CRI implementation while fetching an image from the upstream. Hence, the above-described scenarios such as configuring image pull secret for a pod or configuring kubelet credential provider plugins don't work out of the box with the pull through cache provided by the registry-cache extension.
+The registry-cache extension is using the [Distribution project](https://github.com/distribution/distribution) as pull through cache implementation. The Distribution project does not use the provided credentials from the CRI implementation while fetching an image from the upstream. Hence, the above-described scenarios such as configuring image pull Secret for a Pod or configuring kubelet credential provider plugins don't work out of the box with the pull through cache provided by the registry-cache extension.
 Instead, the Distribution project supports configuring only one set of credentials for a given pull through cache instance (for a given upstream).
 
 This document describe how to supply credentials for the private upstream registry in order to pull private image with the registry cache.
 
 ## How to configure the registry cache to use upstream registry credentials?
 
-1. Create an immutable secret with the upstream registry credentials in the Garden cluster:
+1. Create an immutable Secret with the upstream registry credentials in the Garden cluster:
 
    ```bash
    % kubectl create -f - <<EOF
@@ -36,9 +36,9 @@ This document describe how to supply credentials for the private upstream regist
    % echo -n $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
    ```
 
-1. Add the newly created secret as a reference to the shoot spec, and then to the registry-cache extension configuration.
+1. Add the newly created Secret as a reference to the Shoot spec, and then to the registry-cache extension configuration.
 
-   In the registry-cache configuration, set the `secretReferenceName` field. It should point to a resource reference under `spec.resources`. The resource reference itself points to the secret in project namespace.
+   In the registry-cache configuration, set the `secretReferenceName` field. It should point to a resource reference under `spec.resources`. The resource reference itself points to the Secret in project namespace.
 
    ```yaml
    apiVersion: core.gardener.cloud/v1beta1
@@ -67,10 +67,10 @@ This document describe how to supply credentials for the private upstream regist
 
 To rotate registry credentials perform the following steps:
 1. Generate a new pair of credentials in the cloud provider account. Do not invalidate the old ones.
-1. Create a new secret (e.g., `ro-docker-secret-v2`) with the newly generated credentials as described in step 1. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
-1. Update the shoot spec with newly created secret as described in step 2. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
-1. The above step will trigger a shoot reconciliation. Wait for it to complete.
-1. Make sure that the old secret is no longer referenced by any shoot cluster. Finally, delete the secret containing the old credentials (e.g., `ro-docker-secret-v1`).
+1. Create a new Secret (e.g., `ro-docker-secret-v2`) with the newly generated credentials as described in step 1. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
+1. Update the Shoot spec with newly created Secret as described in step 2. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
+1. The above step will trigger a Shoot reconciliation. Wait for it to complete.
+1. Make sure that the old Secret is no longer referenced by any Shoot cluster. Finally, delete the Secret containing the old credentials (e.g., `ro-docker-secret-v1`).
 1. Delete the corresponding old credentials from the cloud provider account.
 
 ## Possible Pitfalls
