@@ -21,7 +21,7 @@ images:
 # registry-configuration-cleaner DaemonSet
 - name: alpine
   repository: europe-docker.pkg.dev/gardener-project/releases/3rd/alpine
-  tag: "3.18.4"
+  tag: "3.19.1"
   labels:
   - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
     value:
