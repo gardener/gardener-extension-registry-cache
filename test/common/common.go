@@ -126,7 +126,7 @@ func WaitUntilRegistryCacheConfigurationsAreApplied(ctx context.Context, log log
 	for _, node := range nodes.Items {
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
-		EventuallyWithOffset(1, ctx, func(g Gomega) string {
+		EventuallyWithOffset(1, ctx, func() string {
 			command := "systemctl -q is-active configure-containerd-registries.service && echo 'active' || echo 'inactive'"
 			// err is ignored intentionally to reduce flakes from transient network errors in prow.
 			response, _ := rootPodExecutor.Execute(ctx, command)
@@ -149,7 +149,7 @@ func VerifyRegistryCacheConfigurationsAreRemoved(ctx context.Context, log logr.L
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
 		if expectSystemdUnitDeletion {
-			EventuallyWithOffset(1, ctx, func(g Gomega) string {
+			EventuallyWithOffset(1, ctx, func() string {
 				command := "systemctl status configure-containerd-registries.service &>/dev/null && echo 'unit found' || echo 'unit not found'"
 				// err is ignored intentionally to reduce flakes from transient network errors in prow.
 				response, _ := rootPodExecutor.Execute(ctx, command)
@@ -207,7 +207,7 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 // Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
 func VerifyHostsTOMLFilesDeletedForNode(ctx context.Context, rootPodExecutor framework.RootPodExecutor, upstreams []string, nodeName string) {
 	for _, upstream := range upstreams {
-		EventuallyWithOffset(2, ctx, func(g Gomega) string {
+		EventuallyWithOffset(2, ctx, func() string {
 			command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
 			// err is ignored intentionally to reduce flakes from transient network errors in prow.
 			response, _ := rootPodExecutor.Execute(ctx, command)
@@ -252,7 +252,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	defer cancel()
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": upstream}))
-	EventuallyWithOffset(1, ctx, func(g Gomega) (err error) {
+	EventuallyWithOffset(1, ctx, func() (err error) {
 		reader, err := framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", metav1.NamespaceSystem, shootClient)
 		if err != nil {
 			return fmt.Errorf("failed to cat registry's scheduler-state.json file: %+w", err)
