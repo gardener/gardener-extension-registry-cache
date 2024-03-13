@@ -38,7 +38,7 @@ func NewServiceControllerCommand() *cobra.Command {
 		Short:         "Registry cache controller manages registry caches within a shoot.",
 		SilenceErrors: true,
 
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			verflag.PrintAndExitIfRequested()
 
 			log.Info("Starting registry-cache", "version", version.Get())
