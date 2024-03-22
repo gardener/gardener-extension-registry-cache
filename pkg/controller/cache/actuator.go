@@ -149,6 +149,16 @@ func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1al
 		}
 	}
 
+	// If the Shoot is in deletion, destroy the cleaner component (delete the cleaner ManagedResource)
+	// as the cleaner ManagedResource could still exist (deployed in a previous reconciliation but failed to be cleaned up)
+	// and could block the Shoot deletion afterwards.
+	if cluster.Shoot.DeletionTimestamp != nil {
+		cleaner := registryconfigurationcleaner.New(a.client, namespace, registryconfigurationcleaner.Values{})
+		if err := component.OpDestroyAndWait(cleaner).Destroy(ctx); err != nil {
+			return fmt.Errorf("failed to destroy the registry configuration cleaner component: %w", err)
+		}
+	}
+
 	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{})
 	if err := component.OpDestroyAndWait(registryCaches).Destroy(ctx); err != nil {
 		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
