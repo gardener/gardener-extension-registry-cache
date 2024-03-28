@@ -26,7 +26,7 @@ bash "${CODE_GEN_DIR}/generate-internal-groups.sh" \
   github.com/gardener/gardener-extension-registry-cache/pkg/client \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
   github.com/gardener/gardener-extension-registry-cache/pkg/apis \
-  "registry:v1alpha2,v1alpha3" \
+  "registry:v1alpha3" \
   --go-header-file "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt"
 
 bash "${CODE_GEN_DIR}/generate-internal-groups.sh" \
