@@ -2,9 +2,6 @@ run:
   concurrency: 4
   deadline: 10m
 
-  skip-files:
-  - "zz_generated\\..*\\.go$"
-
 linters:
   disable:
   - unused
@@ -24,3 +21,6 @@ issues:
   # typecheck:
   - "undeclared name: `.*`"
   - "\".*\" imported but not used"
+
+  exclude-files:
+  - "zz_generated\\..*\\.go$"
