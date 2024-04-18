@@ -6,6 +6,8 @@ package validation
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -70,7 +72,10 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
+	allErrs = append(allErrs, ValidateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
+	if cache.RemoteURL != nil {
+		allErrs = append(allErrs, ValidateURL(fldPath.Child("remoteURL"), *cache.RemoteURL)...)
+	}
 	if cache.Volume != nil {
 		if cache.Volume.Size != nil {
 			allErrs = append(allErrs, validatePositiveQuantity(*cache.Volume.Size, fldPath.Child("volume", "size"))...)
@@ -85,13 +90,33 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 	return allErrs
 }
 
-func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
+// ValidateUpstream validates that upstream is valid DNS subdomain (RFC 1123) and optionally a port.
+func ValidateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	var allErrs field.ErrorList
-	for _, msg := range validation.IsDNS1123Subdomain(upstream) {
+	for _, msg := range validateHostPort(upstream) {
 		allErrs = append(allErrs, field.Invalid(fldPath, upstream, msg))
 	}
 
 	return allErrs
+}
+
+var digitsRegex = regexp.MustCompile(`^\d+$`)
+var portRegexp = regexp.MustCompile(`^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$`)
+
+// validateHostPort check that host and optional port format is `<host>[:<port>]`
+func validateHostPort(hostPort string) []string {
+	var errs []string
+	host := hostPort
+	if index := strings.LastIndexByte(hostPort, ':'); index != -1 {
+		port := hostPort[index+1:]
+		if digitsRegex.MatchString(port) {
+			host = hostPort[:index]
+			if !portRegexp.MatchString(port) {
+				errs = append(errs, fmt.Sprintf("port '%s' is not valid, valid port must be between 1 and 65535, inclusive", port))
+			}
+		}
+	}
+	return append(errs, validation.IsDNS1123Subdomain(host)...)
 }
 
 // validatePositiveQuantity validates that a Quantity is positive.
@@ -128,4 +153,25 @@ func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, 
 	}
 
 	return allErrors
+}
+
+// ValidateURL validates that URL format is `<scheme><host>[:<port>]` where `<scheme>` is 'https://' or 'http://',
+// `<host>` is valid DNS subdomain (RFC 1123) and optional `<port>` is in range [1,65535].
+func ValidateURL(fldPath *field.Path, url string) field.ErrorList {
+	var allErrs field.ErrorList
+	var scheme string
+	host := url
+	index := strings.Index(url, "://")
+	if index != -1 {
+		scheme = url[:index]
+		host = url[index+len("://"):]
+	}
+	if scheme != "https" && scheme != "http" {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must start with 'http://' or 'https://' scheme"))
+	}
+	for _, msg := range validateHostPort(host) {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, msg))
+	}
+
+	return allErrs
 }

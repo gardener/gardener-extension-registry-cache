@@ -63,7 +63,8 @@ string
 </em>
 </td>
 <td>
-<p>Upstream is the remote registry host to mirror.</p>
+<p>Upstream is the remote registry host to mirror.
+The value must be a valid DNS subdomain (RFC 1123) and optionally a port.</p>
 </td>
 </tr>
 <tr>

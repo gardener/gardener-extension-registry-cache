@@ -70,7 +70,22 @@ string
 </td>
 <td>
 <p>Upstream is the remote registry host to cache.
-The value must be a valid DNS subdomain (RFC 1123).</p>
+The value must be a valid DNS subdomain (RFC 1123) and optionally a port.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>remoteURL</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>RemoteURL is the remote registry URL. The format must be <code>&lt;scheme&gt;&lt;host&gt;[:&lt;port&gt;]</code> where
+<code>&lt;scheme&gt;</code> is <code>https://</code> or <code>http://</code> and <code>&lt;host&gt;[:&lt;port&gt;]</code> corresponds to the Upstream</p>
+<p>If defined, the value is set as <code>proxy.remoteurl</code> in the registry <a href="https://github.com/distribution/distribution/blob/main/docs/content/recipes/mirror.md#configure-the-cache">configuration</a>
+and in containerd configuration as <code>server</code> field in <a href="https://github.com/containerd/containerd/blob/main/docs/hosts.md#server-field">hosts.toml</a> file.</p>
 </td>
 </tr>
 <tr>
@@ -141,7 +156,7 @@ string
 </em>
 </td>
 <td>
-<p>Upstream is the remote registry host.</p>
+<p>Upstream is the remote registry host (and optionally port).</p>
 </td>
 </tr>
 <tr>
@@ -154,6 +169,17 @@ string
 <td>
 <p>Endpoint is the registry cache endpoint.
 Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:5000&rdquo;</a></p>
+</td>
+</tr>
+<tr>
+<td>
+<code>remoteURL</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>RemoteURL is the remote registry URL.</p>
 </td>
 </tr>
 </tbody>

@@ -79,7 +79,7 @@ var _ = Describe("Validation", func() {
 					Hosts:    []api.MirrorHost{{Host: "https://mirror.gcr.io"}},
 				},
 				api.MirrorConfiguration{
-					Upstream: "docker.io:443",
+					Upstream: "docker.io:0443",
 					Hosts:    []api.MirrorHost{{Host: "https://mirror.gcr.io"}},
 				},
 			)
@@ -108,7 +108,7 @@ var _ = Describe("Validation", func() {
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.mirrors[4].upstream"),
-					"BadValue": Equal("docker.io:443"),
+					"BadValue": Equal("docker.io:0443"),
 				})),
 			))
 		})
@@ -143,13 +143,13 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.mirrors[0].hosts[0].host"),
 					"BadValue": Equal("public-mirror.example.com"),
-					"Detail":   Equal("mirror must include scheme 'http://' or 'https://'"),
+					"Detail":   Equal("url must start with 'http://' or 'https://' scheme"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.mirrors[0].hosts[1].host"),
 					"BadValue": Equal("docker-mirror.internal"),
-					"Detail":   Equal("mirror must include scheme 'http://' or 'https://'"),
+					"Detail":   Equal("url must start with 'http://' or 'https://' scheme"),
 				})),
 			))
 		})

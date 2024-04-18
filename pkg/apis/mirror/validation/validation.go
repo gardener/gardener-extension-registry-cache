@@ -5,13 +5,11 @@
 package validation
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
+	registryvalidation "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
 )
 
 var supportedCapabilities = sets.New[string](
@@ -46,7 +44,7 @@ func ValidateMirrorConfig(mirrorConfig *mirror.MirrorConfig, fldPath *field.Path
 func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 
-	allErrs = append(allErrs, validateUpstream(fldPath.Child("upstream"), mirror.Upstream)...)
+	allErrs = append(allErrs, registryvalidation.ValidateUpstream(fldPath.Child("upstream"), mirror.Upstream)...)
 
 	if len(mirror.Hosts) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("hosts"), "at least one host must be provided"))
@@ -56,9 +54,7 @@ func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *fie
 	for i, host := range mirror.Hosts {
 		hostFldPath := fldPath.Child("hosts").Index(i)
 
-		if !strings.HasPrefix(host.Host, "http://") && !strings.HasPrefix(host.Host, "https://") {
-			allErrs = append(allErrs, field.Invalid(hostFldPath.Child("host"), host.Host, "mirror must include scheme 'http://' or 'https://'"))
-		}
+		allErrs = append(allErrs, registryvalidation.ValidateURL(hostFldPath.Child("host"), host.Host)...)
 
 		if hosts.Has(host.Host) {
 			allErrs = append(allErrs, field.Duplicate(hostFldPath.Child("host"), host.Host))
@@ -67,15 +63,6 @@ func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *fie
 		}
 
 		allErrs = append(allErrs, validateCapabilities(hostFldPath.Child("capabilities"), host.Capabilities)...)
-	}
-
-	return allErrs
-}
-
-func validateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
-	var allErrs field.ErrorList
-	for _, msg := range validation.IsDNS1123Subdomain(upstream) {
-		allErrs = append(allErrs, field.Invalid(fldPath, upstream, msg))
 	}
 
 	return allErrs

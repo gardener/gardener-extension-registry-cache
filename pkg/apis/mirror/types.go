@@ -21,6 +21,7 @@ type MirrorConfig struct {
 // MirrorConfiguration represents a registry mirror.
 type MirrorConfiguration struct {
 	// Upstream is the remote registry host to mirror.
+	// The value must be a valid DNS subdomain (RFC 1123) and optionally a port.
 	Upstream string
 	// Hosts are the mirror hosts to be used for the upstream.
 	Hosts []MirrorHost

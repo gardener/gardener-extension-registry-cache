@@ -241,12 +241,19 @@ var _ = Describe("Ensurer", func() {
 								},
 								Caches: []v1alpha3.RegistryCacheStatus{
 									{
-										Upstream: "docker.io",
-										Endpoint: "http://10.0.0.1:5000",
+										Upstream:  "docker.io",
+										Endpoint:  "http://10.0.0.1:5000",
+										RemoteURL: "https://registry-1.docker.io",
 									},
 									{
-										Upstream: "europe-docker.pkg.dev",
-										Endpoint: "http://10.0.0.2:5000",
+										Upstream:  "europe-docker.pkg.dev",
+										Endpoint:  "http://10.0.0.2:5000",
+										RemoteURL: "https://europe-docker.pkg.dev",
+									},
+									{
+										Upstream:  "my-registry.io:5000",
+										Endpoint:  "http://10.0.0.3:5000",
+										RemoteURL: "http://my-registry.io:5000",
 									},
 								},
 							},
@@ -260,7 +267,7 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev"),
+				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev my-registry.io:5000,http://10.0.0.3:5000,http://my-registry.io:5000"),
 			))
 		})
 
@@ -286,12 +293,19 @@ var _ = Describe("Ensurer", func() {
 								},
 								Caches: []v1alpha3.RegistryCacheStatus{
 									{
-										Upstream: "docker.io",
-										Endpoint: "http://10.0.0.1:5000",
+										Upstream:  "docker.io",
+										Endpoint:  "http://10.0.0.1:5000",
+										RemoteURL: "https://registry-1.docker.io",
 									},
 									{
-										Upstream: "europe-docker.pkg.dev",
-										Endpoint: "http://10.0.0.2:5000",
+										Upstream:  "europe-docker.pkg.dev",
+										Endpoint:  "http://10.0.0.2:5000",
+										RemoteURL: "https://europe-docker.pkg.dev",
+									},
+									{
+										Upstream:  "my-registry.io:5000",
+										Endpoint:  "http://10.0.0.3:5000",
+										RemoteURL: "http://my-registry.io:5000",
 									},
 								},
 							},
@@ -309,7 +323,7 @@ var _ = Describe("Ensurer", func() {
 
 			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
 			Expect(units).To(ConsistOf(oldUnit,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev"),
+				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev my-registry.io:5000,http://10.0.0.3:5000,http://my-registry.io:5000"),
 			))
 		})
 	})

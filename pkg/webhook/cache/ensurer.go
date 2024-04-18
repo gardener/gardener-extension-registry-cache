@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
 var (
@@ -103,7 +102,7 @@ func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.Garde
 
 	scriptArgs := make([]string, 0, len(registryStatus.Caches))
 	for _, cache := range registryStatus.Caches {
-		scriptArgs = append(scriptArgs, fmt.Sprintf("%s,%s,%s", cache.Upstream, cache.Endpoint, registryutils.GetUpstreamURL(cache.Upstream)))
+		scriptArgs = append(scriptArgs, fmt.Sprintf("%s,%s,%s", cache.Upstream, cache.Endpoint, cache.RemoteURL))
 	}
 
 	unit := extensionsv1alpha1.Unit{
