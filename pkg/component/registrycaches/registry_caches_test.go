@@ -171,8 +171,8 @@ proxy:
 kind: Service
 metadata:
   annotations:
-    remote-host: ` + upstream + `
     remote-url: ` + remoteURL + `
+    upstream: ` + upstream + `
   creationTimestamp: null
   labels:
     app: ` + name + `

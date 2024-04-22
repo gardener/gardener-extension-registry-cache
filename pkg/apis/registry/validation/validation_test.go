@@ -5,6 +5,7 @@
 package validation_test
 
 import (
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -377,7 +378,6 @@ var _ = Describe("Validation", func() {
 	})
 
 	Describe("#ValidateUpstream", func() {
-
 		BeforeEach(func() {
 			fldPath = fldPath.Child("caches").Index(0).Child("upstream")
 		})
@@ -407,12 +407,11 @@ var _ = Describe("Validation", func() {
 			Entry("when port is invalid", "example.com:0123"),
 			Entry("when port is 0", "example.com:0"),
 			Entry("when port is out of range", "example.com:65536"),
-			Entry("when host is very long", "very.long.hostname.nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.com"),
+			Entry("when host is very long", strings.Repeat("n", 250)+".com"),
 		)
 	})
 
 	Describe("#ValidateURL", func() {
-
 		BeforeEach(func() {
 			fldPath = fldPath.Child("caches").Index(0).Child("remoteURL")
 		})

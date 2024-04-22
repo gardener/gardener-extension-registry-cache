@@ -17,8 +17,8 @@ const (
 	// RegistryCachePort is the port on which the pull through cache serves requests.
 	RegistryCachePort = 5000
 
-	// RemoteURLAnnotation is an annotation on registry cache Service which denotes the upstream registry URL
+	// RemoteURLAnnotation is an annotation on registry cache Service which denotes the upstream registry URL.
 	RemoteURLAnnotation = "remote-url"
-	// RemoteHostAnnotation is an annotation on registry cache Service which denotes the upstream registry host and optionally a port.
-	RemoteHostAnnotation = "remote-host"
+	// UpstreamAnnotation is an annotation on registry cache Service which denotes the upstream registry host and optionally a port.
+	UpstreamAnnotation = "upstream"
 )

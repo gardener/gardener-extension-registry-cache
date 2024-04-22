@@ -53,7 +53,7 @@ The `providerConfig` field is required.
 The `providerConfig.mirrors` field contains information about the registry mirrors to configure. It is a required field. At least one mirror has to be specified.
 
 The `providerConfig.mirror[].upstream` field is the remote registry host to mirror. It is a required field.
-The value must be a valid DNS subdomain (RFC 1123). It must not include a scheme or port.
+The value must be a valid DNS subdomain (RFC 1123) and optionally a port (i.e. `<host>[:<port>]`). It must not include a scheme.
 
 The `providerConfig.mirror[].hosts` field represents the mirror hosts to be used for the upstream. At least one mirror host has to be specified.
 

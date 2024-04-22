@@ -112,7 +112,7 @@ func validateHostPort(hostPort string) []string {
 		if digitsRegex.MatchString(port) {
 			host = hostPort[:index]
 			if !portRegexp.MatchString(port) {
-				errs = append(errs, fmt.Sprintf("port '%s' is not valid, valid port must be between 1 and 65535, inclusive", port))
+				errs = append(errs, fmt.Sprintf("port '%s' is not valid, valid port must be in the range [1, 65535]", port))
 			}
 		}
 	}
