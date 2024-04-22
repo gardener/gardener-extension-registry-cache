@@ -112,7 +112,7 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 		return fmt.Errorf("failed to create or update secret of managed resources: %w", err)
 	}
 	if err := managedResource.Reconcile(ctx); err != nil {
-		return fmt.Errorf("failed to not create or update managed resource: %w", err)
+		return fmt.Errorf("failed to create or update managed resource: %w", err)
 	}
 
 	if err := r.deployMonitoringConfigMap(ctx); err != nil {
@@ -182,11 +182,13 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	)
 
 	var (
-		name         = computeName(cache.Upstream)
-		configValues = map[string]interface{}{
+		name          = computeName(cache.Upstream)
+		upstreamLabel = strings.Replace(cache.Upstream, ":", "-", 1)
+		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
+		configValues  = map[string]interface{}{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCachePort),
 			"http_debug_addr": fmt.Sprintf(":%d", debugPort),
-			"proxy_remoteurl": registryutils.GetUpstreamURL(cache.Upstream),
+			"proxy_remoteurl": remoteURL,
 			"proxy_ttl":       helper.GarbageCollectionTTL(cache).Duration.String(),
 		}
 	)
@@ -225,7 +227,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name + "-config",
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, cache.Upstream),
+			Labels:    getLabels(name, upstreamLabel),
 		},
 		Data: map[string][]byte{
 			"config.yml": configYAML.Bytes(),
@@ -237,10 +239,14 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, cache.Upstream),
+			Labels:    getLabels(name, upstreamLabel),
+			Annotations: map[string]string{
+				constants.UpstreamAnnotation:  cache.Upstream,
+				constants.RemoteURLAnnotation: remoteURL,
+			},
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: getLabels(name, cache.Upstream),
+			Selector: getLabels(name, upstreamLabel),
 			Ports: []corev1.ServicePort{{
 				Name:       "registry-cache",
 				Port:       constants.RegistryCachePort,
@@ -255,17 +261,17 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, cache.Upstream),
+			Labels:    getLabels(name, upstreamLabel),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: service.Name,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: getLabels(name, cache.Upstream),
+				MatchLabels: getLabels(name, upstreamLabel),
 			},
 			Replicas: ptr.To(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: utils.MergeStringMaps(getLabels(name, cache.Upstream), map[string]string{
+					Labels: utils.MergeStringMaps(getLabels(name, upstreamLabel), map[string]string{
 						v1beta1constants.LabelNetworkPolicyToDNS:            v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
@@ -357,7 +363,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   registryCacheVolumeName,
-						Labels: getLabels(name, cache.Upstream),
+						Labels: getLabels(name, upstreamLabel),
 					},
 					Spec: corev1.PersistentVolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -419,10 +425,10 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}, nil
 }
 
-func getLabels(name, upstream string) map[string]string {
+func getLabels(name, upstreamLabel string) map[string]string {
 	return map[string]string{
 		"app":                       name,
-		constants.UpstreamHostLabel: upstream,
+		constants.UpstreamHostLabel: upstreamLabel,
 	}
 }
 
@@ -437,8 +443,7 @@ func computeName(upstream string) string {
 	// The "controller-revision-hash" label gets added to the StatefulSet Pod. The label value is in format <stateful_set_name>_<hash> where <hash> is 10 or 11 chars.
 	// A label value limit is 63 chars. That's why a Pod for a StatefulSet with name > 52 chars cannot be created.
 	const statefulSetNameLimit = 52
-
-	escapedUpstream := strings.Replace(upstream, ".", "-", -1)
+	escapedUpstream := strings.NewReplacer(".", "-", ":", "-").Replace(upstream)
 	name := "registry-" + escapedUpstream
 	if len(name) > statefulSetNameLimit {
 		hash := utils.ComputeSHA256Hex([]byte(upstream))[:5]

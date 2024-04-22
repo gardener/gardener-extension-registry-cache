@@ -5,6 +5,7 @@
 package validation_test
 
 import (
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -46,6 +47,25 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(BeEmpty())
 		})
 
+		It("should allow valid remoteURLs", func() {
+			registryConfig.Caches[0].RemoteURL = ptr.To("https://registry-1.docker.io")
+			registryConfig.Caches = append(registryConfig.Caches,
+				api.RegistryCache{
+					Upstream:  "my-registry.io",
+					RemoteURL: ptr.To("https://my-registry.io"),
+				},
+				api.RegistryCache{
+					Upstream:  "my-registry.io:5000",
+					RemoteURL: ptr.To("http://my-registry.io:5000"),
+				},
+				api.RegistryCache{
+					Upstream:  "quay.io",
+					RemoteURL: ptr.To("https://mirror-host.io:8443"),
+				},
+			)
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(BeEmpty())
+		})
+
 		It("should deny configuration without a cache", func() {
 			registryConfig = &api.RegistryConfig{Caches: nil}
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
@@ -80,7 +100,7 @@ var _ = Describe("Validation", func() {
 					Upstream: "https://docker.io",
 				},
 				api.RegistryCache{
-					Upstream: "docker.io:443",
+					Upstream: "docker.io:0443",
 				},
 			)
 
@@ -108,7 +128,7 @@ var _ = Describe("Validation", func() {
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[4].upstream"),
-					"BadValue": Equal("docker.io:443"),
+					"BadValue": Equal("docker.io:0443"),
 				})),
 			))
 		})
@@ -164,6 +184,46 @@ var _ = Describe("Validation", func() {
 				})),
 			))
 		})
+
+		It("should deny invalid remoteURLs", func() {
+			registryConfig.Caches[0].RemoteURL = ptr.To("ftp://docker.io")
+			registryConfig.Caches = append(registryConfig.Caches,
+				api.RegistryCache{
+					Upstream:  "my-registry.io:5000",
+					RemoteURL: ptr.To("http://my-registry.io:5000/repository"),
+				},
+				api.RegistryCache{
+					Upstream:  "my-registry.io:8443",
+					RemoteURL: ptr.To("https://my-registry.io:8443/repository"),
+				},
+				api.RegistryCache{
+					Upstream:  "quay.io",
+					RemoteURL: ptr.To("mirror-host.io:8443"),
+				},
+			)
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].remoteURL"),
+					"BadValue": Equal("ftp://docker.io"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[1].remoteURL"),
+					"BadValue": Equal("http://my-registry.io:5000/repository"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[2].remoteURL"),
+					"BadValue": Equal("https://my-registry.io:8443/repository"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[3].remoteURL"),
+					"BadValue": Equal("mirror-host.io:8443"),
+				})),
+			))
+		})
 	})
 
 	Describe("#ValidateRegistryConfigUpdate", func() {
@@ -174,14 +234,14 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should allow valid configuration update", func() {
+			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+				TTL: metav1.Duration{Duration: 14 * 24 * time.Hour},
+			}
 			size := resource.MustParse("5Gi")
 			newCache := api.RegistryCache{
-				Upstream: "docker.io",
+				Upstream: "quay.io",
 				Volume: &api.Volume{
 					Size: &size,
-				},
-				GarbageCollection: &api.GarbageCollection{
-					TTL: metav1.Duration{Duration: 14 * 24 * time.Hour},
 				},
 			}
 			registryConfig.Caches = append(registryConfig.Caches, newCache)
@@ -315,5 +375,68 @@ var _ = Describe("Validation", func() {
 				})),
 			))
 		})
+	})
+
+	Describe("#ValidateUpstream", func() {
+		BeforeEach(func() {
+			fldPath = fldPath.Child("caches").Index(0).Child("upstream")
+		})
+
+		DescribeTable("should allow valid upstreams",
+			func(upstream string) {
+				Expect(ValidateUpstream(fldPath, upstream)).To(BeEmpty())
+			},
+			Entry("when host is valid", "example.com"),
+			Entry("when port is set", "example.com:5000"),
+			Entry("when port is 1", "example.com:1"),
+			Entry("when port is 65535", "example.com:65535"),
+		)
+
+		DescribeTable("should deny invalid upstreams",
+			func(upstream string) {
+				Expect(ValidateUpstream(fldPath, upstream)).To(ConsistOf(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"BadValue": Equal(upstream),
+					})),
+				))
+			},
+			Entry("when starts with https scheme", "https://example.com"),
+			Entry("when starts with http scheme", "http://example.com:5000"),
+			Entry("when scheme is not supported", "ftp://example.com:5000"),
+			Entry("when port is invalid", "example.com:0123"),
+			Entry("when port is 0", "example.com:0"),
+			Entry("when port is out of range", "example.com:65536"),
+			Entry("when host is very long", strings.Repeat("n", 250)+".com"),
+		)
+	})
+
+	Describe("#ValidateURL", func() {
+		BeforeEach(func() {
+			fldPath = fldPath.Child("caches").Index(0).Child("remoteURL")
+		})
+
+		DescribeTable("should allow valid urls",
+			func(upstream string) {
+				Expect(ValidateURL(fldPath, upstream)).To(BeEmpty())
+			},
+			Entry("when url consists of valid scheme and host", "https://example.com"),
+			Entry("when url consists of valid scheme, host and port", "http://example.com:5000"),
+		)
+
+		DescribeTable("should deny invalid urls",
+			func(upstream string) {
+				Expect(ValidateURL(fldPath, upstream)).To(ConsistOf(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"BadValue": Equal(upstream),
+					})),
+				))
+			},
+			Entry("when scheme is missing", "example.com"),
+			Entry("when scheme is not supported", "ftp://example.com"),
+			Entry("when port is invalid", "https://example.com:80443"),
+			Entry("when path is set", "https://example.com/myrepository"),
+		)
 	})
 })

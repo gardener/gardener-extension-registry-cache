@@ -109,6 +109,7 @@ func Convert_registry_GarbageCollection_To_v1alpha3_GarbageCollection(in *regist
 
 func autoConvert_v1alpha3_RegistryCache_To_registry_RegistryCache(in *RegistryCache, out *registry.RegistryCache, s conversion.Scope) error {
 	out.Upstream = in.Upstream
+	out.RemoteURL = (*string)(unsafe.Pointer(in.RemoteURL))
 	out.Volume = (*registry.Volume)(unsafe.Pointer(in.Volume))
 	out.GarbageCollection = (*registry.GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
 	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
@@ -122,6 +123,7 @@ func Convert_v1alpha3_RegistryCache_To_registry_RegistryCache(in *RegistryCache,
 
 func autoConvert_registry_RegistryCache_To_v1alpha3_RegistryCache(in *registry.RegistryCache, out *RegistryCache, s conversion.Scope) error {
 	out.Upstream = in.Upstream
+	out.RemoteURL = (*string)(unsafe.Pointer(in.RemoteURL))
 	out.Volume = (*Volume)(unsafe.Pointer(in.Volume))
 	out.GarbageCollection = (*GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
 	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
@@ -136,6 +138,7 @@ func Convert_registry_RegistryCache_To_v1alpha3_RegistryCache(in *registry.Regis
 func autoConvert_v1alpha3_RegistryCacheStatus_To_registry_RegistryCacheStatus(in *RegistryCacheStatus, out *registry.RegistryCacheStatus, s conversion.Scope) error {
 	out.Upstream = in.Upstream
 	out.Endpoint = in.Endpoint
+	out.RemoteURL = in.RemoteURL
 	return nil
 }
 
@@ -147,6 +150,7 @@ func Convert_v1alpha3_RegistryCacheStatus_To_registry_RegistryCacheStatus(in *Re
 func autoConvert_registry_RegistryCacheStatus_To_v1alpha3_RegistryCacheStatus(in *registry.RegistryCacheStatus, out *RegistryCacheStatus, s conversion.Scope) error {
 	out.Upstream = in.Upstream
 	out.Endpoint = in.Endpoint
+	out.RemoteURL = in.RemoteURL
 	return nil
 }
 

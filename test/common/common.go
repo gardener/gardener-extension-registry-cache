@@ -251,7 +251,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 	defer cancel()
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": upstream}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": strings.Replace(upstream, ":", "-", 1)}))
 	EventuallyWithOffset(1, ctx, func() (err error) {
 		reader, err := framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", metav1.NamespaceSystem, shootClient)
 		if err != nil {

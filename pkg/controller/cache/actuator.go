@@ -225,11 +225,12 @@ func (a *actuator) computeProviderStatus(ctx context.Context, registryConfig *ap
 		return nil, fmt.Errorf("not all services for all configured caches exist")
 	}
 
-	caches := []v1alpha3.RegistryCacheStatus{}
+	caches := make([]v1alpha3.RegistryCacheStatus, 0, len(services.Items))
 	for _, service := range services.Items {
 		caches = append(caches, v1alpha3.RegistryCacheStatus{
-			Upstream: service.Labels[constants.UpstreamHostLabel],
-			Endpoint: fmt.Sprintf("http://%s:%d", service.Spec.ClusterIP, constants.RegistryCachePort),
+			Upstream:  service.Annotations[constants.UpstreamAnnotation],
+			Endpoint:  fmt.Sprintf("http://%s:%d", service.Spec.ClusterIP, constants.RegistryCachePort),
+			RemoteURL: service.Annotations[constants.RemoteURLAnnotation],
 		})
 	}
 

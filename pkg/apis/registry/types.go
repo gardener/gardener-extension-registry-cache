@@ -23,8 +23,15 @@ type RegistryConfig struct {
 
 // RegistryCache represents a registry cache to deploy.
 type RegistryCache struct {
-	// Upstream is the remote registry host (and optionally port) to cache.
+	// Upstream is the remote registry host to cache.
+	// The value must be a valid DNS subdomain (RFC 1123) and optionally a port.
 	Upstream string
+	// RemoteURL is the remote registry URL. The format must be `<scheme><host>[:<port>]` where
+	// `<scheme>` is `https://` or `http://` and `<host>[:<port>]` corresponds to the Upstream
+	//
+	// If defined, the value is set as `proxy.remoteurl` in the registry [configuration](https://github.com/distribution/distribution/blob/main/docs/content/recipes/mirror.md#configure-the-cache)
+	// and in containerd configuration as `server` field in [hosts.toml](https://github.com/containerd/containerd/blob/main/docs/hosts.md#server-field) file.
+	RemoteURL *string
 	// Volume contains settings for the registry cache volume.
 	Volume *Volume
 	// GarbageCollection contains settings for the garbage collection of content from the cache.
@@ -73,4 +80,6 @@ type RegistryCacheStatus struct {
 	// Endpoint is the registry cache endpoint.
 	// Example: "http://10.4.246.205:5000"
 	Endpoint string
+	// RemoteURL is the remote registry URL.
+	RemoteURL string
 }

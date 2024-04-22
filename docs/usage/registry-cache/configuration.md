@@ -57,6 +57,8 @@ spec:
         garbageCollection:
           ttl: 0s
         secretReferenceName: quay-credentials
+      - upstream: my-registry.io:5000
+        remoteURL: http://my-registry.io:5000
   # ...
   resources:
   - name: quay-credentials
@@ -71,7 +73,10 @@ The `providerConfig` field is required.
 The `providerConfig.caches` field contains information about the registry caches to deploy. It is a required field. At least one cache has to be specified.
 
 The `providerConfig.caches[].upstream` field is the remote registry host to cache. It is a required field.
-The value must be a valid DNS subdomain (RFC 1123). It must not include a scheme or port. The configured upstream registry must be accessible by `https` (`https://` is the assumed scheme).
+The value must be a valid DNS subdomain (RFC 1123) and optionally a port (i.e. `<host>[:<port>]`). It must not include a scheme.
+
+The `providerConfig.caches[].remoteURL` optional field is the remote registry URL. If configured, it must include an `https://` or `http://` scheme.
+If the field is not configured, the remote registry URL defaults to `https://<upstream>`. In case the upstream is `docker.io`, it defaults to `https://registry-1.docker.io`.
 
 The `providerConfig.caches[].volume` field contains settings for the registry cache volume.
 The registry-cache extension deploys a StatefulSet with a volume claim template. A PersistentVolumeClaim is created with the configured size and StorageClass name.
