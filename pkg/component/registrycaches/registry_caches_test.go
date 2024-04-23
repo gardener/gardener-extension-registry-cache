@@ -20,6 +20,9 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -497,6 +500,7 @@ status: {}
 			})
 		})
 
+		// TODO(dimitar-kostadinov) delete this after August 2024.
 		It("should deploy a monitoring ConfigMap", func() {
 			Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
@@ -510,7 +514,65 @@ status: {}
 			Expect(monitoringConfigMap.Labels).To(HaveKeyWithValue("extensions.gardener.cloud/configuration", "monitoring"))
 			Expect(monitoringConfigMap.Data).To(HaveKey("alerting_rules"))
 			Expect(monitoringConfigMap.Data).To(HaveKey("scrape_config"))
-			Expect(monitoringConfigMap.Data).To(HaveKey("dashboard_operators"))
+		})
+
+		// TODO(dimitar-kostadinov) remove 'When' condition after August 2024.
+		When("prometheus-shoot statefulset set exist", func() {
+			BeforeEach(func() {
+				prometheusShoot := &appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "prometheus-shoot",
+						Namespace: namespace,
+					},
+				}
+				Expect(c.Create(ctx, prometheusShoot)).To(Succeed())
+			})
+
+			It("should deploy a monitoring objects", func() {
+				Expect(registryCaches.Deploy(ctx)).To(Succeed())
+
+				configMapDashboards := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "extension-registry-cache-monitoring",
+						Namespace: namespace,
+					},
+				}
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(configMapDashboards), configMapDashboards)).To(Succeed())
+				Expect(configMapDashboards.Labels).To(HaveKeyWithValue("dashboard.monitoring.gardener.cloud/shoot", "true"))
+				Expect(configMapDashboards.Labels).To(HaveKeyWithValue("component", "registry-cache"))
+				Expect(configMapDashboards.Data).To(HaveKey("registry-cache.dashboard.json"))
+
+				prometheusRule := &monitoringv1.PrometheusRule{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "shoot-registry-cache",
+						Namespace: namespace,
+					},
+				}
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(prometheusRule), prometheusRule)).To(Succeed())
+				Expect(prometheusRule.Labels).To(HaveKeyWithValue("prometheus", "shoot"))
+				Expect(prometheusRule.Labels).To(HaveKeyWithValue("component", "registry-cache"))
+				Expect(prometheusRule.Spec.Groups[0].Name).To(Equal("registry-cache.rules"))
+				Expect(prometheusRule.Spec.Groups[0].Rules).To(HaveLen(4))
+				Expect(prometheusRule.Spec.Groups[0].Rules[0].Alert).To(Equal("RegistryCachePersistentVolumeUsageCritical"))
+				Expect(prometheusRule.Spec.Groups[0].Rules[1].Alert).To(Equal("RegistryCachePersistentVolumeFullInFourDays"))
+				Expect(prometheusRule.Spec.Groups[0].Rules[2].Record).To(Equal("shoot:registry_proxy_pushed_bytes_total:sum"))
+				Expect(prometheusRule.Spec.Groups[0].Rules[3].Record).To(Equal("shoot:registry_proxy_pulled_bytes_total:sum"))
+
+				scrapeConfig := &monitoringv1alpha1.ScrapeConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "shoot-registry-cache",
+						Namespace: namespace,
+					},
+				}
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(scrapeConfig), scrapeConfig)).To(Succeed())
+				Expect(scrapeConfig.Labels).To(HaveKeyWithValue("prometheus", "shoot"))
+				Expect(scrapeConfig.Labels).To(HaveKeyWithValue("component", "registry-cache"))
+				Expect(scrapeConfig.Spec.Authorization.Credentials.LocalObjectReference.Name).To(Equal("shoot-access-prometheus-shoot"))
+				Expect(scrapeConfig.Spec.KubernetesSDConfigs[0].APIServer).To(Equal(ptr.To("https://kube-apiserver:443")))
+				Expect(scrapeConfig.Spec.RelabelConfigs).To(HaveLen(5))
+				Expect(scrapeConfig.Spec.MetricRelabelConfigs).To(HaveLen(1))
+				Expect(scrapeConfig.Spec.MetricRelabelConfigs[0].Regex).To(Equal("^(registry_proxy_.+)$"))
+			})
 		})
 	})
 

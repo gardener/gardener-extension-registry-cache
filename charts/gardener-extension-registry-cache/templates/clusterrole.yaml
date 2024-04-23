@@ -79,6 +79,7 @@ rules:
   - delete
   resourceNames:
   - extension-registry-cache-monitoring
+  - extension-registry-cache-plutono-dashboard
 - apiGroups:
   - ""
   resources:
@@ -92,5 +93,27 @@ rules:
   resources:
   - leases
   verbs:
+  - list
+  - watch
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - scrapeconfigs
+  - prometheusrules
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# TODO(dimitar-kostadinov): Remove this after August 2024.
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - get
   - list
   - watch
