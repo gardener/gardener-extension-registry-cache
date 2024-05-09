@@ -613,7 +613,7 @@ status: {}
 
 	DescribeTable("#computeUpstreamLabel",
 		func(upstream, expected string) {
-			actual := ComputeUpstreamLabel(upstream)
+			actual := ComputeUpstreamLabelValue(upstream)
 			Expect(len(actual)).NotTo(BeNumerically(">", 43))
 			Expect(actual).To(Equal(expected))
 		},

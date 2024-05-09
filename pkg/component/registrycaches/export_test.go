@@ -4,4 +4,4 @@
 
 package registrycaches
 
-var ComputeUpstreamLabel = computeUpstreamLabel
+var ComputeUpstreamLabelValue = computeUpstreamLabelValue
