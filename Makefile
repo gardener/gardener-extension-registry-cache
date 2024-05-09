@@ -15,7 +15,13 @@ EFFECTIVE_VERSION           := $(VERSION)-$(shell git rev-parse HEAD)
 IMAGE_TAG                   := $(EFFECTIVE_VERSION)
 LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
 PARALLEL_E2E_TESTS          := 2
+GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
+SEED_NAME                   := provider-extensions
+SEED_KUBECONFIG             := $(GARDENER_REPO_ROOT)/example/provider-extensions/seed/kubeconfig
 
+ifneq ($(SEED_NAME),provider-extensions)
+	SEED_KUBECONFIG := $(GARDENER_REPO_ROOT)/example/provider-extensions/seed/kubeconfig-$(SEED_NAME)
+endif
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
 endif
@@ -111,11 +117,19 @@ ci-e2e-kind:
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
-extension-up: $(SKAFFOLD) $(KIND) $(HELM)
+extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL) $(YQ)
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
 
-extension-dev: $(SKAFFOLD) $(HELM)
+extension-dev: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
 
-extension-down: $(SKAFFOLD) $(HELM)
+extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) delete
+
+remote-extension-up remote-extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-remote
+
+remote-extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
+	@LD_FLAGS=$(LD_FLAGS) ./hack/remote-extension-up.sh --path-seed-kubeconfig $(SEED_KUBECONFIG)
+
+remote-extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) delete
