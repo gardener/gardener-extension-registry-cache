@@ -198,6 +198,8 @@ status:
 				out := `apiVersion: apps/v1
 kind: StatefulSet
 metadata:
+  annotations:
+    resources.gardener.cloud/delete-on-invalid-update: "true"
   creationTimestamp: null
   labels:
     app: ` + name + `
@@ -609,15 +611,19 @@ status: {}
 		})
 	})
 
-	DescribeTable("#computeName",
+	DescribeTable("#computeUpstreamLabel",
 		func(upstream, expected string) {
-			actual := ComputeName(upstream)
-			Expect(len(actual)).NotTo(BeNumerically(">", 52))
+			actual := ComputeUpstreamLabelValue(upstream)
+			Expect(len(actual)).NotTo(BeNumerically(">", 43))
 			Expect(actual).To(Equal(expected))
 		},
 
-		Entry("short upstream", "docker.io", "registry-docker-io"),
-		Entry("long upstream", "myproj-releases.common.repositories.cloud.com", "registry-myproj-releases-common-repositories-c-3f834"),
+		Entry("short upstream", "my-registry.io", "my-registry.io"),
+		Entry("short upstream ends with port", "my-registry.io:5000", "my-registry.io-5000"),
+		Entry("short upstream ends like a port", "my-registry.io-5000", "my-registry.io-5000"),
+		Entry("long upstream", "my-very-long-registry.very-long-subdomain.io", "my-very-long-registry.very-long-subdo-2fae3"),
+		Entry("long upstream ends with port", "my-very-long-registry.long-subdomain.io:8443", "my-very-long-registry.long-subdomain.-8cb9e"),
+		Entry("long upstream ends like a port", "my-very-long-registry.long-subdomain.io-8443", "my-very-long-registry.long-subdomain.-e91ed"),
 	)
 })
 

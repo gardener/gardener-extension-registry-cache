@@ -17,6 +17,7 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils"
@@ -182,8 +183,8 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	)
 
 	var (
-		name          = computeName(cache.Upstream)
-		upstreamLabel = strings.Replace(cache.Upstream, ":", "-", 1)
+		upstreamLabel = computeUpstreamLabelValue(cache.Upstream)
+		name          = "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		configValues  = map[string]interface{}{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCachePort),
@@ -262,6 +263,10 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
 			Labels:    getLabels(name, upstreamLabel),
+			// StatefulSets for upstreams with more than 43 chars have to be recreated.
+			// See more details in https://github.com/gardener/gardener-extension-registry-cache/pull/186.
+			// TODO(dimitar-kostadinov): Remove the `DeleteOnInvalidUpdate` annotation in the v0.10.0 release.
+			Annotations: map[string]string{resourcesv1alpha1.DeleteOnInvalidUpdate: "true"},
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: service.Name,
@@ -432,24 +437,28 @@ func getLabels(name, upstreamLabel string) map[string]string {
 	}
 }
 
-// computeName computes a name by given upstream.
-// The name later on is used by the registry cache Service, config Secret, StatefulSet and VPA.
+// computeUpstreamLabelValue computes upstream-host label value by given upstream.
 //
-// If length of registry-<escaped_upsteam> is NOT > 52, the name is registry-<escaped_upsteam>.
-// Otherwise it is registry-<truncated_escaped_upsteam>-<hash> where <escaped_upsteam> is truncated at 37 chars.
-// The returned name is at most 52 chars.
-func computeName(upstream string) string {
-	// The StatefulSet name limit is 63 chars. However Pods for a StatefulSet with name > 52 chars cannot be created due to https://github.com/kubernetes/kubernetes/issues/64023.
-	// The "controller-revision-hash" label gets added to the StatefulSet Pod. The label value is in format <stateful_set_name>_<hash> where <hash> is 10 or 11 chars.
-	// A label value limit is 63 chars. That's why a Pod for a StatefulSet with name > 52 chars cannot be created.
-	const statefulSetNameLimit = 52
-	escapedUpstream := strings.NewReplacer(".", "-", ":", "-").Replace(upstream)
-	name := "registry-" + escapedUpstream
-	if len(name) > statefulSetNameLimit {
-		hash := utils.ComputeSHA256Hex([]byte(upstream))[:5]
-		upstreamLimit := statefulSetNameLimit - len("registry-") - len(hash) - 1
-		name = fmt.Sprintf("registry-%s-%s", escapedUpstream[:upstreamLimit], hash)
-	}
+// Upstream is a valid DNS subdomain (RFC 1123) and optionally a port (e.g. my-registry.io[:5000])
+// It is used as a 'upstream-host' label value on registry cache resources (Service, Secret, StatefulSet and VPA).
+// Label values cannot contain ':' char, so if upstream is '<host>:<port>' the label value is transformed to '<host>-<port>'.
+// It is also used to build the resources names escaping the '.' with '-'; e.g. `registry-<escaped_upstreamLabel>`.
+//
+// Due to restrictions of resource names length, if upstream length > 43 it is truncated at 37 chars, and the
+// label value is transformed to <truncated-upstream>-<hash> where <hash> is first 5 chars of upstream sha256 hash.
+//
+// The returned upstreamLabel is at most 43 chars.
+func computeUpstreamLabelValue(upstream string) string {
+	// A label value length and a resource name length limits are 63 chars. However, Pods for a StatefulSet with name > 52 chars
+	// cannot be created due to https://github.com/kubernetes/kubernetes/issues/64023.
+	// The cache resources name have prefix 'registry-', thus the label value length is limited to 43.
+	const labelValueLimit = 43
 
-	return name
+	upstreamLabel := strings.ReplaceAll(upstream, ":", "-")
+	if len(upstream) > labelValueLimit {
+		hash := utils.ComputeSHA256Hex([]byte(upstream))[:5]
+		limit := labelValueLimit - len(hash) - 1
+		upstreamLabel = fmt.Sprintf("%s-%s", upstreamLabel[:limit], hash)
+	}
+	return upstreamLabel
 }
