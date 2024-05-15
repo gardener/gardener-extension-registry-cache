@@ -117,10 +117,10 @@ ci-e2e-kind:
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
-extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL) $(YQ)
+extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
 
-extension-dev: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
+extension-dev: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) dev --cleanup=false --trigger=manual
 
 extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)

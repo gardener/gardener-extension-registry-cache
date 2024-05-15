@@ -7,8 +7,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-
 PATH_SEED_KUBECONFIG=""
 
 parse_flags() {
@@ -18,7 +16,6 @@ parse_flags() {
       shift; PATH_SEED_KUBECONFIG="$1"
       ;;
     esac
-
     shift
   done
 }
