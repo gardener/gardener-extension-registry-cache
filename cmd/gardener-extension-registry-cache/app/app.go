@@ -12,6 +12,8 @@ import (
 	heartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
 	componentbaseconfig "k8s.io/component-base/config"
@@ -91,6 +93,13 @@ func (o *Options) run(ctx context.Context) error {
 		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
 	if err := mirrorinstall.AddToScheme(mgr.GetScheme()); err != nil {
+		return fmt.Errorf("could not update manager scheme: %w", err)
+	}
+
+	if err := monitoringv1.AddToScheme(mgr.GetScheme()); err != nil {
+		return fmt.Errorf("could not update manager scheme: %w", err)
+	}
+	if err := monitoringv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		return fmt.Errorf("could not update manager scheme: %w", err)
 	}
 

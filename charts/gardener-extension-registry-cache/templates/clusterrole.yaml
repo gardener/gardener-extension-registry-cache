@@ -78,7 +78,9 @@ rules:
   - patch
   - delete
   resourceNames:
+# TODO(dimitar-kostadinov): Remove 'extension-registry-cache-monitoring' after August 2024.
   - extension-registry-cache-monitoring
+  - registry-cache-dashboards
 - apiGroups:
   - ""
   resources:
@@ -92,5 +94,27 @@ rules:
   resources:
   - leases
   verbs:
+  - list
+  - watch
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - scrapeconfigs
+  - prometheusrules
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# TODO(dimitar-kostadinov): Remove this after August 2024.
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs:
+  - get
   - list
   - watch
