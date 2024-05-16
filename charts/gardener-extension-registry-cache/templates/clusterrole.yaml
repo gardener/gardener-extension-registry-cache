@@ -78,8 +78,9 @@ rules:
   - patch
   - delete
   resourceNames:
+# TODO(dimitar-kostadinov): Remove 'extension-registry-cache-monitoring' after August 2024.
   - extension-registry-cache-monitoring
-  - extension-registry-cache-plutono-dashboard
+  - registry-cache-dashboards
 - apiGroups:
   - ""
   resources:

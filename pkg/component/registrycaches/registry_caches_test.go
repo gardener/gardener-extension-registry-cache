@@ -533,7 +533,7 @@ status: {}
 
 				configMapDashboards := &corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "extension-registry-cache-monitoring",
+						Name:      "registry-cache-dashboards",
 						Namespace: namespace,
 					},
 				}

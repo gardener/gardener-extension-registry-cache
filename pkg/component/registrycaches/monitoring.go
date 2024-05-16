@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	scrapeConfigYaml = `- job_name: registry-cache-metrics
+	scrapeConfigYAML = `- job_name: registry-cache-metrics
   scheme: https
   tls_config:
     ca_file: /etc/prometheus/seed/ca.crt
@@ -79,17 +79,17 @@ func (r *registryCaches) dashboard() string {
 }
 
 func (r *registryCaches) scrapeConfig() string {
-	return scrapeConfigYaml
+	return scrapeConfigYAML
 }
 
-func (r *registryCaches) deployMonitoring(ctx context.Context) error {
+func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 	// TODO(dimitar-kostadinov): Delete this if-condition after August 2024.
 	if r.client.Get(ctx, client.ObjectKey{Name: "prometheus-shoot", Namespace: r.namespace}, &appsv1.StatefulSet{}) == nil {
 		if err := kutil.DeleteObject(ctx, r.client, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "extension-registry-cache-monitoring", Namespace: r.namespace}}); err != nil {
 			return fmt.Errorf("failed deleting %s ConfigMap: %w", "extension-registry-cache-monitoring", err)
 		}
 
-		configMapDashboards := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "extension-registry-cache-monitoring", Namespace: r.namespace}}
+		configMapDashboards := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "registry-cache-dashboards", Namespace: r.namespace}}
 		if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.client, configMapDashboards, func() error {
 			metav1.SetMetaDataLabel(&configMapDashboards.ObjectMeta, "component", "registry-cache")
 			metav1.SetMetaDataLabel(&configMapDashboards.ObjectMeta, "dashboard.monitoring.gardener.cloud/shoot", "true")
@@ -230,7 +230,7 @@ func (r *registryCaches) deployMonitoring(ctx context.Context) error {
 		return nil
 	}
 
-	// TODO(dimitar-kostadinov): Delete this, scrapeConfigYaml & monitoringAlertingRules vars and alerting-rules/registry-cache.rules.yaml file after August 2024.
+	// TODO(dimitar-kostadinov): Delete this, scrapeConfigYAML & monitoringAlertingRules vars and alerting-rules/registry-cache.rules.yaml file after August 2024.
 	monitoringConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "extension-registry-cache-monitoring",

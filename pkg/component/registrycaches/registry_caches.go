@@ -116,8 +116,8 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 		return fmt.Errorf("failed to create or update managed resource: %w", err)
 	}
 
-	if err := r.deployMonitoring(ctx); err != nil {
-		return fmt.Errorf("failed to deploy monitoring: %w", err)
+	if err := r.deployMonitoringConfig(ctx); err != nil {
+		return fmt.Errorf("failed to deploy monitoring config: %w", err)
 	}
 
 	return nil
