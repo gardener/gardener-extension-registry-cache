@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"slices"
 	"strings"
 	"time"
@@ -30,19 +29,24 @@ import (
 )
 
 const (
-	// DockerNginx1230ImageWithDigest corresponds to the nginx:1.23.0 image.
-	DockerNginx1230ImageWithDigest = "docker.io/library/nginx@sha256:db345982a2f2a4257c6f699a499feb1d79451a1305e8022f16456ddc3ad6b94c"
-	// DockerNginx1240ImageWithDigest corresponds to the nginx:1.24.0 image.
-	DockerNginx1240ImageWithDigest = "docker.io/library/nginx@sha256:066476749f229923b9de29cc9a0738ea2d45923b16a2b388449ea549673f97d8"
-	// DockerNginx1250ImageWithDigest corresponds to the nginx:1.25.0 image.
-	DockerNginx1250ImageWithDigest = "docker.io/library/nginx@sha256:b997b0db9c2bc0a2fb803ced5fb9ff3a757e54903a28ada3e50412cc3ab7822f"
+	// DockerNginx1230Image is the docker.io nginx:1.23.0 image.
+	DockerNginx1230Image = "docker.io/library/nginx:1.23.0"
+	// DockerNginx1240Image is the docker.io nginx:1.24.0 image.
+	DockerNginx1240Image = "docker.io/library/nginx:1.24.0"
+	// DockerNginx1250Image is the docker.io nginx:1.25.0 image.
+	DockerNginx1250Image = "docker.io/library/nginx:1.25.0"
 
-	// ArtifactRegistryNginx1176ImageWithDigest corresponds to the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
-	ArtifactRegistryNginx1176ImageWithDigest = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx@sha256:b2d89d0a210398b4d1120b3e3a7672c16a4ba09c2c4a0395f18b9f7999b768f2"
-	// RegistryK8sNginx1154ImageWithDigest corresponds to the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
-	RegistryK8sNginx1154ImageWithDigest = "registry.k8s.io/e2e-test-images/nginx@sha256:db048754ae68ae337d8fa96494c96d2a1204c3320f5dcf7e8e71085adec85da6"
-	// PublicEcrAwsNginx1199ImageWithDigest corresponds to the public.ecr.aws/nginx/nginx:1.19.9 image.
-	PublicEcrAwsNginx1199ImageWithDigest = "public.ecr.aws/nginx/nginx@sha256:f248a8862fa9b21badbe043518f52f143946e2dc705300e8534f8ca624a291b2"
+	// ArtifactRegistryNginx1176Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image.
+	ArtifactRegistryNginx1176Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6"
+	// RegistryK8sNginx1154Image is the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
+	RegistryK8sNginx1154Image = "registry.k8s.io/e2e-test-images/nginx:1.15-4"
+	// PublicEcrAwsNginx1199Image is the public.ecr.aws/nginx/nginx:1.19.9 image.
+	PublicEcrAwsNginx1199Image = "public.ecr.aws/nginx/nginx:1.19.9"
+
+	// jqRegistryLocation is jq command that extracts the source location of '/var/lib/registry' mount from containerd config json.
+	jqRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
+	// jqManifestsLength command counts the number of image manifests in the manifest index. Ref: https://github.com/opencontainers/image-spec/blob/main/image-index.md#example-image-index.
+	jqManifestsLength = `jq -j '.manifests | length' %s/docker/registry/v2/blobs/%s/data`
 )
 
 // AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
@@ -222,9 +226,9 @@ func VerifyHostsTOMLFilesDeletedForNode(ctx context.Context, rootPodExecutor fra
 // The verification consists of the following steps:
 //  1. It deploys an nginx Pod with the given image.
 //  2. It waits until the Pod is running.
-//  3. It verifies that the image is present in the registry's scheduler-state.json file.
+//  3. It verifies that the image is present in the registry's store.
 //     This is a verification that the image pull happened via the registry cache (and the containerd didn't fall back to the upstream).
-func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstream, nginxImageWithDigest string) {
+func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient kubernetes.Interface, nginxImage string) {
 	By("Create nginx Pod")
 	ctx, cancel := context.WithTimeout(parentCtx, 5*time.Minute)
 	defer cancel()
@@ -237,7 +241,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 			Containers: []corev1.Container{
 				{
 					Name:  "nginx",
-					Image: nginxImageWithDigest,
+					Image: nginxImage,
 				},
 			},
 		},
@@ -251,35 +255,53 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 	defer cancel()
 
+	upstream, path, tag := splitImage(nginxImage)
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": strings.Replace(upstream, ":", "-", 1)}))
-	EventuallyWithOffset(1, ctx, func() (err error) {
-		reader, err := framework.PodExecByLabel(ctx, selector, "registry-cache", "cat /var/lib/registry/scheduler-state.json", metav1.NamespaceSystem, shootClient)
+	EventuallyWithOffset(1, ctx, func() error {
+		registryPod, err := framework.GetFirstRunningPodWithLabels(ctx, selector, metav1.NamespaceSystem, shootClient)
 		if err != nil {
-			return fmt.Errorf("failed to cat registry's scheduler-state.json file: %+w", err)
+			return fmt.Errorf("failed to get the registry pod: %w", err)
 		}
 
-		schedulerStateFileContent, err := io.ReadAll(reader)
+		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &registryPod.Spec.NodeName, metav1.NamespaceSystem)
+		defer func(ctx context.Context, rootPodExecutor framework.RootPodExecutor) {
+			_ = rootPodExecutor.Clean(ctx)
+		}(ctx, rootPodExecutor)
+
+		registryRootPath, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqRegistryLocation, strings.TrimPrefix(registryPod.Status.ContainerStatuses[0].ContainerID, "containerd://")))
 		if err != nil {
-			return fmt.Errorf("failed to read from reader: %+w", err)
+			return fmt.Errorf("failed to get the '/var/lib/registry' location from container config json: %w", err)
 		}
 
-		schedulerStateMap := map[string]interface{}{}
-		if err := json.Unmarshal(schedulerStateFileContent, &schedulerStateMap); err != nil {
-			return fmt.Errorf("failed to unmarshal registry's scheduler-state.json file: %+w", err)
+		imageDigest, err := rootPodExecutor.Execute(ctx, fmt.Sprintf("cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link", string(registryRootPath), path, tag))
+		if err != nil {
+			return fmt.Errorf("failed to get the %s image digest: %w", nginxImage, err)
 		}
+		imageSha256Value := strings.TrimPrefix(string(imageDigest), "sha256:")
+		imageIndexPath := fmt.Sprintf("sha256/%s/%s", imageSha256Value[:2], imageSha256Value)
 
-		expectedImage := strings.TrimPrefix(nginxImageWithDigest, upstream+"/")
-		if _, ok := schedulerStateMap[expectedImage]; !ok {
-			prettyFileContent, _ := json.MarshalIndent(schedulerStateMap, "", "  ")
-			return fmt.Errorf("failed to find key (image) '%s' in map (registry's scheduler-state.json file) %v", expectedImage, string(prettyFileContent))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqManifestsLength, string(registryRootPath), imageIndexPath))
+		if err != nil {
+			return fmt.Errorf("failed to get the %s image index manifests count: %w", nginxImage, err)
 		}
 
 		return nil
-	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's scheduler-state.json file")
+	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's storage")
 
 	By("Delete nginx Pod")
 	timeout := 5 * time.Minute
 	ctx, cancel = context.WithTimeout(parentCtx, timeout)
 	defer cancel()
 	ExpectWithOffset(1, framework.DeleteAndWaitForResource(ctx, shootClient, pod, timeout)).To(Succeed())
+}
+
+// splitImage splits the image to <upstream>/<path>:<tag>
+func splitImage(image string) (upstream, path, tag string) {
+	index := strings.Index(image, "/")
+	upstream = image[:index]
+	path = image[index+1:]
+	index = strings.LastIndex(path, ":")
+	tag = path[index+1:]
+	path = path[:index]
+	return
 }
