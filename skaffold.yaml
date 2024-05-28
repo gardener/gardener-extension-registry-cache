@@ -5,7 +5,7 @@ metadata:
   name: extension
 build:
   artifacts:
-    - image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache
+    - image: local-skaffold/gardener/extensions/registry-cache
       ko:
         dependencies:
           paths:
@@ -41,8 +41,9 @@ resourceSelector:
     - groupKind: ControllerDeployment.core.gardener.cloud
       image: [".*"]
 manifests:
-  rawYaml:
-    - example/controller-registration.yaml
+  kustomize:
+    paths:
+    - local-setup
 deploy:
   kubectl: {}
 ---
@@ -52,7 +53,7 @@ metadata:
   name: admission
 build:
   artifacts:
-    - image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache-admission
+    - image: local-skaffold/gardener/extensions/registry-cache-admission
       ko:
         dependencies:
           paths:
@@ -84,8 +85,8 @@ deploy:
         wait: true
         chartPath: charts/admission
         setValueTemplates:
-          global.image.repository: '{{.IMAGE_REPO_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}'
-          global.image.tag: '{{.IMAGE_TAG_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_europe_docker_pkg_dev_gardener_project_public_gardener_extensions_registry_cache_admission}}'
+          global.image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extensions_registry_cache_admission}}'
+          global.image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extensions_registry_cache_admission}}'
 profiles:
 - name: remote-extensions
   patches:

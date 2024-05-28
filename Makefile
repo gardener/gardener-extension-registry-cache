@@ -114,8 +114,12 @@ test-e2e-local: $(GINKGO)
 ci-e2e-kind:
 	./hack/ci-e2e-kind.sh
 
+# speed-up skaffold deployments by building all images concurrently
+export SKAFFOLD_BUILD_CONCURRENCY = 0
+extension-up extension-dev: export SKAFFOLD_DEFAULT_REPO = localhost:5001
+extension-up extension-dev: export SKAFFOLD_PUSH = true
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-extension-up extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
+extension-up extension-dev extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
 extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
