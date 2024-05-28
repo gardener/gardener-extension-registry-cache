@@ -36,17 +36,18 @@ const (
 	// DockerNginx1250Image is the docker.io nginx:1.25.0 image.
 	DockerNginx1250Image = "docker.io/library/nginx:1.25.0"
 
-	// ArtifactRegistryNginx1176Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image.
+	// ArtifactRegistryNginx1176Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
 	ArtifactRegistryNginx1176Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6"
 	// RegistryK8sNginx1154Image is the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154Image = "registry.k8s.io/e2e-test-images/nginx:1.15-4"
 	// PublicEcrAwsNginx1199Image is the public.ecr.aws/nginx/nginx:1.19.9 image.
 	PublicEcrAwsNginx1199Image = "public.ecr.aws/nginx/nginx:1.19.9"
 
-	// jqRegistryLocation is jq command that extracts the source location of '/var/lib/registry' mount from containerd config json.
-	jqRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
-	// jqManifestsLength command counts the number of image manifests in the manifest index. Ref: https://github.com/opencontainers/image-spec/blob/main/image-index.md#example-image-index.
-	jqManifestsLength = `jq -j '.manifests | length' %s/docker/registry/v2/blobs/%s/data`
+	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
+	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
+	// jqCountManifests is a jq command that counts the number of image manifests in the manifest index.
+	// Ref: https://github.com/opencontainers/image-spec/blob/main/image-index.md#example-image-index.
+	jqCountManifests = `jq -j '.manifests | length' %s/docker/registry/v2/blobs/%s/data`
 )
 
 // AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
@@ -226,7 +227,7 @@ func VerifyHostsTOMLFilesDeletedForNode(ctx context.Context, rootPodExecutor fra
 // The verification consists of the following steps:
 //  1. It deploys an nginx Pod with the given image.
 //  2. It waits until the Pod is running.
-//  3. It verifies that the image is present in the registry's store.
+//  3. It verifies that the image is present in the registry's volume.
 //     This is a verification that the image pull happened via the registry cache (and the containerd didn't fall back to the upstream).
 func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient kubernetes.Interface, nginxImage string) {
 	By("Create nginx Pod")
@@ -260,7 +261,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	EventuallyWithOffset(1, ctx, func() error {
 		registryPod, err := framework.GetFirstRunningPodWithLabels(ctx, selector, metav1.NamespaceSystem, shootClient)
 		if err != nil {
-			return fmt.Errorf("failed to get the registry pod: %w", err)
+			return fmt.Errorf("failed to get a running registry Pod: %w", err)
 		}
 
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &registryPod.Spec.NodeName, metav1.NamespaceSystem)
@@ -268,9 +269,10 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 			_ = rootPodExecutor.Clean(ctx)
 		}(ctx, rootPodExecutor)
 
-		registryRootPath, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqRegistryLocation, strings.TrimPrefix(registryPod.Status.ContainerStatuses[0].ContainerID, "containerd://")))
+		containerID := strings.TrimPrefix(registryPod.Status.ContainerStatuses[0].ContainerID, "containerd://")
+		registryRootPath, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractRegistryLocation, containerID))
 		if err != nil {
-			return fmt.Errorf("failed to get the '/var/lib/registry' location from container config json: %w", err)
+			return fmt.Errorf("failed to extract the source localtion of the '/var/lib/registry' mount from the container's config.json file: %w", err)
 		}
 
 		imageDigest, err := rootPodExecutor.Execute(ctx, fmt.Sprintf("cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link", string(registryRootPath), path, tag))
@@ -280,13 +282,13 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		imageSha256Value := strings.TrimPrefix(string(imageDigest), "sha256:")
 		imageIndexPath := fmt.Sprintf("sha256/%s/%s", imageSha256Value[:2], imageSha256Value)
 
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqManifestsLength, string(registryRootPath), imageIndexPath))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCountManifests, string(registryRootPath), imageIndexPath))
 		if err != nil {
 			return fmt.Errorf("failed to get the %s image index manifests count: %w", nginxImage, err)
 		}
 
 		return nil
-	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's storage")
+	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's volume")
 
 	By("Delete nginx Pod")
 	timeout := 5 * time.Minute
