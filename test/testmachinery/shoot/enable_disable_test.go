@@ -50,7 +50,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, "docker.io", common.DockerNginx1230ImageWithDigest)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.DockerNginx1230Image)
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
