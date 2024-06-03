@@ -15,4 +15,5 @@ Gardener extension controller which deploys pull-through caches for container re
 ## Local Setup and Development
 
 - [Deploying Registry Cache Extension Locally](docs/development/getting-started-locally.md) - learn how to set up a local development environment
+- [Deploying Registry Cache Extension in Gardener's Local Setup with Provider Extensions](docs/development/getting-started-remotely.md) - learn how to set up a development environment using own Seed clusters on an existing Kubernetes cluster
 - [Developer Docs for Gardener Extension Registry Cache](docs/development/extension-registry-cache.md) - learn about the inner workings
