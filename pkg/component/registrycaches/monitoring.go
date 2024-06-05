@@ -175,7 +175,7 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 				ScrapeTimeout: ptr.To(monitoringv1.Duration("10s")),
 				Scheme:        ptr.To("HTTPS"),
 				// This is needed because the kubelets' certificates are not are generated for a specific pod IP
-				TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: true},
+				TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)},
 				Authorization: &monitoringv1.SafeAuthorization{Credentials: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "shoot-access-prometheus-shoot"},
 					Key:                  "token",
@@ -189,13 +189,13 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 						Key:                  "token",
 					}},
 					// This is needed because we do not fetch the correct cluster CA bundle right now
-					TLSConfig:       &monitoringv1.SafeTLSConfig{InsecureSkipVerify: true},
+					TLSConfig:       &monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)},
 					FollowRedirects: ptr.To(true),
 				}},
-				RelabelConfigs: []*monitoringv1.RelabelConfig{
+				RelabelConfigs: []monitoringv1.RelabelConfig{
 					{
 						Action:      "replace",
-						Replacement: "registry-cache-metrics",
+						Replacement: ptr.To("registry-cache-metrics"),
 						TargetLabel: "job",
 					},
 					{
@@ -210,14 +210,14 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 					{
 						TargetLabel: "__address__",
 						Action:      "replace",
-						Replacement: v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port),
+						Replacement: ptr.To(v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
 					},
 					{
 						SourceLabels: []monitoringv1.LabelName{"__meta_kubernetes_pod_name", "__meta_kubernetes_pod_container_port_number"},
 						Action:       "replace",
 						TargetLabel:  "__metrics_path__",
 						Regex:        `(.+);(.+)`,
-						Replacement:  "/api/v1/namespaces/kube-system/pods/${1}:${2}/proxy/metrics",
+						Replacement:  ptr.To("/api/v1/namespaces/kube-system/pods/${1}:${2}/proxy/metrics"),
 					},
 				},
 				MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("registry_proxy_.+"),

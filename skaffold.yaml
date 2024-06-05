@@ -5,13 +5,14 @@ metadata:
   name: extension
 build:
   artifacts:
-    - image: local-skaffold/gardener/extensions/registry-cache
+    - image: local-skaffold/gardener-extension-registry-cache
       ko:
         dependencies:
           paths:
             - cmd/gardener-extension-registry-cache
             - cmd/gardener-extension-registry-cache/app
             - imagevector
+            - imagevector/images.yaml
             - pkg/apis/config
             - pkg/apis/config/v1alpha1
             - pkg/apis/config/validation
@@ -24,13 +25,18 @@ build:
             - pkg/apis/registry/v1alpha3
             - pkg/cmd
             - pkg/component/registrycaches
+            - pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml
+            - pkg/component/registrycaches/monitoring/dashboard.json
+            - pkg/component/registrycaches/templates/config.yml.tpl
             - pkg/component/registryconfigurationcleaner
             - pkg/constants
             - pkg/controller/cache
             - pkg/controller/mirror
             - pkg/utils/registry
             - pkg/webhook/cache
+            - pkg/webhook/cache/scripts/configure-containerd-registries.sh
             - pkg/webhook/mirror
+            - pkg/webhook/mirror/templates/hosts.toml.tpl
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'
@@ -53,7 +59,7 @@ metadata:
   name: admission
 build:
   artifacts:
-    - image: local-skaffold/gardener/extensions/registry-cache-admission
+    - image: local-skaffold/gardener-extension-registry-cache-admission
       ko:
         dependencies:
           paths:
@@ -85,8 +91,8 @@ deploy:
         wait: true
         chartPath: charts/admission
         setValueTemplates:
-          global.image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extensions_registry_cache_admission}}'
-          global.image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extensions_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extensions_registry_cache_admission}}'
+          global.image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
+          global.image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
 profiles:
 - name: remote-extensions
   patches:

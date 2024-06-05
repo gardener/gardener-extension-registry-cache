@@ -57,7 +57,8 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
 			Networking: &gardencorev1beta1.Networking{
-				Type: ptr.To("calico"),
+				Type:  ptr.To("calico"),
+				Nodes: ptr.To("10.10.0.0/16"),
 			},
 			Provider: gardencorev1beta1.Provider{
 				Type: "local",

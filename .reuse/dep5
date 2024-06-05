@@ -22,6 +22,7 @@ Files:
   go.mod
   go.sum
   hack/api-reference/*.json
+  local-setup
   pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml
   pkg/component/registrycaches/monitoring/dashboard.json
   pkg/component/registrycaches/templates/config.yml.tpl
