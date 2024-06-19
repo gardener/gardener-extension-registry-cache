@@ -73,6 +73,8 @@ To rotate registry credentials perform the following steps:
 1. Make sure that the old Secret is no longer referenced by any Shoot cluster. Finally, delete the Secret containing the old credentials (e.g., `ro-docker-secret-v1`).
 1. Delete the corresponding old credentials from the cloud provider account.
 
+> **Note**: Do not delete old Secret before the Shoot is updated with the new Secret and Shoot reconciliation is successful.
+
 ## Possible Pitfalls
 
 - The registry cache is not protected by any authentication/authorization mechanism. The cached images (incl. private images) can be fetched from the registry cache without authentication/authorization. Note that the registry cache itself is not exposed publicly.

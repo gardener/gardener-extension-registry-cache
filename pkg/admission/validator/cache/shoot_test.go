@@ -227,6 +227,26 @@ var _ = Describe("Shoot validator", func() {
 					"Detail":   Equal("field is immutable"),
 				}))))
 			})
+
+			It("should exit earlier when no semantic change in providerConfig is detected", func() {
+				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: encode(&v1alpha3.RegistryConfig{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: v1alpha3.SchemeGroupVersion.String(),
+						},
+						Caches: []v1alpha3.RegistryCache{},
+					}),
+				}
+				oldShoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: encode(&v1alpha3.RegistryConfig{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: v1alpha3.SchemeGroupVersion.String(),
+						},
+						Caches: nil,
+					}),
+				}
+				Expect(shootValidator.Validate(ctx, shoot, oldShoot)).To(Succeed())
+			})
 		})
 
 		Context("Upstream credentials", func() {
