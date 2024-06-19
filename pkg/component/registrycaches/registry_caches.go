@@ -17,7 +17,6 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
-	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils"
@@ -263,10 +262,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
 			Labels:    getLabels(name, upstreamLabel),
-			// StatefulSets for upstreams with more than 43 chars have to be recreated.
-			// See more details in https://github.com/gardener/gardener-extension-registry-cache/pull/186.
-			// TODO(dimitar-kostadinov): Remove the `DeleteOnInvalidUpdate` annotation in the v0.10.0 release.
-			Annotations: map[string]string{resourcesv1alpha1.DeleteOnInvalidUpdate: "true"},
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: service.Name,
