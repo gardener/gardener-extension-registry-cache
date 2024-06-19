@@ -201,8 +201,6 @@ status:
 				out := `apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  annotations:
-    resources.gardener.cloud/delete-on-invalid-update: "true"
   creationTimestamp: null
   labels:
     app: ` + name + `
