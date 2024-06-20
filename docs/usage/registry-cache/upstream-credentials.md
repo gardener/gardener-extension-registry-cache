@@ -63,6 +63,8 @@ This document describe how to supply credentials for the private upstream regist
    # ...
    ```
 
+> **Note**: Do not delete the referenced Secret when there is a Shoot still using it.
+
 ## How to rotate the registry credentials?
 
 To rotate registry credentials perform the following steps:
@@ -72,8 +74,6 @@ To rotate registry credentials perform the following steps:
 1. The above step will trigger a Shoot reconciliation. Wait for it to complete.
 1. Make sure that the old Secret is no longer referenced by any Shoot cluster. Finally, delete the Secret containing the old credentials (e.g., `ro-docker-secret-v1`).
 1. Delete the corresponding old credentials from the cloud provider account.
-
-> **Note**: Do not delete old Secret before the Shoot is updated with the new Secret and Shoot reconciliation is successful.
 
 ## Possible Pitfalls
 

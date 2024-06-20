@@ -233,16 +233,29 @@ var _ = Describe("Shoot validator", func() {
 					Raw: encode(&v1alpha3.RegistryConfig{
 						TypeMeta: metav1.TypeMeta{
 							APIVersion: v1alpha3.SchemeGroupVersion.String(),
+							Kind:       "RegistryConfig",
 						},
-						Caches: []v1alpha3.RegistryCache{},
+						Caches: []v1alpha3.RegistryCache{
+							{
+								Upstream: "https://registry.example.com", // invalid upstream
+							},
+						},
 					}),
 				}
 				oldShoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
 					Raw: encode(&v1alpha3.RegistryConfig{
 						TypeMeta: metav1.TypeMeta{
 							APIVersion: v1alpha3.SchemeGroupVersion.String(),
+							Kind:       "RegistryConfig",
 						},
-						Caches: nil,
+						Caches: []v1alpha3.RegistryCache{
+							{
+								Upstream: "https://registry.example.com", // invalid upstream
+								GarbageCollection: &v1alpha3.GarbageCollection{
+									TTL: v1alpha3.DefaultTTL,
+								},
+							},
+						},
 					}),
 				}
 				Expect(shootValidator.Validate(ctx, shoot, oldShoot)).To(Succeed())
