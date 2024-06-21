@@ -12,6 +12,7 @@ import (
 	"github.com/gardener/gardener/pkg/apis/core"
 	gardencorehelper "github.com/gardener/gardener/pkg/apis/core/helper"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -82,6 +83,10 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 			oldRegistryConfig := &api.RegistryConfig{}
 			if err := runtime.DecodeInto(s.decoder, oldExt.ProviderConfig.Raw, oldRegistryConfig); err != nil {
 				return fmt.Errorf("failed to decode providerConfig: %w", err)
+			}
+
+			if equality.Semantic.DeepEqual(registryConfig, oldRegistryConfig) {
+				return nil
 			}
 
 			allErrs = append(allErrs, validation.ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, providerConfigPath)...)
