@@ -369,22 +369,23 @@ status: {}
 				Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
-				Expect(managedResourceSecret.Data).To(HaveLen(8))
-				dockerConfigSecretName := "registry-docker-io-config-340eea9b"
-				dockerConfigSecret := configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", ""))
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerConfigSecretName+".yaml"])).To(Equal(dockerConfigSecret))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io")))
-				dockerStatefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
-				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
+				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(manifests).To(HaveLen(8))
 
+				dockerConfigSecretName := "registry-docker-io-config-340eea9b"
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-454ce11f"
-				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", ""))
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev")))
-				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
-				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(vpaYAMLFor("registry-europe-docker-pkg-dev")))
+				expectedManifests := []string{
+					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
+					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					vpaYAMLFor("registry-docker-io"),
+					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
+					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					vpaYAMLFor("registry-europe-docker-pkg-dev"),
+				}
+				Expect(manifests).To(ConsistOf(expectedManifests))
 			})
 		})
 
@@ -400,8 +401,21 @@ status: {}
 				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
-				Expect(managedResourceSecret.Data).To(HaveLen(6))
-				Expect(managedResourceSecret.Data).ShouldNot(HaveKey(ContainSubstring("verticalpodautoscaler")))
+				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(manifests).To(HaveLen(6))
+
+				dockerConfigSecretName := "registry-docker-io-config-340eea9b"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-454ce11f"
+				expectedManifests := []string{
+					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
+					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
+					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+				}
+				Expect(manifests).To(ConsistOf(expectedManifests))
 			})
 		})
 
@@ -456,22 +470,23 @@ status: {}
 				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
-				Expect(managedResourceSecret.Data).To(HaveLen(8))
-				dockerConfigSecretName := "registry-docker-io-config-71d335ac"
-				dockerConfigSecret := configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret"))
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+dockerConfigSecretName+".yaml"])).To(Equal(dockerConfigSecret))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-docker-io.yaml"])).To(Equal(serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io")))
-				dockerStatefulSet := statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil)
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-docker-io.yaml"])).To(Equal(dockerStatefulSet))
-				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-docker-io.yaml"])).To(Equal(vpaYAMLFor("registry-docker-io")))
+				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(manifests).To(HaveLen(8))
 
+				dockerConfigSecretName := "registry-docker-io-config-71d335ac"
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-5b9d5155"
-				arConfigSecret := configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`))
-				Expect(string(managedResourceSecret.Data["secret__kube-system__"+arConfigSecretName+".yaml"])).To(Equal(arConfigSecret))
-				Expect(string(managedResourceSecret.Data["service__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev")))
-				arStatefulSet := statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"))
-				Expect(string(managedResourceSecret.Data["statefulset__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(arStatefulSet))
-				Expect(string(managedResourceSecret.Data["verticalpodautoscaler__kube-system__registry-europe-docker-pkg-dev.yaml"])).To(Equal(vpaYAMLFor("registry-europe-docker-pkg-dev")))
+				expectedManifests := []string{
+					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
+					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					vpaYAMLFor("registry-docker-io"),
+					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`)),
+					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					vpaYAMLFor("registry-europe-docker-pkg-dev"),
+				}
+				Expect(manifests).To(ConsistOf(expectedManifests))
 			})
 
 			When("get secret fails", func() {

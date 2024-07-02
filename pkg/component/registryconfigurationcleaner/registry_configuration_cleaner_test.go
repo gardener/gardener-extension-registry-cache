@@ -111,8 +111,10 @@ var _ = Describe("RegistryConfigurationCleaner", func() {
 			Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
 			Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 			Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-			Expect(managedResourceSecret.Data).To(HaveLen(1))
-			Expect(string(managedResourceSecret.Data["daemonset__kube-system__registry-configuration-cleaner.yaml"])).To(Equal(daemonSet))
+			manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(manifests).To(HaveLen(1))
+			Expect(manifests[0]).To(Equal(daemonSet))
 		},
 
 		Entry("should successfully deploy the resources (with systemd unit cleanup)",
