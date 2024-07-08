@@ -51,7 +51,7 @@ spec:
       - upstream: docker.io
         volume:
           size: 100Gi
-          storageClassName: premium
+          # storageClassName: premium
       - upstream: ghcr.io
       - upstream: quay.io
         garbageCollection:
