@@ -26,6 +26,9 @@ spec:
         {{- end }}
 {{ include "labels" . | indent 8 }}
     spec:
+      {{- if .Values.global.priorityClassName }}
+      priorityClassName: {{ .Values.global.priorityClassName }}
+      {{- end }}
       serviceAccountName: {{ include "name" . }}
       {{- if .Values.global.kubeconfig }}
       automountServiceAccountToken: false
