@@ -21,5 +21,6 @@ spec:
       -shoot-name=$SHOOT_NAME
       -ginkgo.focus="\[BETA\].*\[SERIAL\]"
       -ginkgo.skip="\[DISRUPTIVE\]"
+      -ginkgo.timeout=9000s
 
   image: golang:1.22.5
