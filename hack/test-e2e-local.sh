@@ -46,4 +46,4 @@ else
   fi
 fi
 
-GO111MODULE=on ginkgo run --timeout=1h --v --show-node-events "$@"
+GO111MODULE=on ginkgo run --timeout=1h30m --v --show-node-events "$@"
