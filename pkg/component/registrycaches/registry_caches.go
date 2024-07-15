@@ -342,7 +342,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 								},
 								{
 									Name:      registryConfigVolumeName,
-									MountPath: "/etc/docker/registry",
+									MountPath: "/etc/distribution",
 								},
 							},
 						},

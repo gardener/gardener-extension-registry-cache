@@ -1,4 +1,4 @@
-# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-alpha.1).
+# Maintain this file with the default config file (/etc/distribution/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-beta.1).
 version: 0.1
 log:
   fields:
@@ -12,6 +12,8 @@ storage:
   #  blobdescriptor: inmemory
   filesystem:
     rootdirectory: /var/lib/registry
+  tag:
+    concurrencylimit: 5
 http:
   addr: {{ .http_addr }}
   debug:

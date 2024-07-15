@@ -126,7 +126,7 @@ metadata:
 			}
 
 			configYAMLFor = func(upstreamURL string, ttl string, username, password string) string {
-				config := `# Maintain this file with the default config file (/etc/docker/registry/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-alpha.1).
+				config := `# Maintain this file with the default config file (/etc/distribution/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-beta.1).
 version: 0.1
 log:
   fields:
@@ -140,6 +140,8 @@ storage:
   #  blobdescriptor: inmemory
   filesystem:
     rootdirectory: /var/lib/registry
+  tag:
+    concurrencylimit: 5
 http:
   addr: :5000
   debug:
@@ -257,7 +259,7 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/registry
           name: cache-volume
-        - mountPath: /etc/docker/registry
+        - mountPath: /etc/distribution
           name: config-volume
       priorityClassName: system-cluster-critical
       securityContext:
@@ -373,8 +375,8 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(8))
 
-				dockerConfigSecretName := "registry-docker-io-config-340eea9b"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-454ce11f"
+				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
 					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
@@ -405,8 +407,8 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(6))
 
-				dockerConfigSecretName := "registry-docker-io-config-340eea9b"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-454ce11f"
+				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
 					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
@@ -474,8 +476,8 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(8))
 
-				dockerConfigSecretName := "registry-docker-io-config-71d335ac"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-5b9d5155"
+				dockerConfigSecretName := "registry-docker-io-config-90f6f66c"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-bc1d0d16"
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
 					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
