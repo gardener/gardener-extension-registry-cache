@@ -6,8 +6,6 @@ package cache_test
 
 import (
 	"context"
-	_ "embed"
-	"encoding/base64"
 	"testing"
 
 	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -35,11 +33,6 @@ func TestRegistryCacheWebhook(t *testing.T) {
 	RunSpecs(t, "Registry Cache Webhook Suite")
 }
 
-var (
-	//go:embed scripts/configure-containerd-registries.sh
-	configureContainerdRegistriesScript string
-)
-
 var _ = Describe("Ensurer", func() {
 	var (
 		logger = logr.Discard()
@@ -58,45 +51,71 @@ var _ = Describe("Ensurer", func() {
 		fakeClient = fakeclient.NewClientBuilder().WithScheme(scheme).Build()
 	})
 
-	Describe("#EnsureAdditionalFiles", func() {
+	Describe("#EnsureCRIConfig", func() {
 		var (
-			oldFile = extensionsv1alpha1.File{
-				Path: "/var/lib/foo.sh",
-			}
-			files []extensionsv1alpha1.File
+			cluster   *extensions.Cluster
+			extension *extensionsv1alpha1.Extension
+			criConfig extensionsv1alpha1.CRIConfig
 		)
 
 		BeforeEach(func() {
-			files = []extensionsv1alpha1.File{oldFile}
-		})
-
-		It("should add additional files to the current ones", func() {
-			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
-
-			Expect(ensurer.EnsureAdditionalFiles(ctx, nil, &files, nil)).To(Succeed())
-			Expect(files).To(ConsistOf(oldFile, configureContainerdRegistriesFile(configureContainerdRegistriesScript)))
-		})
-
-		It("should overwrite existing files of the current ones", func() {
-			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
-
-			files = append(files, configureContainerdRegistriesFile("echo 'foo'"))
-
-			Expect(ensurer.EnsureAdditionalFiles(ctx, nil, &files, nil)).To(Succeed())
-			Expect(files).To(ConsistOf(oldFile, configureContainerdRegistriesFile(configureContainerdRegistriesScript)))
-		})
-	})
-
-	Describe("#EnsureAdditionalUnits", func() {
-		var (
-			oldUnit = extensionsv1alpha1.Unit{
-				Name: "foo.service",
+			cluster = &extensions.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
+				Shoot:      &gardencorev1beta1.Shoot{},
 			}
-			units []extensionsv1alpha1.Unit
-		)
 
-		BeforeEach(func() {
-			units = []extensionsv1alpha1.Unit{oldUnit}
+			extension = &extensionsv1alpha1.Extension{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "registry-cache",
+					Namespace: cluster.ObjectMeta.Name,
+				},
+				Status: extensionsv1alpha1.ExtensionStatus{
+					DefaultStatus: extensionsv1alpha1.DefaultStatus{
+						ProviderStatus: &runtime.RawExtension{
+							Object: &v1alpha3.RegistryStatus{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha3.SchemeGroupVersion.String(),
+									Kind:       "RegistryStatus",
+								},
+								Caches: []v1alpha3.RegistryCacheStatus{
+									{
+										Upstream:  "docker.io",
+										Endpoint:  "http://10.0.0.1:5000",
+										RemoteURL: "https://registry-1.docker.io",
+									},
+									{
+										Upstream:  "europe-docker.pkg.dev",
+										Endpoint:  "http://10.0.0.2:5000",
+										RemoteURL: "https://europe-docker.pkg.dev",
+									},
+									{
+										Upstream:  "my-registry.io:5000",
+										Endpoint:  "http://10.0.0.3:5000",
+										RemoteURL: "http://my-registry.io:5000",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			criConfig = extensionsv1alpha1.CRIConfig{
+				Containerd: &extensionsv1alpha1.ContainerdConfig{
+					Registries: []extensionsv1alpha1.RegistryConfig{
+						{
+							Upstream: "foo.io",
+							Server:   ptr.To("https://foo.io"),
+							Hosts: []extensionsv1alpha1.RegistryHost{
+								{
+									URL:          "https://bar.io",
+									Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability},
+								},
+							},
+						},
+					},
+				},
+			}
 		})
 
 		It("should return err when it fails to get the cluster", func() {
@@ -109,256 +128,144 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace 'shoot--foo--bar'")))
 		})
 
 		It("should do nothing if the shoot has a deletion timestamp set", func() {
 			deletionTimestamp := metav1.Now()
-			cluster := &extensions.Cluster{
-				Shoot: &gardencorev1beta1.Shoot{
-					ObjectMeta: metav1.ObjectMeta{
-						DeletionTimestamp: &deletionTimestamp,
-					},
-				},
-			}
+			cluster.Shoot.ObjectMeta.DeletionTimestamp = &deletionTimestamp
+
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
+			expectedContainerd := criConfig.Containerd.DeepCopy()
 
-			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
-			Expect(units).To(ConsistOf(oldUnit))
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd).To(Equal(expectedContainerd))
 		})
 
 		It("should do nothing if hibernation is enabled for Shoot", func() {
-			cluster := &extensions.Cluster{
-				Shoot: &gardencorev1beta1.Shoot{
-					Spec: gardencorev1beta1.ShootSpec{
-						Hibernation: &gardencorev1beta1.Hibernation{
-							Enabled: ptr.To(true),
-						},
-					},
-				},
-			}
+			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
+			expectedContainerd := criConfig.Containerd.DeepCopy()
 
-			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
-			Expect(units).To(ConsistOf(oldUnit))
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd).To(Equal(expectedContainerd))
 		})
 
 		It("return err when it fails to get the extension", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to get extension 'shoot--foo--bar/registry-cache'")))
 		})
 
 		It("should return err when extension .status.providerStatus is nil", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Status.DefaultStatus.ProviderStatus = nil
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-cache",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Status: extensionsv1alpha1.ExtensionStatus{
-					DefaultStatus: extensionsv1alpha1.DefaultStatus{
-						ProviderStatus: nil,
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("extension 'shoot--foo--bar/registry-cache' does not have a .status.providerStatus specified")))
 		})
 
 		It("should return err when extension .status.providerStatus cannot be decoded", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Status.DefaultStatus.ProviderStatus = &runtime.RawExtension{Object: &corev1.Pod{}}
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-cache",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Status: extensionsv1alpha1.ExtensionStatus{
-					DefaultStatus: extensionsv1alpha1.DefaultStatus{
-						ProviderStatus: &runtime.RawExtension{
-							Object: &corev1.Pod{},
-						},
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to decode providerStatus of extension 'shoot--foo--bar/registry-cache'")))
 		})
 
-		It("should add additional unit to the current ones", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
+		It("should add additional registry config to a nil containerd registry configs", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			criConfig.Containerd = nil
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-cache",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Status: extensionsv1alpha1.ExtensionStatus{
-					DefaultStatus: extensionsv1alpha1.DefaultStatus{
-						ProviderStatus: &runtime.RawExtension{
-							Object: &v1alpha3.RegistryStatus{
-								TypeMeta: metav1.TypeMeta{
-									APIVersion: v1alpha3.SchemeGroupVersion.String(),
-									Kind:       "RegistryStatus",
-								},
-								Caches: []v1alpha3.RegistryCacheStatus{
-									{
-										Upstream:  "docker.io",
-										Endpoint:  "http://10.0.0.1:5000",
-										RemoteURL: "https://registry-1.docker.io",
-									},
-									{
-										Upstream:  "europe-docker.pkg.dev",
-										Endpoint:  "http://10.0.0.2:5000",
-										RemoteURL: "https://europe-docker.pkg.dev",
-									},
-									{
-										Upstream:  "my-registry.io:5000",
-										Endpoint:  "http://10.0.0.3:5000",
-										RemoteURL: "http://my-registry.io:5000",
-									},
-								},
-							},
-						},
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
-			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
-			Expect(units).To(ConsistOf(oldUnit,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev my-registry.io:5000,http://10.0.0.3:5000,http://my-registry.io:5000"),
-			))
+			expectedRegistries := []extensionsv1alpha1.RegistryConfig{
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000"),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "http://10.0.0.3:5000"),
+			}
+
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
 
-		It("should overwrite existing unit of the current ones", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
+		It("should add additional registry config to the current containerd registry configs", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-cache",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Status: extensionsv1alpha1.ExtensionStatus{
-					DefaultStatus: extensionsv1alpha1.DefaultStatus{
-						ProviderStatus: &runtime.RawExtension{
-							Object: &v1alpha3.RegistryStatus{
-								TypeMeta: metav1.TypeMeta{
-									APIVersion: v1alpha3.SchemeGroupVersion.String(),
-									Kind:       "RegistryStatus",
-								},
-								Caches: []v1alpha3.RegistryCacheStatus{
-									{
-										Upstream:  "docker.io",
-										Endpoint:  "http://10.0.0.1:5000",
-										RemoteURL: "https://registry-1.docker.io",
-									},
-									{
-										Upstream:  "europe-docker.pkg.dev",
-										Endpoint:  "http://10.0.0.2:5000",
-										RemoteURL: "https://europe-docker.pkg.dev",
-									},
-									{
-										Upstream:  "my-registry.io:5000",
-										Endpoint:  "http://10.0.0.3:5000",
-										RemoteURL: "http://my-registry.io:5000",
-									},
-								},
-							},
-						},
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
-			units = append(units,
-				configureContainerdRegistriesUnit("docker.io,foo,bar"),
-			)
+			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
+			expectedRegistries = append(expectedRegistries, []extensionsv1alpha1.RegistryConfig{
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000"),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "http://10.0.0.3:5000"),
+			}...)
 
-			Expect(ensurer.EnsureAdditionalUnits(ctx, gctx, &units, nil)).To(Succeed())
-			Expect(units).To(ConsistOf(oldUnit,
-				configureContainerdRegistriesUnit("docker.io,http://10.0.0.1:5000,https://registry-1.docker.io europe-docker.pkg.dev,http://10.0.0.2:5000,https://europe-docker.pkg.dev my-registry.io:5000,http://10.0.0.3:5000,http://my-registry.io:5000"),
-			))
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
+		})
+
+		It("should update existing registry config from containerd registry configs", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
+
+			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
+			expectedRegistries = append(expectedRegistries, []extensionsv1alpha1.RegistryConfig{
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000"),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "http://10.0.0.3:5000"),
+			}...)
+
+			criConfig.Containerd.Registries = append(criConfig.Containerd.Registries, []extensionsv1alpha1.RegistryConfig{
+				createRegistryConfig("docker.io", "foo", "bar"),
+				createRegistryConfig("europe-docker.pkg.dev", "foo", "bar"),
+				createRegistryConfig("my-registry.io:5000", "foo", "bar"),
+			}...)
+
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
 	})
 })
 
-func configureContainerdRegistriesFile(script string) extensionsv1alpha1.File {
-	return extensionsv1alpha1.File{
-		Path:        "/opt/bin/configure-containerd-registries.sh",
-		Permissions: ptr.To(int32(0744)),
-		Content: extensionsv1alpha1.FileContent{
-			Inline: &extensionsv1alpha1.FileContentInline{
-				Encoding: "b64",
-				Data:     base64.StdEncoding.EncodeToString([]byte(script)),
+func createRegistryConfig(upstream, server, host string) extensionsv1alpha1.RegistryConfig {
+	return extensionsv1alpha1.RegistryConfig{
+		Upstream: upstream,
+		Server:   ptr.To(server),
+		Hosts: []extensionsv1alpha1.RegistryHost{
+			{
+				URL:          host,
+				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
 			},
 		},
-	}
-}
-
-func configureContainerdRegistriesUnit(args string) extensionsv1alpha1.Unit {
-	return extensionsv1alpha1.Unit{
-		Name:    "configure-containerd-registries.service",
-		Command: ptr.To(extensionsv1alpha1.CommandStart),
-		Enable:  ptr.To(true),
-		Content: ptr.To(`[Unit]
-Description=Configures containerd registries
-
-[Install]
-WantedBy=multi-user.target
-
-[Unit]
-After=containerd.service
-Requires=containerd.service
-
-[Service]
-Type=simple
-ExecStart=/opt/bin/configure-containerd-registries.sh ` + args),
+		ReadinessProbe: ptr.To(true),
 	}
 }

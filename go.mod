@@ -5,7 +5,6 @@ go 1.22.4
 toolchain go1.22.5
 
 require (
-	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
 	github.com/gardener/gardener v1.100.1
 	github.com/go-logr/logr v1.4.1
@@ -30,6 +29,7 @@ require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect

@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/imagevector"
@@ -29,7 +28,6 @@ import (
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registryconfigurationcleaner"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
@@ -63,31 +61,6 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 	cluster, err := extensionscontroller.GetCluster(ctx, a.client, namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get cluster: %w", err)
-	}
-
-	// Clean registry configuration if a registry cache is removed.
-	if ex.Status.ProviderStatus != nil {
-		registryStatus := &api.RegistryStatus{}
-		if _, _, err := a.decoder.Decode(ex.Status.ProviderStatus.Raw, nil, registryStatus); err != nil {
-			return fmt.Errorf("failed to decode providerStatus of extension '%s': %w", client.ObjectKeyFromObject(ex), err)
-		}
-
-		existingUpstreams := sets.New[string]()
-		for _, cache := range registryStatus.Caches {
-			existingUpstreams.Insert(cache.Upstream)
-		}
-
-		desiredUpstreams := sets.New[string]()
-		for _, cache := range registryConfig.Caches {
-			desiredUpstreams.Insert(cache.Upstream)
-		}
-
-		upstreamsToDelete := existingUpstreams.Difference(desiredUpstreams)
-		if upstreamsToDelete.Len() > 0 {
-			if err := cleanRegistryConfiguration(ctx, cluster, a.client, ex.GetNamespace(), false, upstreamsToDelete.UnsortedList()); err != nil {
-				return err
-			}
-		}
 	}
 
 	image, err := imagevector.ImageVector().FindImage("registry")
@@ -124,40 +97,6 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 // Delete the Extension resource.
 func (a *actuator) Delete(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
-
-	cluster, err := extensionscontroller.GetCluster(ctx, a.client, namespace)
-	if err != nil {
-		return fmt.Errorf("failed to get cluster: %w", err)
-	}
-
-	// If the Shoot is in deletion, then there is no need to clean up the registry configuration from Nodes.
-	// The Shoot deletion flows ensures that the Worker is deleted before the Extension deletion.
-	// Hence, there are no Nodes, no need to clean up registry configuration.
-	if ex.Status.ProviderStatus != nil && cluster.Shoot.DeletionTimestamp == nil {
-		registryStatus := &api.RegistryStatus{}
-		if _, _, err := a.decoder.Decode(ex.Status.ProviderStatus.Raw, nil, registryStatus); err != nil {
-			return fmt.Errorf("failed to decode providerStatus of extension '%s': %w", client.ObjectKeyFromObject(ex), err)
-		}
-
-		upstreams := make([]string, 0, len(registryStatus.Caches))
-		for _, cache := range registryStatus.Caches {
-			upstreams = append(upstreams, cache.Upstream)
-		}
-
-		if err := cleanRegistryConfiguration(ctx, cluster, a.client, ex.GetNamespace(), true, upstreams); err != nil {
-			return err
-		}
-	}
-
-	// If the Shoot is in deletion, destroy the cleaner component (delete the cleaner ManagedResource)
-	// as the cleaner ManagedResource could still exist (deployed in a previous reconciliation but failed to be cleaned up)
-	// and could block the Shoot deletion afterwards.
-	if cluster.Shoot.DeletionTimestamp != nil {
-		cleaner := registryconfigurationcleaner.New(a.client, namespace, registryconfigurationcleaner.Values{})
-		if err := component.OpDestroyAndWait(cleaner).Destroy(ctx); err != nil {
-			return fmt.Errorf("failed to destroy the registry configuration cleaner component: %w", err)
-		}
-	}
 
 	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{})
 	if err := component.OpDestroyAndWait(registryCaches).Destroy(ctx); err != nil {
@@ -247,38 +186,4 @@ func (a *actuator) updateProviderStatus(ctx context.Context, ex *extensionsv1alp
 	patch := client.MergeFrom(ex.DeepCopy())
 	ex.Status.ProviderStatus = &runtime.RawExtension{Object: registryStatus}
 	return a.client.Status().Patch(ctx, ex, patch)
-}
-
-func cleanRegistryConfiguration(ctx context.Context, cluster *extensionscontroller.Cluster, client client.Client, namespace string, deleteSystemdUnit bool, upstreams []string) error {
-	// If the Shoot is hibernated, we don't have Nodes. Hence, there is no need to clean up anything.
-	if extensionscontroller.IsHibernated(cluster) {
-		return nil
-	}
-
-	alpineImage, err := imagevector.ImageVector().FindImage("alpine")
-	if err != nil {
-		return fmt.Errorf("failed to find the alpine image: %w", err)
-	}
-	pauseImage, err := imagevector.ImageVector().FindImage("pause")
-	if err != nil {
-		return fmt.Errorf("failed to find the pause image: %w", err)
-	}
-
-	values := registryconfigurationcleaner.Values{
-		AlpineImage:       alpineImage.String(),
-		PauseImage:        pauseImage.String(),
-		DeleteSystemdUnit: deleteSystemdUnit,
-		Upstreams:         upstreams,
-	}
-	cleaner := registryconfigurationcleaner.New(client, namespace, values)
-
-	if err := component.OpWait(cleaner).Deploy(ctx); err != nil {
-		return fmt.Errorf("failed to deploy the registry configuration cleaner component: %w", err)
-	}
-
-	if err := component.OpDestroyAndWait(cleaner).Destroy(ctx); err != nil {
-		return fmt.Errorf("failed to destroy the registry configuration cleaner component: %w", err)
-	}
-
-	return nil
 }

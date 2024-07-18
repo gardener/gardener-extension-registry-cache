@@ -28,15 +28,12 @@ build:
             - pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml
             - pkg/component/registrycaches/monitoring/dashboard.json
             - pkg/component/registrycaches/templates/config.yml.tpl
-            - pkg/component/registryconfigurationcleaner
             - pkg/constants
             - pkg/controller/cache
             - pkg/controller/mirror
             - pkg/utils/registry
             - pkg/webhook/cache
-            - pkg/webhook/cache/scripts/configure-containerd-registries.sh
             - pkg/webhook/mirror
-            - pkg/webhook/mirror/templates/hosts.toml.tpl
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'
