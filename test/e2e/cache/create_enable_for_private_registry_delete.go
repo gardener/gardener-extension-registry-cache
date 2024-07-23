@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	//nginx1240Digest is the nginx:1.24.0 digest for multi-platform index
-	nginx1240Digest    = "nginx@sha256:f6daac2445b0ce70e64d77442ccf62839f3f1b4c24bf6746a857eff014e798c8"
-	indexMediaType     = "application/vnd.oci.image.config.v1+json"
-	upstreamConfigYAML = `version: 0.1
+	publicEcrAwsNginx1240Image = "public.ecr.aws/nginx/nginx:1.24.0"
+	nginx1240                  = "nginx:1.24.0"
+	registry300beta1Image      = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-beta.1"
+	upstreamConfigYAML         = `version: 0.1
 log:
   fields:
     service: registry
@@ -213,7 +213,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 						Containers: []corev1.Container{
 							{
 								Name:            "registry",
-								Image:           "registry:2.8.3",
+								Image:           registry300beta1Image,
 								ImagePullPolicy: corev1.PullIfNotPresent,
 								Ports: []corev1.ContainerPort{
 									{
@@ -233,7 +233,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 									},
 									{
 										Name:      "config-volume",
-										MountPath: "/etc/docker/registry",
+										MountPath: "/etc/distribution",
 									},
 								},
 							},
@@ -283,20 +283,17 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
 		framework.ExpectNoError(err)
 		rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
-
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --platform amd64 --platform arm64 docker.io/library/%s > /dev/null", nginx1240Digest))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --platform amd64 --platform arm64 %s > /dev/null", publicEcrAwsNginx1240Image))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag docker.io/library/%[1]s %[2]s/%[1]s > /dev/null", nginx1240Digest, upstreamHostPort))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", publicEcrAwsNginx1240Image, upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr content push-object --plain-http -u admin:%s %s/%s %s %s > /dev/null", password, upstreamHostPort, nginx1240Digest, nginx1240Digest[len("nginx@"):], indexMediaType))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --platform amd64 --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --platform amd64 --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240Digest))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --platform arm64 --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --platform arm64 --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240Digest))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, nginx1240Digest))
-		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", "docker.io/library", nginx1240Digest))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", publicEcrAwsNginx1240Image))
 		framework.ExpectNoError(err)
 
 		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
@@ -320,13 +317,8 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			return nil
 		})).To(Succeed())
 
-		By("Wait until the registry configuration is applied")
-		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
-		defer cancel()
-		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
-
 		By("[" + upstreamHostPort + "] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, "1.24.0"))
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, nginx1240))
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
