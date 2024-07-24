@@ -43,11 +43,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			return nil
 		})).To(Succeed())
 
-		By("Wait until the registry configuration is applied")
-		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
-		defer cancel()
-		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
-
 		By("[public.ecr.aws] Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.PublicEcrAwsNginx1230Image)
 
@@ -63,11 +58,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 
 			return nil
 		})).To(Succeed())
-
-		By("Wait until the registry configuration is applied")
-		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
-		defer cancel()
-		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
 		By("[ghcr.io] Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryNginx1261Image)
@@ -87,7 +77,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		By("[ghcr.io] Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyRegistryCacheConfigurationsAreRemoved(ctx, f.Logger, f.ShootFramework.ShootClient, false, []string{"ghcr.io"})
+		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"ghcr.io"})
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -101,7 +91,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		By("[public.ecr.aws] Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyRegistryCacheConfigurationsAreRemoved(ctx, f.Logger, f.ShootFramework.ShootClient, true, []string{"public.ecr.aws"})
+		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"public.ecr.aws"})
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
