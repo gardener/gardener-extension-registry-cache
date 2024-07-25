@@ -37,6 +37,11 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache
+      hooks:
+        after:
+          - command: 
+            - bash 
+            - hack/registry-cache-image-overwrite.sh
 resourceSelector:
   allow:
     # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
