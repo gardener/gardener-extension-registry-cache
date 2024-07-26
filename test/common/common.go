@@ -29,19 +29,19 @@ import (
 )
 
 const (
-	// DockerNginx1230Image is the docker.io nginx:1.23.0 image.
-	DockerNginx1230Image = "docker.io/library/nginx:1.23.0"
-	// DockerNginx1240Image is the docker.io nginx:1.24.0 image.
-	DockerNginx1240Image = "docker.io/library/nginx:1.24.0"
-	// DockerNginx1250Image is the docker.io nginx:1.25.0 image.
-	DockerNginx1250Image = "docker.io/library/nginx:1.25.0"
+	// PublicEcrAwsNginx1230Image is the public.ecr.aws/nginx/nginx:1.23.0 image.
+	PublicEcrAwsNginx1230Image = "public.ecr.aws/nginx/nginx:1.23.0"
+	// PublicEcrAwsNginx1240Image is the public.ecr.aws/nginx/nginx:1.24.0 image.
+	PublicEcrAwsNginx1240Image = "public.ecr.aws/nginx/nginx:1.24.0"
+	// PublicEcrAwsNginx1250Image is the public.ecr.aws/nginx/nginx:1.25.0 image.
+	PublicEcrAwsNginx1250Image = "public.ecr.aws/nginx/nginx:1.25.0"
 
 	// ArtifactRegistryNginx1176Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
 	ArtifactRegistryNginx1176Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6"
 	// RegistryK8sNginx1154Image is the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154Image = "registry.k8s.io/e2e-test-images/nginx:1.15-4"
-	// PublicEcrAwsNginx1199Image is the public.ecr.aws/nginx/nginx:1.19.9 image.
-	PublicEcrAwsNginx1199Image = "public.ecr.aws/nginx/nginx:1.19.9"
+	// GithubRegistryNginx1261Image is the ghcr.io/linuxserver/nginx:1.26.1 image.
+	GithubRegistryNginx1261Image = "ghcr.io/linuxserver/nginx:1.26.1"
 
 	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
 	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
