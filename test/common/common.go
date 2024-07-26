@@ -40,8 +40,8 @@ const (
 	ArtifactRegistryNginx1176Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6"
 	// RegistryK8sNginx1154Image is the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154Image = "registry.k8s.io/e2e-test-images/nginx:1.15-4"
-	// GithubRegistryNginx1240Image is the ghcr.io/linuxserver/nginx:1.24.0 image.
-	GithubRegistryNginx1240Image = "ghcr.io/linuxserver/nginx:1.24.0"
+	// GithubRegistryNginx1261Image is the ghcr.io/linuxserver/nginx:1.26.1 image.
+	GithubRegistryNginx1261Image = "ghcr.io/linuxserver/nginx:1.26.1"
 
 	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
 	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`

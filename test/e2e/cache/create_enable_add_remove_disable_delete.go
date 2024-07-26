@@ -70,7 +70,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootFramework.ShootClient)
 
 		By("[ghcr.io] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryNginx1240Image)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryNginx1261Image)
 
 		By("Remove the ghcr.io upstream from the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
