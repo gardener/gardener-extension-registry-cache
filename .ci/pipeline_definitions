@@ -14,9 +14,18 @@ gardener-extension-registry-cache:
         attribute: image.repository
       - ref: ocm-resource:gardener-extension-registry-cache.tag
         attribute: image.tag
-    - &registry-cache-admission
-      name: admission-registry-cache
-      dir: charts/admission
+    - &registry-cache-admission-application
+      name: admission-registry-cache-application
+      dir: charts/admission/charts/application
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-extension-registry-cache-admission.repository
+        attribute: global.image.repository
+      - ref: ocm-resource:gardener-extension-registry-cache-admission.tag
+        attribute: global.image.tag
+    - &registry-cache-admission-runtime
+      name: admission-registry-cache-runtime
+      dir: charts/admission/charts/runtime
       registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
       mappings:
       - ref: ocm-resource:gardener-extension-registry-cache-admission.repository
@@ -73,5 +82,7 @@ gardener-extension-registry-cache:
           helmcharts:
           - <<: *registry-cache
             registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
-          - <<: *registry-cache-admission
+          - <<: *registry-cache-admission-application
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
+          - <<: *registry-cache-admission-runtime
             registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
