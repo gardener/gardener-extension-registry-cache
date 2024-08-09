@@ -122,53 +122,6 @@ func RemoveExtension(shoot *gardencorev1beta1.Shoot, extensionType string) {
 	})
 }
 
-// WaitUntilRegistryCacheConfigurationsAreApplied waits until the configure-containerd-registries.service systemd unit gets inactive on the Nodes.
-// The unit will be in active state until it configures all registry caches.
-func WaitUntilRegistryCacheConfigurationsAreApplied(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface) {
-	nodes := &corev1.NodeList{}
-	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
-
-	for _, node := range nodes.Items {
-		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
-
-		EventuallyWithOffset(1, ctx, func() string {
-			command := "systemctl -q is-active configure-containerd-registries.service && echo 'active' || echo 'inactive'"
-			// err is ignored intentionally to reduce flakes from transient network errors in prow.
-			response, _ := rootPodExecutor.Execute(ctx, command)
-
-			return string(response)
-		}).WithPolling(10*time.Second).Should(Equal("inactive\n"), fmt.Sprintf("Expected the configure-containerd-registries.service unit to be inactive on node %s", node.Name))
-
-		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
-	}
-}
-
-// VerifyRegistryCacheConfigurationsAreRemoved verifies that configure-containerd-registries.service systemd unit gets deleted (if expectSystemdUnitDeletion is true)
-// and the hosts.toml files for the given upstreams are removed.
-// The hosts.toml file(s) and the systemd unit are deleted by the registry-configuration-cleaner DaemonSet.
-func VerifyRegistryCacheConfigurationsAreRemoved(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, expectSystemdUnitDeletion bool, upstreams []string) {
-	nodes := &corev1.NodeList{}
-	ExpectWithOffset(1, shootClient.Client().List(ctx, nodes)).To(Succeed())
-
-	for _, node := range nodes.Items {
-		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
-
-		if expectSystemdUnitDeletion {
-			EventuallyWithOffset(1, ctx, func() string {
-				command := "systemctl status configure-containerd-registries.service &>/dev/null && echo 'unit found' || echo 'unit not found'"
-				// err is ignored intentionally to reduce flakes from transient network errors in prow.
-				response, _ := rootPodExecutor.Execute(ctx, command)
-
-				return string(response)
-			}).WithPolling(10*time.Second).Should(Equal("unit not found\n"), fmt.Sprintf("Expected the configure-containerd-registries.service systemd unit on node %s to be deleted", node.Name))
-		}
-
-		VerifyHostsTOMLFilesDeletedForNode(ctx, rootPodExecutor, upstreams, node.Name)
-
-		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
-	}
-}
-
 // VerifyHostsTOMLFilesCreatedForAllNodes verifies that hosts.toml files for the given upstreams are created for all Nodes
 // with the given hosts.toml file content.
 func VerifyHostsTOMLFilesCreatedForAllNodes(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstreamToHostsTOML map[string]string) {
@@ -200,25 +153,17 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 	for _, node := range nodes.Items {
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
-		VerifyHostsTOMLFilesDeletedForNode(ctx, rootPodExecutor, upstreams, node.Name)
+		for _, upstream := range upstreams {
+			EventuallyWithOffset(2, ctx, func() string {
+				command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
+				// err is ignored intentionally to reduce flakes from transient network errors in prow.
+				response, _ := rootPodExecutor.Execute(ctx, command)
+
+				return string(response)
+			}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", node.Name, upstream))
+		}
 
 		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
-	}
-}
-
-// VerifyHostsTOMLFilesDeletedForNode verifies that hosts.toml files for the given upstreams are deleted for a Node.
-//
-// Note that for a Shoot cluster provider-local adds hosts.toml files for localhost:5001, gcr.io, eu.gcr.io, ghcr.io, registry.k8s.io, quay.io and europe-docker.pkg.dev.
-// Hence, when a registry cache is removed for one of the above upstreams, then provider-local's hosts.toml file will still exist.
-func VerifyHostsTOMLFilesDeletedForNode(ctx context.Context, rootPodExecutor framework.RootPodExecutor, upstreams []string, nodeName string) {
-	for _, upstream := range upstreams {
-		EventuallyWithOffset(2, ctx, func() string {
-			command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
-			// err is ignored intentionally to reduce flakes from transient network errors in prow.
-			response, _ := rootPodExecutor.Execute(ctx, command)
-
-			return string(response)
-		}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", nodeName, upstream))
 	}
 }
 

@@ -18,25 +18,3 @@ images:
       confidentiality_requirement: high
       integrity_requirement: high
       availability_requirement: low
-# registry-configuration-cleaner DaemonSet
-- name: alpine
-  repository: europe-docker.pkg.dev/gardener-project/releases/3rd/alpine
-  tag: "3.19.1"
-  labels:
-  - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
-    value:
-      policy: skip
-      comment: >
-        The alpine container is not accessible from outside k8s clusters and not
-        interacted with from other containers or other systems.
-- name: pause
-  sourceRepository: github.com/kubernetes/kubernetes/blob/master/build/pause/Dockerfile
-  repository: registry.k8s.io/pause
-  tag: "3.9"
-  labels:
-  - name: cloud.gardener.cnudie/dso/scanning-hints/binary_id/v1
-    value:
-      policy: skip
-      comment: >
-        The pause container is not accessible from outside k8s clusters and not
-        interacted with from other containers or other systems.

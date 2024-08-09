@@ -6,12 +6,9 @@ package cache
 
 import (
 	"context"
-	_ "embed"
-	"encoding/base64"
 	"fmt"
-	"strings"
+	"slices"
 
-	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
@@ -23,11 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-)
-
-var (
-	//go:embed scripts/configure-containerd-registries.sh
-	configureContainerdRegistriesScript string
 )
 
 // NewEnsurer creates a new registry cache ensurer.
@@ -46,24 +38,8 @@ type ensurer struct {
 	logger  logr.Logger
 }
 
-// EnsureAdditionalFiles ensures that the configure-containerd-registries.sh script is added to the <new> files.
-func (e *ensurer) EnsureAdditionalFiles(_ context.Context, _ gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
-	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
-		Path:        "/opt/bin/configure-containerd-registries.sh",
-		Permissions: ptr.To(int32(0744)),
-		Content: extensionsv1alpha1.FileContent{
-			Inline: &extensionsv1alpha1.FileContentInline{
-				Encoding: "b64",
-				Data:     base64.StdEncoding.EncodeToString([]byte(configureContainerdRegistriesScript)),
-			},
-		},
-	})
-
-	return nil
-}
-
-// EnsureAdditionalUnits ensures that the configure-containerd-registries.service unit is added to the <new> units.
-func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.Unit) error {
+// EnsureCRIConfig ensures the CRI config.
+func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, new, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -77,7 +53,7 @@ func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.Garde
 	// or outdated (if for hibernated Shoot a new registry is added). Hence, we skip the OperatingSystemConfig mutation when hibernation is enabled.
 	// When Shoot is waking up, then .status.providerStatus will be updated in the Extension and the OperatingSystemConfig will be mutated according to it.
 	if v1beta1helper.HibernationIsEnabled(cluster.Shoot) {
-		e.logger.Info("Hibernation is enabeld for Shoot, skipping the OperatingSystemConfig mutation", "shoot", client.ObjectKeyFromObject(cluster.Shoot))
+		e.logger.Info("Hibernation is enabled for Shoot, skipping the OperatingSystemConfig mutation", "shoot", client.ObjectKeyFromObject(cluster.Shoot))
 		return nil
 	}
 
@@ -100,31 +76,29 @@ func (e *ensurer) EnsureAdditionalUnits(ctx context.Context, gctx gcontext.Garde
 		return fmt.Errorf("failed to decode providerStatus of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}
 
-	scriptArgs := make([]string, 0, len(registryStatus.Caches))
+	if new.Containerd == nil {
+		new.Containerd = &extensionsv1alpha1.ContainerdConfig{}
+	}
+
 	for _, cache := range registryStatus.Caches {
-		scriptArgs = append(scriptArgs, fmt.Sprintf("%s,%s,%s", cache.Upstream, cache.Endpoint, cache.RemoteURL))
+		cfg := extensionsv1alpha1.RegistryConfig{
+			Upstream: cache.Upstream,
+			Server:   ptr.To(cache.RemoteURL),
+			Hosts: []extensionsv1alpha1.RegistryHost{{
+				URL:          cache.Endpoint,
+				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
+			}},
+			ReadinessProbe: ptr.To(true),
+		}
+		i := slices.IndexFunc(new.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
+			return registryConfig.Upstream == cfg.Upstream
+		})
+		if i == -1 {
+			new.Containerd.Registries = append(new.Containerd.Registries, cfg)
+		} else {
+			new.Containerd.Registries[i] = cfg
+		}
 	}
-
-	unit := extensionsv1alpha1.Unit{
-		Name:    "configure-containerd-registries.service",
-		Command: ptr.To(extensionsv1alpha1.CommandStart),
-		Enable:  ptr.To(true),
-		Content: ptr.To(`[Unit]
-Description=Configures containerd registries
-
-[Install]
-WantedBy=multi-user.target
-
-[Unit]
-After=containerd.service
-Requires=containerd.service
-
-[Service]
-Type=simple
-ExecStart=/opt/bin/configure-containerd-registries.sh ` + strings.Join(scriptArgs, " ")),
-	}
-
-	*new = extensionswebhook.EnsureUnitWithName(*new, unit)
 
 	return nil
 }

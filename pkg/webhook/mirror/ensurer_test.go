@@ -6,8 +6,6 @@ package mirror_test
 
 import (
 	"context"
-	"fmt"
-	"path/filepath"
 	"testing"
 
 	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -53,16 +51,65 @@ var _ = Describe("Ensurer", func() {
 		fakeClient = fakeclient.NewClientBuilder().WithScheme(scheme).Build()
 	})
 
-	Describe("#EnsureAdditionalFiles", func() {
+	Describe("#EnsureCRIConfig", func() {
 		var (
-			oldFile = extensionsv1alpha1.File{
-				Path: "/var/lib/foo.sh",
-			}
-			files []extensionsv1alpha1.File
+			cluster   *extensions.Cluster
+			extension *extensionsv1alpha1.Extension
+			criConfig extensionsv1alpha1.CRIConfig
 		)
 
 		BeforeEach(func() {
-			files = []extensionsv1alpha1.File{oldFile}
+			cluster = &extensions.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
+				Shoot:      &gardencorev1beta1.Shoot{},
+			}
+
+			extension = &extensionsv1alpha1.Extension{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "registry-mirror",
+					Namespace: cluster.ObjectMeta.Name,
+				},
+				Spec: extensionsv1alpha1.ExtensionSpec{
+					DefaultSpec: extensionsv1alpha1.DefaultSpec{
+						ProviderConfig: &runtime.RawExtension{
+							Object: &v1alpha1.MirrorConfig{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha1.SchemeGroupVersion.String(),
+									Kind:       "MirrorConfig",
+								},
+								Mirrors: []v1alpha1.MirrorConfiguration{
+									{
+										Upstream: "docker.io",
+										Hosts: []v1alpha1.MirrorHost{
+											{
+												Host:         "https://mirror.gcr.io",
+												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			criConfig = extensionsv1alpha1.CRIConfig{
+				Containerd: &extensionsv1alpha1.ContainerdConfig{
+					Registries: []extensionsv1alpha1.RegistryConfig{
+						{
+							Upstream: "foo.io",
+							Server:   ptr.To("https://foo.io"),
+							Hosts: []extensionsv1alpha1.RegistryHost{
+								{
+									URL:          "https://mirror.foo.io",
+									Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability},
+								},
+							},
+						},
+					},
+				},
+			}
 		})
 
 		It("should return err when it fails to get the cluster", func() {
@@ -75,208 +122,137 @@ var _ = Describe("Ensurer", func() {
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace 'shoot--foo--bar'")))
 		})
 
 		It("should do nothing if the shoot has a deletion timestamp set", func() {
 			deletionTimestamp := metav1.Now()
-			cluster := &extensions.Cluster{
-				Shoot: &gardencorev1beta1.Shoot{
-					ObjectMeta: metav1.ObjectMeta{
-						DeletionTimestamp: &deletionTimestamp,
-					},
-				},
-			}
+			cluster.Shoot.ObjectMeta.DeletionTimestamp = &deletionTimestamp
+
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+			expectedContainerd := criConfig.Containerd.DeepCopy()
 
-			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
-			Expect(files).To(ConsistOf(oldFile))
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd).To(Equal(expectedContainerd))
 		})
 
-		It("return err when it fails to get the extension", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
+		It("should return err when it fails to get the extension", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to get extension 'shoot--foo--bar/registry-mirror'")))
 		})
 
 		It("should return err when extension .spec.providerConfig is nil", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.DefaultSpec.ProviderConfig = nil
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-mirror",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Spec: extensionsv1alpha1.ExtensionSpec{
-					DefaultSpec: extensionsv1alpha1.DefaultSpec{
-						ProviderConfig: nil,
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("extension 'shoot--foo--bar/registry-mirror' does not have a .spec.providerConfig specified")))
 		})
 
 		It("should return err when extension .spec.providerConfig cannot be decoded", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.DefaultSpec.ProviderConfig = &runtime.RawExtension{Object: &corev1.Pod{}}
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-mirror",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Spec: extensionsv1alpha1.ExtensionSpec{
-					DefaultSpec: extensionsv1alpha1.DefaultSpec{
-						ProviderConfig: &runtime.RawExtension{
-							Object: &corev1.Pod{},
-						},
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
-			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)
+			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig of extension 'shoot--foo--bar/registry-mirror'")))
 		})
 
-		It("should add additional file to the current ones", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
+		It("should add additional registry config to a nil containerd registry configs", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			criConfig.Containerd = nil
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-mirror",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Spec: extensionsv1alpha1.ExtensionSpec{
-					DefaultSpec: extensionsv1alpha1.DefaultSpec{
-						ProviderConfig: &runtime.RawExtension{
-							Object: &v1alpha1.MirrorConfig{
-								TypeMeta: metav1.TypeMeta{
-									APIVersion: v1alpha1.SchemeGroupVersion.String(),
-									Kind:       "MirrorConfig",
-								},
-								Mirrors: []v1alpha1.MirrorConfiguration{
-									{
-										Upstream: "docker.io",
-										Hosts: []v1alpha1.MirrorHost{
-											{
-												Host:         "https://mirror.gcr.io",
-												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
-			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
-			Expect(files).To(ConsistOf(oldFile,
-				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "https://mirror.gcr.io", `["pull", "resolve"]`),
-			))
+			expectedRegistries := []extensionsv1alpha1.RegistryConfig{{
+				Upstream: "docker.io",
+				Server:   ptr.To("https://registry-1.docker.io"),
+				Hosts: []extensionsv1alpha1.RegistryHost{
+					{
+						URL:          "https://mirror.gcr.io",
+						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
+					},
+				},
+			}}
+
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
 
-		It("should overwrite existing unit of the current ones", func() {
-			cluster := &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
-				Shoot:      &gardencorev1beta1.Shoot{},
-			}
+		It("should add additional registry config to the current containerd registry configs", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
-			extension := &extensionsv1alpha1.Extension{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "registry-mirror",
-					Namespace: cluster.ObjectMeta.Name,
-				},
-				Spec: extensionsv1alpha1.ExtensionSpec{
-					DefaultSpec: extensionsv1alpha1.DefaultSpec{
-						ProviderConfig: &runtime.RawExtension{
-							Object: &v1alpha1.MirrorConfig{
-								TypeMeta: metav1.TypeMeta{
-									APIVersion: v1alpha1.SchemeGroupVersion.String(),
-									Kind:       "MirrorConfig",
-								},
-								Mirrors: []v1alpha1.MirrorConfiguration{
-									{
-										Upstream: "docker.io",
-										Hosts: []v1alpha1.MirrorHost{
-											{
-												Host:         "https://mirror.gcr.io",
-												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
 
-			files = append(files,
-				hostsTOMLFile("docker.io", "foo", "bar", "baz"),
-			)
+			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
+			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
+				Upstream: "docker.io",
+				Server:   ptr.To("https://registry-1.docker.io"),
+				Hosts: []extensionsv1alpha1.RegistryHost{
+					{
+						URL:          "https://mirror.gcr.io",
+						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
+					},
+				},
+			})
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
+		})
 
-			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
-			Expect(files).To(ConsistOf(oldFile,
-				hostsTOMLFile("docker.io", "https://registry-1.docker.io", "https://mirror.gcr.io", `["pull", "resolve"]`),
-			))
+		It("should update existing registry config from containerd registry configs", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
+			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
+				Upstream: "docker.io",
+				Server:   ptr.To("https://registry-1.docker.io"),
+				Hosts: []extensionsv1alpha1.RegistryHost{
+					{
+						URL:          "https://mirror.gcr.io",
+						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
+					},
+				},
+			})
+
+			criConfig.Containerd.Registries = append(criConfig.Containerd.Registries, extensionsv1alpha1.RegistryConfig{
+				Upstream: "docker.io",
+				Server:   ptr.To("foo"),
+				Hosts: []extensionsv1alpha1.RegistryHost{
+					{
+						URL:          "bar",
+						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PushCapability},
+					},
+				},
+			})
+
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
 	})
 })
-
-func hostsTOMLFile(upstream, upstreamServer, mirrorHost, capabilities string) extensionsv1alpha1.File {
-	return extensionsv1alpha1.File{
-		Path:        filepath.Join("/etc/containerd/certs.d/", upstream, "hosts.toml"),
-		Permissions: ptr.To(int32(0644)),
-		Content: extensionsv1alpha1.FileContent{
-			Inline: &extensionsv1alpha1.FileContentInline{
-				Data: fmt.Sprintf(`server = "%s"
-
-[host."%s"]
-  capabilities = %s
-`, upstreamServer, mirrorHost, capabilities),
-			},
-		},
-	}
-}

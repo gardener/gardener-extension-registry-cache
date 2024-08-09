@@ -84,18 +84,22 @@ var _ = Describe("Registry Mirror Extension Tests", Label("mirror"), func() {
 })
 
 const (
-	dockerHostsTOML = `server = "https://registry-1.docker.io"
+	dockerHostsTOML = `# managed by gardener-node-agent
+server = "https://registry-1.docker.io"
 
 [host."https://mirror.gcr.io"]
   capabilities = ["pull"]
+
 `
 
-	ecrHostsTOML = `server = "https://public.ecr.aws"
+	ecrHostsTOML = `# managed by gardener-node-agent
+server = "https://public.ecr.aws"
 
 [host."https://public-mirror.example.com"]
   capabilities = ["pull"]
 
 [host."https://private-mirror.internal"]
-  capabilities = ["pull", "resolve"]
+  capabilities = ["pull","resolve"]
+
 `
 )

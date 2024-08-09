@@ -46,11 +46,6 @@ var _ = Describe("Shoot registry cache testing", func() {
 			return nil
 		})).To(Succeed())
 
-		By("Wait until the registry configuration is applied")
-		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
-		defer cancel()
-		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
-
 		By("Verify registry-cache works")
 		// We are using nginx:1.24.0 as nginx:1.23.0 is already used by the "should enable and disable the registry-cache extension" test.
 		// Hence, nginx:1.23.0 will be present in the Node.
@@ -75,11 +70,6 @@ var _ = Describe("Shoot registry cache testing", func() {
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
 		Expect(f.WakeUpShoot(ctx)).To(Succeed())
-
-		By("Wait until the registry configuration is applied")
-		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
-		defer cancel()
-		common.WaitUntilRegistryCacheConfigurationsAreApplied(ctx, f.Logger, f.ShootClient)
 
 		By("Verify registry-cache works after wake up")
 		// We are using nginx:1.25.0 as nginx:1.24.0 is already used above and already present in the Node and in the registry cache.

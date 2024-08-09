@@ -5,49 +5,22 @@
 package mirror
 
 import (
-	"bytes"
 	"context"
-	_ "embed"
 	"fmt"
-	"path/filepath"
-	"text/template"
+	"slices"
 
-	"github.com/Masterminds/sprig/v3"
-	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
+	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
-
-const (
-	// containerdRegistryHostsDirectory is a directory that is created by the containerd-inializer systemd service.
-	// containerd is configured to read registry configuration from this directory.
-	containerdRegistryHostsDirectory = "/etc/containerd/certs.d"
-)
-
-var (
-	//go:embed templates/hosts.toml.tpl
-	hostsTOMLContentTpl string
-	hostsTOMLTpl        *template.Template
-)
-
-func init() {
-	var err error
-	hostsTOMLTpl, err = template.
-		New("hosts.toml.tpl").
-		Funcs(sprig.TxtFuncMap()).
-		Parse(hostsTOMLContentTpl)
-	utilruntime.Must(err)
-}
 
 // NewEnsurer creates a new mirror configuration ensurer.
 func NewEnsurer(client client.Client, decoder runtime.Decoder, logger logr.Logger) genericmutator.Ensurer {
@@ -65,8 +38,8 @@ type ensurer struct {
 	logger  logr.Logger
 }
 
-// EnsureAdditionalFiles ensures that the containerd registry configuration files are added to the <new> files.
-func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+// EnsureCRIConfig ensures the CRI config.
+func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, new, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -90,29 +63,42 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 		return fmt.Errorf("extension '%s' does not have a .spec.providerConfig specified", client.ObjectKeyFromObject(extension))
 	}
 
-	mirrorConfig := &mirror.MirrorConfig{}
+	mirrorConfig := &api.MirrorConfig{}
 	if _, _, err := e.decoder.Decode(extension.Spec.ProviderConfig.Raw, nil, mirrorConfig); err != nil {
 		return fmt.Errorf("failed to decode providerConfig of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}
 
-	for _, mirror := range mirrorConfig.Mirrors {
-		var hostsTOML bytes.Buffer
-		if err := hostsTOMLTpl.Execute(&hostsTOML, map[string]interface{}{
-			"Server": registryutils.GetUpstreamURL(mirror.Upstream),
-			"Hosts":  mirror.Hosts,
-		}); err != nil {
-			return fmt.Errorf("cannot execute hosts.toml template: %w", err)
-		}
+	if new.Containerd == nil {
+		new.Containerd = &extensionsv1alpha1.ContainerdConfig{}
+	}
 
-		*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
-			Path:        filepath.Join(containerdRegistryHostsDirectory, mirror.Upstream, "hosts.toml"),
-			Permissions: ptr.To(int32(0644)),
-			Content: extensionsv1alpha1.FileContent{
-				Inline: &extensionsv1alpha1.FileContentInline{
-					Data: hostsTOML.String(),
-				},
-			},
+	for _, mirror := range mirrorConfig.Mirrors {
+		cfg := extensionsv1alpha1.RegistryConfig{
+			Upstream: mirror.Upstream,
+			Server:   ptr.To(registryutils.GetUpstreamURL(mirror.Upstream)),
+		}
+		for _, host := range mirror.Hosts {
+			registryHost := extensionsv1alpha1.RegistryHost{
+				URL: host.Host,
+			}
+			for _, c := range host.Capabilities {
+				switch c {
+				case api.MirrorHostCapabilityPull:
+					registryHost.Capabilities = append(registryHost.Capabilities, extensionsv1alpha1.PullCapability)
+				case api.MirrorHostCapabilityResolve:
+					registryHost.Capabilities = append(registryHost.Capabilities, extensionsv1alpha1.ResolveCapability)
+				}
+			}
+			cfg.Hosts = append(cfg.Hosts, registryHost)
+		}
+		i := slices.IndexFunc(new.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
+			return registryConfig.Upstream == cfg.Upstream
 		})
+		if i == -1 {
+			new.Containerd.Registries = append(new.Containerd.Registries, cfg)
+		} else {
+			new.Containerd.Registries[i] = cfg
+		}
 	}
 
 	return nil
