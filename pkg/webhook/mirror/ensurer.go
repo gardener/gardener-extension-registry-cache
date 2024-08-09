@@ -7,6 +7,7 @@ package mirror
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
@@ -90,15 +91,13 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 			}
 			cfg.Hosts = append(cfg.Hosts, registryHost)
 		}
-		update := false
-		for i, reg := range new.Containerd.Registries {
-			if reg.Upstream == cfg.Upstream {
-				new.Containerd.Registries[i] = cfg
-				update = true
-			}
-		}
-		if !update {
+		i := slices.IndexFunc(new.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
+			return registryConfig.Upstream == cfg.Upstream
+		})
+		if i == -1 {
 			new.Containerd.Registries = append(new.Containerd.Registries, cfg)
+		} else {
+			new.Containerd.Registries[i] = cfg
 		}
 	}
 

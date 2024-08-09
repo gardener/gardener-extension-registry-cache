@@ -30,6 +30,7 @@ This section outlines how the extension disablement works, i.e., the extension h
 
 1. As part of the Shoot reconciliation flow, the gardenlet destroys the [Extension](https://github.com/gardener/gardener/blob/master/docs/extensions/extension.md) resource because it is no longer needed.
    1. The extension deletes the ManagedResource containing the registry cache resources.
+   1. The OperatingSystemConfig resource will not be mutated and no `RegistryConfig` entries will be added or updated. The [gardener-node-agent](https://github.com/gardener/gardener/blob/master/docs/concepts/node-agent.md) detects that `RegistryConfig` entries have been removed or changed and deletes or updates corresponding `hosts.toml` configuration files under `/etc/containerd/certs.d` folder.
 
 ## Shoot Deletion
 
