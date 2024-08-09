@@ -1,5 +1,7 @@
-image: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache:latest
-imagePullPolicy: IfNotPresent
+image:
+  repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache
+  tag: latest
+  pullPolicy: IfNotPresent
 
 replicaCount: 1
 
