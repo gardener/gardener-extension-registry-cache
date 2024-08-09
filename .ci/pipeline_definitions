@@ -3,6 +3,36 @@
 # SPDX-License-Identifier: Apache-2.0
 
 gardener-extension-registry-cache:
+  templates:
+    helmcharts:
+    - &registry-cache
+      name: registry-cache
+      dir: charts/gardener-extension-registry-cache
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-extension-registry-cache.repository
+        attribute: image.repository
+      - ref: ocm-resource:gardener-extension-registry-cache.tag
+        attribute: image.tag
+    - &registry-cache-admission-application
+      name: admission-registry-cache-application
+      dir: charts/admission/charts/application
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-extension-registry-cache-admission.repository
+        attribute: global.image.repository
+      - ref: ocm-resource:gardener-extension-registry-cache-admission.tag
+        attribute: global.image.tag
+    - &registry-cache-admission-runtime
+      name: admission-registry-cache-runtime
+      dir: charts/admission/charts/runtime
+      registry: europe-docker.pkg.dev/gardener-project/snapshots/charts/gardener/extensions
+      mappings:
+      - ref: ocm-resource:gardener-extension-registry-cache-admission.repository
+        attribute: global.image.repository
+      - ref: ocm-resource:gardener-extension-registry-cache-admission.tag
+        attribute: global.image.tag
+
   base_definition:
     traits:
       version:
@@ -49,3 +79,10 @@ gardener-extension-registry-cache:
               dockerfile: 'Dockerfile'
               target: registry-cache-admission
               tag_as_latest: true
+          helmcharts:
+          - <<: *registry-cache
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
+          - <<: *registry-cache-admission-application
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
+          - <<: *registry-cache-admission-runtime
+            registry: europe-docker.pkg.dev/gardener-project/releases/charts/gardener/extensions
