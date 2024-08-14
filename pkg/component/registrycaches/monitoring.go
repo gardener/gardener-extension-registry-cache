@@ -48,10 +48,10 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 					{
 						Alert: "RegistryCachePersistentVolumeUsageCritical",
 						Expr: intstr.FromString(`100 * (
-	 kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
-	   /
-	 kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
-	) < 5`),
+ kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
+   /
+ kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
+) < 5`),
 						For: ptr.To(monitoringv1.Duration("1h")),
 						Labels: map[string]string{
 							"service":    "registry-cache-extension",
@@ -67,12 +67,12 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 					{
 						Alert: "RegistryCachePersistentVolumeFullInFourDays",
 						Expr: intstr.FromString(`100 * (
-	 kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
-	   /
-	 kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
-	) < 15
-	and
-	predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}[30m], 4 * 24 * 3600) <= 0`),
+ kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
+   /
+ kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
+) < 15
+and
+predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}[30m], 4 * 24 * 3600) <= 0`),
 						For: ptr.To(monitoringv1.Duration("1h")),
 						Labels: map[string]string{
 							"service":    "registry-cache-extension",
