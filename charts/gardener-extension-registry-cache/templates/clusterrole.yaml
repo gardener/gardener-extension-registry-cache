@@ -78,8 +78,6 @@ rules:
   - patch
   - delete
   resourceNames:
-# TODO(dimitar-kostadinov): Remove 'extension-registry-cache-monitoring' after August 2024.
-  - extension-registry-cache-monitoring
   - registry-cache-dashboards
 - apiGroups:
   - ""
@@ -109,12 +107,3 @@ rules:
   - update
   - patch
   - delete
-# TODO(dimitar-kostadinov): Remove this after August 2024.
-- apiGroups:
-  - apps
-  resources:
-  - statefulsets
-  verbs:
-  - get
-  - list
-  - watch
