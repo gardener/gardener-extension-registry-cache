@@ -41,6 +41,7 @@ build:
             - pkg/constants
             - pkg/controller/cache
             - pkg/controller/mirror
+            - pkg/secrets
             - pkg/utils/registry
             - pkg/webhook/cache
             - pkg/webhook/mirror
