@@ -90,6 +90,8 @@ var (
 type RegistryStatus struct {
 	metav1.TypeMeta `json:",inline"`
 
+	// CASecretName is the name of the CA secret
+	CASecretName string `json:"caSecretName,omitempty"`
 	// Caches is a slice of deployed registry caches.
 	Caches []RegistryCacheStatus `json:"caches"`
 }
@@ -103,4 +105,6 @@ type RegistryCacheStatus struct {
 	Endpoint string `json:"endpoint"`
 	// RemoteURL is the remote registry URL.
 	RemoteURL string `json:"remoteURL"`
+	//// ClusterIP is the Endpoint IP address
+	//ClusterIP string `json:"clusterIP,omitempty"`
 }

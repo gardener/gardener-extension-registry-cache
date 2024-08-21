@@ -264,6 +264,7 @@ func createRegistryConfig(upstream, server, host string) extensionsv1alpha1.Regi
 			{
 				URL:          host,
 				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
+				CACerts:      []string{"/etc/containerd/certs.d/ca-bundle.pem"},
 			},
 		},
 		ReadinessProbe: ptr.To(true),

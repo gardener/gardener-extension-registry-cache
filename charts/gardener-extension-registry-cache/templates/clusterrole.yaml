@@ -42,6 +42,8 @@ rules:
   - resources.gardener.cloud
   resources:
   - managedresources
+  # TODO(dimitar-kostadinov): Remove managedresources/status after v0.11.0.
+  - managedresources/status
   verbs:
   - get
   - list

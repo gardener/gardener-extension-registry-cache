@@ -14,10 +14,14 @@ import (
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
+	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/retry"
 	retryfake "github.com/gardener/gardener/pkg/utils/retry/fake"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	"github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -38,6 +42,7 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
 )
 
@@ -53,8 +58,11 @@ var _ = Describe("RegistryCaches", func() {
 		ctx        = context.Background()
 		dockerSize = resource.MustParse("10Gi")
 		arSize     = resource.MustParse("20Gi")
+		logger     = logr.Discard()
 
 		c                     client.Client
+		shootClient           client.Client
+		secretsManager        secretsmanager.Interface
 		values                Values
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
@@ -65,6 +73,8 @@ var _ = Describe("RegistryCaches", func() {
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
+		shootClient = fakeclient.NewClientBuilder().WithScheme(kubernetes.ShootScheme).Build()
+		secretsManager = fakesecretsmanager.New(c, namespace)
 		values = Values{
 			Image:      image,
 			VPAEnabled: true,
@@ -90,6 +100,8 @@ var _ = Describe("RegistryCaches", func() {
 				},
 			},
 			ResourceReferences: []gardencorev1beta1.NamedResourceReference{},
+			CacheStatuses:      []api.RegistryCacheStatus{},
+			RegistryStatus:     &v1alpha3.RegistryStatus{},
 		}
 
 		managedResource = &resourcesv1alpha1.ManagedResource{
@@ -108,7 +120,7 @@ var _ = Describe("RegistryCaches", func() {
 	})
 
 	JustBeforeEach(func() {
-		registryCaches = New(c, namespace, values)
+		registryCaches = New(c, shootClient, secretsManager, logger, namespace, values)
 	})
 
 	Describe("#Deploy", func() {
@@ -129,6 +141,29 @@ var _ = Describe("RegistryCaches", func() {
 						"config.yml": []byte(configYAML),
 					},
 				}
+			}
+
+			tlsSecretFor = func(crt, key []byte, name, upstream string) *corev1.Secret {
+				tlsSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+							"resources.gardener.cloud/garbage-collectable-reference": "true",
+						},
+					},
+					Immutable: ptr.To(true),
+					Type:      corev1.SecretTypeOpaque,
+					Data: map[string][]byte{
+						"ca.crt": crt,
+						"ca.key": key,
+					},
+				}
+
+				tlsSecret.Name = name + "-tls-" + utils.ComputeSecretChecksum(tlsSecret.Data)[:8]
+
+				return tlsSecret
 			}
 
 			configYAMLFor = func(upstreamURL string, ttl string, username, password string) string {
@@ -156,6 +191,9 @@ http:
       enabled: true
       path: /metrics
   draintimeout: 25s
+  tls:
+    certificate: /etc/docker/registry/certs/tls.crt
+    key: /etc/docker/registry/certs/tls.key
   headers:
     X-Content-Type-Options: [nosniff]
 health:
@@ -177,7 +215,7 @@ proxy:
 				return config
 			}
 
-			serviceFor = func(name, upstream, remoteURL string) *corev1.Service {
+			_ = func(name, upstream, remoteURL string) *corev1.Service {
 				return &corev1.Service{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
@@ -207,7 +245,7 @@ proxy:
 				}
 			}
 
-			statefulSetFor = func(name, upstream, size, configSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar) *appsv1.StatefulSet {
+			statefulSetFor = func(name, upstream, size, configSecretName, tlsSecretName, tlsSecretChecksum string, storageClassName *string, additionalEnvs []corev1.EnvVar) *appsv1.StatefulSet {
 				env := []corev1.EnvVar{
 					{
 						Name:  "OTEL_TRACES_EXPORTER",
@@ -236,6 +274,9 @@ proxy:
 						Replicas: ptr.To[int32](1),
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
+								Annotations: map[string]string{
+									"checksum/secret-" + name + "-tls": tlsSecretChecksum,
+								},
 								Labels: map[string]string{
 									"app":                              name,
 									"upstream-host":                    upstream,
@@ -327,6 +368,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 												Name:      "config-volume",
 												MountPath: "/etc/distribution",
 											},
+											{
+												Name:      "certs-volume",
+												MountPath: "/etc/docker/registry/certs",
+											},
 										},
 									},
 								},
@@ -336,6 +381,14 @@ source /entrypoint.sh /etc/distribution/config.yml
 										VolumeSource: corev1.VolumeSource{
 											Secret: &corev1.SecretVolumeSource{
 												SecretName: configSecretName,
+											},
+										},
+									},
+									{
+										Name: "certs-volume",
+										VolumeSource: corev1.VolumeSource{
+											Secret: &corev1.SecretVolumeSource{
+												SecretName: tlsSecretName,
 											},
 										},
 									},
@@ -444,17 +497,24 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
-				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
+				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
+
+				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecret := tlsSecretFor(dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"], "registry-docker-io", "docker.io")
+				arSecretsManagerSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				arTLSSecret := tlsSecretFor(arSecretsManagerSecret.Data["ca.crt"], arSecretsManagerSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")
 
 				Expect(managedResource).To(consistOf(
 					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
+					dockerTLSSecret,
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, nil),
 					vpaFor("registry-docker-io"),
 					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+					arTLSSecret,
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), nil),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -470,16 +530,23 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
+				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
+
+				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecret := tlsSecretFor(dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"], "registry-docker-io", "docker.io")
+				arSecretsManagerSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				arTLSSecret := tlsSecretFor(arSecretsManagerSecret.Data["ca.crt"], arSecretsManagerSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")
 
 				Expect(managedResource).To(consistOf(
 					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
+					dockerTLSSecret,
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, nil),
 					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+					arTLSSecret,
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), nil),
 				))
 			})
 		})
@@ -501,8 +568,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
+				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
 				additionalEnvs := []corev1.EnvVar{
 					{
 						Name:  "HTTP_PROXY",
@@ -514,14 +581,21 @@ source /entrypoint.sh /etc/distribution/config.yml
 					},
 				}
 
+				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecret := tlsSecretFor(dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"], "registry-docker-io", "docker.io")
+				arSecretsManagerSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				arTLSSecret := tlsSecretFor(arSecretsManagerSecret.Data["ca.crt"], arSecretsManagerSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")
+
 				Expect(managedResource).To(consistOf(
 					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, additionalEnvs),
+					dockerTLSSecret,
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, additionalEnvs),
 					vpaFor("registry-docker-io"),
 					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), additionalEnvs),
+					arTLSSecret,
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), additionalEnvs),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -576,17 +650,24 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecretName := "registry-docker-io-config-90f6f66c"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-bc1d0d16"
+				dockerConfigSecretName := "registry-docker-io-config-e561062e"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-0accd8a8"
+
+				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecret := tlsSecretFor(dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"], "registry-docker-io", "docker.io")
+				arSecretsManagerSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				arTLSSecret := tlsSecretFor(arSecretsManagerSecret.Data["ca.crt"], arSecretsManagerSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev")
 
 				Expect(managedResource).To(consistOf(
 					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
-					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
+					dockerTLSSecret,
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, nil),
 					vpaFor("registry-docker-io"),
 					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`)),
-					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+					arTLSSecret,
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), nil),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
