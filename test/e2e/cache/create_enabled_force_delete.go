@@ -41,6 +41,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		By("Force Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
-		Expect(f.ForceDeleteShootAndWaitForDeletion(ctx, f.Shoot, f.ShootFramework.SeedClient.Client())).To(Succeed())
+		Expect(f.ForceDeleteShootAndWaitForDeletion(ctx, f.Shoot)).To(Succeed())
 	})
 })

@@ -106,7 +106,7 @@ func (o *Options) run(ctx context.Context) error {
 	ctrlConfig := o.registryOptions.Completed()
 	ctrlConfig.Apply(&cachecontroller.DefaultAddOptions.Config)
 	o.controllerOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.ControllerOptions)
-	o.reconcileOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.IgnoreOperationAnnotation)
+	o.reconcileOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.IgnoreOperationAnnotation, &cachecontroller.DefaultAddOptions.ExtensionClass)
 	o.heartbeatOptions.Completed().Apply(&heartbeatcontroller.DefaultAddOptions)
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {

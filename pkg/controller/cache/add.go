@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -37,6 +38,8 @@ type AddOptions struct {
 	Config config.Configuration
 	// IgnoreOperationAnnotation specifies whether to ignore the operation annotation or not.
 	IgnoreOperationAnnotation bool
+	// ExtensionClass defines the extension class this extension is responsible for.
+	ExtensionClass extensionsv1alpha1.ExtensionClass
 }
 
 // AddToManager adds a controller with the default Options to the given Controller Manager.
@@ -57,5 +60,6 @@ func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddO
 		Resync:            0,
 		Predicates:        extension.DefaultPredicates(ctx, mgr, DefaultAddOptions.IgnoreOperationAnnotation),
 		Type:              Type,
+		ExtensionClass:    opts.ExtensionClass,
 	})
 }
