@@ -11,6 +11,7 @@ import (
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	heartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
+	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
@@ -19,6 +20,7 @@ import (
 	componentbaseconfig "k8s.io/component-base/config"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -106,7 +108,7 @@ func (o *Options) run(ctx context.Context) error {
 	ctrlConfig := o.registryOptions.Completed()
 	ctrlConfig.Apply(&cachecontroller.DefaultAddOptions.Config)
 	o.controllerOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.ControllerOptions)
-	o.reconcileOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.IgnoreOperationAnnotation, &cachecontroller.DefaultAddOptions.ExtensionClass)
+	o.reconcileOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.IgnoreOperationAnnotation, ptr.To(extensionsv1alpha1.ExtensionClassShoot))
 	o.heartbeatOptions.Completed().Apply(&heartbeatcontroller.DefaultAddOptions)
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
