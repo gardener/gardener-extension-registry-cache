@@ -43,7 +43,7 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			},
 		},
 		Spec: gardencorev1beta1.ShootSpec{
-			CloudProfileName:  "local",
+			CloudProfile:      &gardencorev1beta1.CloudProfileReference{Name: "local"},
 			SecretBindingName: ptr.To("local"),
 			Region:            "local",
 			Purpose:           &purpose,
