@@ -40,6 +40,8 @@ type RegistryCache struct {
 	SecretReferenceName *string
 	// Proxy contains settings for a proxy used in the registry cache.
 	Proxy *Proxy
+	// HighAvailability defines if the StatefulSet is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	HighAvailability *bool
 }
 
 // Volume contains settings for the registry cache volume.
