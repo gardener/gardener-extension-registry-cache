@@ -231,6 +231,18 @@ HTTP
 <p>HTTP contains settings for the HTTP server that hosts the registry cache.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>highAvailability</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HighAvailability defines if the StatefulSet is scaled with the <a href="https://gardener.cloud/docs/gardener/high-availability/#system-components">High Availability</a> feature.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCacheStatus">RegistryCacheStatus

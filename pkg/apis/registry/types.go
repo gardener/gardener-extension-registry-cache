@@ -42,6 +42,8 @@ type RegistryCache struct {
 	Proxy *Proxy
 	// HTTP contains settings for the HTTP server that hosts the registry cache.
 	HTTP *HTTP
+	// HighAvailability defines if the StatefulSet is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	HighAvailability *bool
 }
 
 // Volume contains settings for the registry cache volume.

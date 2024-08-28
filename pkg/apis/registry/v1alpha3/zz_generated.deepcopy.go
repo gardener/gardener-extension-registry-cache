@@ -104,6 +104,11 @@ func (in *RegistryCache) DeepCopyInto(out *RegistryCache) {
 		*out = new(HTTP)
 		**out = **in
 	}
+	if in.HighAvailability != nil {
+		in, out := &in.HighAvailability, &out.HighAvailability
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
