@@ -43,6 +43,9 @@ type RegistryCache struct {
 	// SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials.
 	// +optional
 	SecretReferenceName *string `json:"secretReferenceName,omitempty"`
+	// Proxy contains settings for a proxy used in the registry cache.
+	// +optional
+	Proxy *Proxy `json:"proxy,omitempty"`
 }
 
 // Volume contains settings for the registry cache volume.
@@ -64,6 +67,19 @@ type GarbageCollection struct {
 	// Set to 0s to disable the garbage collection.
 	// Defaults to 168h (7 days).
 	TTL metav1.Duration `json:"ttl"`
+}
+
+// Proxy contains settings for a proxy used in the registry cache.
+type Proxy struct {
+	// HTTPProxy is used as HTTP_PROXY env in the StatefulSet.
+	// +optional
+	HTTPProxy *string `json:"httpProxy"`
+	// HTTPSProxy is used as HTTPS_PROXY env in the StatefulSet.
+	// +optional
+	HTTPSProxy *string `json:"httpsProxy"`
+	// NoProxy is used as NO_PROXY env in the StatefulSet.
+	// +optional
+	NoProxy *string `json:"noProxy"`
 }
 
 var (

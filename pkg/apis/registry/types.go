@@ -38,6 +38,8 @@ type RegistryCache struct {
 	GarbageCollection *GarbageCollection
 	// SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials
 	SecretReferenceName *string
+	// Proxy contains settings for a proxy used in the registry cache.
+	Proxy *Proxy
 }
 
 // Volume contains settings for the registry cache volume.
@@ -56,6 +58,16 @@ type GarbageCollection struct {
 	// TTL is the time to live of a blob in the cache.
 	// Set to 0s to disable the garbage collection.
 	TTL metav1.Duration
+}
+
+// Proxy contains settings for a proxy used in the registry cache.
+type Proxy struct {
+	// HTTPProxy is used as HTTP_PROXY env in the StatefulSet.
+	HTTPProxy *string
+	// HTTPSProxy is used as HTTPS_PROXY env in the StatefulSet.
+	HTTPSProxy *string
+	// NoProxy is used as NO_PROXY env in the StatefulSet.
+	NoProxy *string
 }
 
 var (
