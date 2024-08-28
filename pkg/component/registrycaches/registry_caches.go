@@ -17,6 +17,7 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
+	"github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/utils"
@@ -104,8 +105,8 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 
 		secretName, secret = managedresources.NewSecret(r.client, r.namespace, managedResourceName, data, false)
 		managedResource    = managedresources.NewForShoot(r.client, r.namespace, managedResourceName, constants.Origin, keepObjects).
-					WithSecretRef(secretName).
-					DeletePersistentVolumeClaims(true)
+			WithSecretRef(secretName).
+			DeletePersistentVolumeClaims(true)
 	)
 
 	if err := secret.Reconcile(ctx); err != nil {
@@ -257,11 +258,16 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		},
 	}
 
+	additionalStatefulSetLabels := map[string]string{}
+	if cache.HighAvailability != nil && *cache.HighAvailability {
+		additionalStatefulSetLabels[v1alpha1.HighAvailabilityConfigType] = v1alpha1.HighAvailabilityConfigTypeServer
+	}
+
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, upstreamLabel),
+			Labels:    utils.MergeStringMaps(getLabels(name, upstreamLabel), additionalStatefulSetLabels),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: service.Name,

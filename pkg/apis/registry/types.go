@@ -38,6 +38,8 @@ type RegistryCache struct {
 	GarbageCollection *GarbageCollection
 	// SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials
 	SecretReferenceName *string
+	// HighAvailability defines if the StatefulSet is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	HighAvailability *bool
 }
 
 // Volume contains settings for the registry cache volume.
