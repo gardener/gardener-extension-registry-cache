@@ -46,6 +46,9 @@ type RegistryCache struct {
 	// Proxy contains settings for a proxy used in the registry cache.
 	// +optional
 	Proxy *Proxy `json:"proxy,omitempty"`
+	// HighAvailability defines if the StatefulSet is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	// +optional
+	HighAvailability *bool `json:"highAvailability,omitempty"`
 }
 
 // Volume contains settings for the registry cache volume.
