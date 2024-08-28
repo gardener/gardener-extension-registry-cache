@@ -92,6 +92,15 @@ The `providerConfig.caches[].garbageCollection.ttl` field is the time to live of
 
 The `providerConfig.caches[].secretReferenceName` is the name of the reference for the Secret containing the upstream registry credentials. To cache images from a private registry, credentials to the upstream registry should be supplied. For more details, see [How to provide credentials for upstream registry](upstream-credentials.md#how-to-provide-credentials-for-upstream-registry).
 
+The `providerConfig.caches[].proxy.httpProxy` field contains settings for a proxy which is used by the registry cache.
+The registry-cache extension sets this value as `HTTP_PROXY` ENV in the StatefulSet.
+
+The `providerConfig.caches[].proxy.httpsProxy` field contains settings for a proxy which is used by the registry cache.
+The registry-cache extension sets this value as `HTTPS_PROXY` ENV in the StatefulSet.
+
+The `providerConfig.caches[].proxy.noProxy` field contains settings for a proxy which is used by the registry cache.
+The registry-cache extension sets this value as `NO_PROXY` ENV in the StatefulSet.
+
 > **Note**: It is only possible to provide one set of credentials for one private upstream registry.
 
 ## Garbage Collection
