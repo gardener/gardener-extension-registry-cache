@@ -29,10 +29,9 @@ import (
 )
 
 const (
-	publicEcrAwsNginx1240Image = "public.ecr.aws/nginx/nginx:1.24.0"
-	nginx1240                  = "nginx:1.24.0"
-	registry300beta1Image      = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-beta.1"
-	upstreamConfigYAML         = `version: 0.1
+	nginx1240             = "nginx:1.24.0"
+	registry300beta1Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-beta.1"
+	upstreamConfigYAML    = `version: 0.1
 log:
   fields:
     service: registry
@@ -283,17 +282,15 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
 		framework.ExpectNoError(err)
 		rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --platform amd64 --platform arm64 %s > /dev/null", publicEcrAwsNginx1240Image))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --all-platforms %s > /dev/null", common.PublicEcrAwsNginx1240Image))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", publicEcrAwsNginx1240Image, upstreamHostPort, nginx1240))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", common.PublicEcrAwsNginx1240Image, upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --platform amd64 --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240))
-		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --platform arm64 --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
 		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, nginx1240))
 		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", publicEcrAwsNginx1240Image))
+		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", common.PublicEcrAwsNginx1240Image))
 		framework.ExpectNoError(err)
 
 		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
