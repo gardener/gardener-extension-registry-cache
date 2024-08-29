@@ -170,7 +170,7 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 // VerifyRegistryCache verifies that a registry cache works as expected.
 //
 // The verification consists of the following steps:
-//  1. It deploys an nginx Pod with the given image.
+//  1. It deploys a nginx Pod with the given image.
 //  2. It waits until the Pod is running.
 //  3. It verifies that the image is present in the registry's volume.
 //     This is a verification that the image pull happened via the registry cache (and the containerd didn't fall back to the upstream).
@@ -215,22 +215,29 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		}(ctx, rootPodExecutor)
 
 		containerID := strings.TrimPrefix(registryPod.Status.ContainerStatuses[0].ContainerID, "containerd://")
+		log.Info("Registry container ID", "containerID", containerID)
 		registryRootPath, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractRegistryLocation, containerID))
 		if err != nil {
+			log.Error(err, "jqExtractRegistryLocation output", "content", string(registryRootPath))
 			return fmt.Errorf("failed to extract the source localtion of the '/var/lib/registry' mount from the container's config.json file: %w", err)
 		}
+		log.Info("Registry root path on node", "registryRootPath", string(registryRootPath))
 
 		imageDigest, err := rootPodExecutor.Execute(ctx, fmt.Sprintf("cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link", string(registryRootPath), path, tag))
 		if err != nil {
+			log.Error(err, "Fail to cat image tags current link", "content", string(imageDigest))
 			return fmt.Errorf("failed to get the %s image digest: %w", nginxImage, err)
 		}
 		imageSha256Value := strings.TrimPrefix(string(imageDigest), "sha256:")
 		imageIndexPath := fmt.Sprintf("sha256/%s/%s", imageSha256Value[:2], imageSha256Value)
+		log.Info("Image index path under <repo-root>/docker/registry/v2/blobs/", "imageIndexPath", imageIndexPath)
 
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCountManifests, string(registryRootPath), imageIndexPath))
+		count, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCountManifests, string(registryRootPath), imageIndexPath))
 		if err != nil {
+			log.Error(err, "jqCountManifests output", "content", string(count))
 			return fmt.Errorf("failed to get the %s image index manifests count: %w", nginxImage, err)
 		}
+		log.Info("Image index manifests", "count", string(count))
 
 		return nil
 	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's volume")

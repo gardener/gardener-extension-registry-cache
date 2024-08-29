@@ -18,6 +18,8 @@ PARALLEL_E2E_TESTS          := 2
 GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
 SEED_NAME                   := provider-extensions
 SEED_KUBECONFIG             := $(GARDENER_REPO_ROOT)/example/provider-extensions/seed/kubeconfig
+# TODO: Remove this with bumping gardener/gardener to version > v1.102
+GOLANGCI_LINT_VERSION       = v1.60.3
 
 ifneq ($(SEED_NAME),provider-extensions)
 	SEED_KUBECONFIG := $(GARDENER_REPO_ROOT)/example/provider-extensions/seed/kubeconfig-$(SEED_NAME)
