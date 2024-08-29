@@ -1,8 +1,6 @@
 module github.com/gardener/gardener-extension-registry-cache
 
-go 1.22.4
-
-toolchain go1.22.5
+go 1.23.0
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
