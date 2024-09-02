@@ -41,12 +41,7 @@ build:
         after:
           - command: 
             - bash 
-            - hack/registry-cache-image-overwrite.sh
-resourceSelector:
-  allow:
-    # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
-    - groupKind: ControllerDeployment.core.gardener.cloud
-      image: [".*"]
+            - hack/generate-kustomize-patch-controllerdeployment-registry-cache.sh
 manifests:
   kustomize:
     paths:

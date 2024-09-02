@@ -5,4 +5,4 @@ resources:
 - ../example
 
 patches:
-- path: patch-controller-deployment-image.yaml
+- path: patch-controllerdeployment-image.yaml

@@ -7,7 +7,7 @@ set -e
 repository=$(echo $SKAFFOLD_IMAGE | rev | cut -d':' -f 2- | rev)
 tag=$(echo $SKAFFOLD_IMAGE | rev | cut -d':' -f 1 | rev)
 
-cat <<EOF > local-setup/patch-controller-deployment-image.yaml
+cat <<EOF > local-setup/patch-controllerdeployment-image.yaml
 apiVersion: core.gardener.cloud/v1
 kind: ControllerDeployment
 metadata:
