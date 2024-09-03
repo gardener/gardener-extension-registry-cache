@@ -1,0 +1,16 @@
+---
+name: gardener-extension-registry-cache
+version: '${COMPONENT_VERSION}'
+type: ociImage
+relation: local
+access:
+  type: ociRegistry
+  imageReference: 'europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/registry-cache:${COMPONENT_VERSION}'
+---
+name: gardener-extension-registry-cache-admission
+version: '${COMPONENT_VERSION}'
+type: ociImage
+relation: local
+access:
+  type: ociRegistry
+  imageReference: 'europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/registry-cache-admission:${COMPONENT_VERSION}'

@@ -47,6 +47,11 @@ gardener-extension-registry-cache:
         draft_release: ~
         options:
           public_build_logs: true
+        publish:
+          helmcharts:
+          - *registry-cache
+          - *registry-cache-admission-application
+          - *registry-cache-admission-runtime
     release:
       steps:
         verify:
