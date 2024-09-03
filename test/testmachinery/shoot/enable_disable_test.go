@@ -45,7 +45,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.PublicEcrAwsNginx1230Image)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.PublicEcrAwsNginx1230Image, nil)
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)

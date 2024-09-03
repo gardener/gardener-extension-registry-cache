@@ -10,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
@@ -24,7 +25,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	shoot := e2e.DefaultShoot("e2e-cache-fd")
 	size := resource.MustParse("2Gi")
 	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-		{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
+		{Upstream: "quay.io", Volume: &v1alpha3.Volume{Size: &size}},
 	})
 	f.Shoot = shoot
 
@@ -36,7 +37,18 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		f.Verify()
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.PublicEcrAwsNginx1230Image)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.QuayPrometheusBusyboxLatestImage, func(pod *corev1.Pod) *corev1.Pod {
+			pod.Spec.Containers[0].Args = append(pod.Spec.Containers[0].Args, "sleep")
+			pod.Spec.Containers[0].Args = append(pod.Spec.Containers[0].Args, "infinity")
+			return pod
+		})
+
+		By("Verify registry-cache works")
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.QuayOpenshifttestBusyboxMultiarchImage, func(pod *corev1.Pod) *corev1.Pod {
+			pod.Spec.Containers[0].Args = append(pod.Spec.Containers[0].Args, "sleep")
+			pod.Spec.Containers[0].Args = append(pod.Spec.Containers[0].Args, "infinity")
+			return pod
+		})
 
 		By("Force Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
