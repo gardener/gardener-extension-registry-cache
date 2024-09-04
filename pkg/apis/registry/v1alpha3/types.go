@@ -43,6 +43,9 @@ type RegistryCache struct {
 	// SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials.
 	// +optional
 	SecretReferenceName *string `json:"secretReferenceName,omitempty"`
+	// HighAvailability defines if the StatefulSet is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	// +optional
+	HighAvailability *bool `json:"highAvailability,omitempty"`
 }
 
 // Volume contains settings for the registry cache volume.
