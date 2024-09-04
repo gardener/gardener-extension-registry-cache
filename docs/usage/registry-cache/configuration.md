@@ -24,7 +24,8 @@ When the extension is enabled, a registry cache for each configured upstream is 
 
 The first time an image is requested from the pull-through cache, it pulls the image from the configured upstream registry and stores it locally, before handing it back to the client. On subsequent requests, the pull-through cache is able to serve the image from its own storage.
 
-> Note: The used registry implementation ([distribution/distribution](https://github.com/distribution/distribution)) supports mirroring of only one upstream registry.
+> [!NOTE]
+> The used registry implementation ([distribution/distribution](https://github.com/distribution/distribution)) supports mirroring of only one upstream registry.
 
 The following diagram shows a rough outline of how an image pull looks like for a Shoot cluster **with registry cache**:
 ![shoot-cluster-with-registry-cache](./images/shoot-cluster-with-registry-cache.png)
@@ -92,7 +93,8 @@ The `providerConfig.caches[].garbageCollection.ttl` field is the time to live of
 
 The `providerConfig.caches[].secretReferenceName` is the name of the reference for the Secret containing the upstream registry credentials. To cache images from a private registry, credentials to the upstream registry should be supplied. For more details, see [How to provide credentials for upstream registry](upstream-credentials.md#how-to-provide-credentials-for-upstream-registry).
 
-> **Note**: It is only possible to provide one set of credentials for one private upstream registry.
+> [!NOTE]
+> It is only possible to provide one set of credentials for one private upstream registry.
 
 ## Garbage Collection
 
