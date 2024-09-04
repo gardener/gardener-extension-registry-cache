@@ -44,6 +44,61 @@ Defaults to 168h (7 days).</p>
 </tr>
 </tbody>
 </table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.Proxy">Proxy
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache</a>)
+</p>
+<p>
+<p>Proxy contains settings for a proxy used in the registry cache.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>httpProxy</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HTTPProxy is used as HTTP_PROXY env in the StatefulSet.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>httpsProxy</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HTTPSProxy is used as HTTPS_PROXY env in the StatefulSet.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>noProxy</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>NoProxy is used as NO_PROXY env in the StatefulSet.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache
 </h3>
 <p>
@@ -127,6 +182,20 @@ string
 <td>
 <em>(Optional)</em>
 <p>SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>proxy</code></br>
+<em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.Proxy">
+Proxy
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>Proxy contains settings for a proxy used in the registry cache.</p>
 </td>
 </tr>
 </tbody>
