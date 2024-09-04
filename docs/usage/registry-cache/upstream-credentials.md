@@ -63,7 +63,8 @@ This document describe how to supply credentials for the private upstream regist
    # ...
    ```
 
-> **Note**: Do not delete the referenced Secret when there is a Shoot still using it.
+> [!WARNING]
+> Do not delete the referenced Secret when there is a Shoot still using it.
 
 ## How to rotate the registry credentials?
 
