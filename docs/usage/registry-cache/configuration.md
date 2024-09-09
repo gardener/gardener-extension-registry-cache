@@ -167,3 +167,5 @@ The registry cache runs with a single replica. This fact may lead to concerns fo
    Example: If the Service of a registry cache is deleted, then a new Service will be created. containerd's registry config will still contain the old Service's cluster IP. containerd requests against the old Service's cluster IP will time out and containerd will fall back to upstream.
    - Image pull of `docker.io/library/alpine:3.13.2` from the upstream takes ~2s while image pull of the same image with invalid registry cache cluster IP takes ~2m.2s.
    - Image pull of `eu.gcr.io/gardener-project/gardener/ops-toolbelt:0.18.0` from the upstream takes ~10s while image pull of the same image with invalid registry cache cluster IP takes ~3m.10s.
+
+3. Amazon Elastic Container Registry is currently not supported. For details see [distribution/distribution#4383](https://github.com/distribution/distribution/issues/4383).

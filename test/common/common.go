@@ -29,19 +29,24 @@ import (
 )
 
 const (
-	// PublicEcrAwsNginx1230Image is the public.ecr.aws/nginx/nginx:1.23.0 image.
-	PublicEcrAwsNginx1230Image = "public.ecr.aws/nginx/nginx:1.23.0"
-	// PublicEcrAwsNginx1240Image is the public.ecr.aws/nginx/nginx:1.24.0 image.
-	PublicEcrAwsNginx1240Image = "public.ecr.aws/nginx/nginx:1.24.0"
-	// PublicEcrAwsNginx1250Image is the public.ecr.aws/nginx/nginx:1.25.0 image.
-	PublicEcrAwsNginx1250Image = "public.ecr.aws/nginx/nginx:1.25.0"
+	// For the e2e tests don't use images from the following upstreams:
+	// - docker.io: DockerHub has rate limiting for anonymous users.
+	// - gcr.io, registry.k8s.io, quay.io, europe-docker.pkg.dev: These are all registries used in the Gardener's local setup. Avoid using them to do not have conflicts with provider-local in some corner cases.
+	// - Amazon ECR: The Distribution project does not support image pulls from Amazon ECR. Ref https://github.com/distribution/distribution/issues/4383.
+
+	// GithubRegistryJitesoftAlpine3189Image is the ghcr.io/jitesoft/alpine:3.18.9 image.
+	GithubRegistryJitesoftAlpine3189Image = "ghcr.io/jitesoft/alpine:3.18.9"
+	// GithubRegistryJitesoftAlpine3194Image is the ghcr.io/jitesoft/alpine:3.19.4 image.
+	GithubRegistryJitesoftAlpine3194Image = "ghcr.io/jitesoft/alpine:3.19.4"
+	// GithubRegistryJitesoftAlpine3203Image is the ghcr.io/jitesoft/alpine:3.20.3 image.
+	GithubRegistryJitesoftAlpine3203Image = "ghcr.io/jitesoft/alpine:3.20.3"
+	// GitlabRegistryJitesoftAlpine31710Image is the registry.gitlab.com/jitesoft/dockerfiles/alpine:3.17.10 image.
+	GitlabRegistryJitesoftAlpine31710Image = "registry.gitlab.com/jitesoft/dockerfiles/alpine:3.17.10"
 
 	// ArtifactRegistryNginx1176Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
 	ArtifactRegistryNginx1176Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6"
 	// RegistryK8sNginx1154Image is the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154Image = "registry.k8s.io/e2e-test-images/nginx:1.15-4"
-	// GithubRegistryNginx1261Image is the ghcr.io/linuxserver/nginx:1.26.1 image.
-	GithubRegistryNginx1261Image = "ghcr.io/linuxserver/nginx:1.26.1"
 
 	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
 	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
@@ -167,41 +172,55 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 	}
 }
 
+// MutatePodFn is an optional function to change the Pod specification depending on the image used.
+type MutatePodFn func(pod *corev1.Pod) *corev1.Pod
+
+// SleepInfinity is MutatePodFn that keeps the container running indefinitely.
+func SleepInfinity(pod *corev1.Pod) *corev1.Pod {
+	pod.Spec.Containers[0].Command = []string{"sleep"}
+	pod.Spec.Containers[0].Args = []string{"infinity"}
+	return pod
+}
+
 // VerifyRegistryCache verifies that a registry cache works as expected.
 //
 // The verification consists of the following steps:
-//  1. It deploys an nginx Pod with the given image.
+//  1. It deploys a Pod with the given image.
 //  2. It waits until the Pod is running.
 //  3. It verifies that the image is present in the registry's volume.
 //     This is a verification that the image pull happened via the registry cache (and the containerd didn't fall back to the upstream).
-func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient kubernetes.Interface, nginxImage string) {
-	By("Create nginx Pod")
+func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient kubernetes.Interface, image string, mutateFns ...MutatePodFn) {
+	upstream, path, tag := splitImage(image)
+	name := strings.ReplaceAll(path, "/", "-")
+	By(fmt.Sprintf("Create %s Pod", name))
 	ctx, cancel := context.WithTimeout(parentCtx, 5*time.Minute)
 	defer cancel()
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "nginx-",
+			GenerateName: name + "-",
 			Namespace:    corev1.NamespaceDefault,
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{
-					Name:  "nginx",
-					Image: nginxImage,
+					Name:  name,
+					Image: image,
 				},
 			},
 		},
 	}
+	for _, mutateFn := range mutateFns {
+		pod = mutateFn(pod)
+	}
 	ExpectWithOffset(1, shootClient.Client().Create(ctx, pod)).To(Succeed())
 
-	By("Wait until nginx Pod is running")
+	By(fmt.Sprintf("Wait until %s Pod is running", name))
 	ExpectWithOffset(1, framework.WaitUntilPodIsRunning(ctx, log, pod.Name, pod.Namespace, shootClient)).To(Succeed())
 
-	By("Verify the registry cache pulled the nginx image")
+	By(fmt.Sprintf("Verify the registry cache pulled the %s image", image))
 	ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 	defer cancel()
 
-	upstream, path, tag := splitImage(nginxImage)
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"upstream-host": strings.Replace(upstream, ":", "-", 1)}))
 	EventuallyWithOffset(1, ctx, func() error {
 		registryPod, err := framework.GetFirstRunningPodWithLabels(ctx, selector, metav1.NamespaceSystem, shootClient)
@@ -222,20 +241,20 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 
 		imageDigest, err := rootPodExecutor.Execute(ctx, fmt.Sprintf("cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link", string(registryRootPath), path, tag))
 		if err != nil {
-			return fmt.Errorf("failed to get the %s image digest: %w", nginxImage, err)
+			return fmt.Errorf("failed to get the %s image digest: %w", image, err)
 		}
 		imageSha256Value := strings.TrimPrefix(string(imageDigest), "sha256:")
 		imageIndexPath := fmt.Sprintf("sha256/%s/%s", imageSha256Value[:2], imageSha256Value)
 
 		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCountManifests, string(registryRootPath), imageIndexPath))
 		if err != nil {
-			return fmt.Errorf("failed to get the %s image index manifests count: %w", nginxImage, err)
+			return fmt.Errorf("failed to get the %s image index manifests count: %w", image, err)
 		}
 
 		return nil
-	}).WithPolling(10*time.Second).Should(Succeed(), "Expected to successfully find the nginx image in the registry's volume")
+	}).WithPolling(10*time.Second).Should(Succeed(), fmt.Sprintf("Expected to successfully find the %s image in the registry's volume", image))
 
-	By("Delete nginx Pod")
+	By(fmt.Sprintf("Delete %s Pod", name))
 	timeout := 5 * time.Minute
 	ctx, cancel = context.WithTimeout(parentCtx, timeout)
 	defer cancel()
