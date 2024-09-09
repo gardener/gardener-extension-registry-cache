@@ -26,7 +26,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	shoot := e2e.DefaultShoot("e2e-cache-hib")
 	size := resource.MustParse("2Gi")
 	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-		{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
+		{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 	})
 	f.Shoot = shoot
 
@@ -38,7 +38,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		f.Verify()
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.PublicEcrAwsNginx1230Image)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3189Image, common.SleepInfinity)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)

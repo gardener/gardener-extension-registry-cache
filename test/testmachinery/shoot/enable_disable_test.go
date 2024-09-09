@@ -38,14 +38,14 @@ var _ = Describe("Shoot registry cache testing", func() {
 			}
 
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-				{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
+				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
 
 			return nil
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.PublicEcrAwsNginx1230Image)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3189Image, common.SleepInfinity)
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -59,7 +59,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootClient, []string{"public.ecr.aws"})
+		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootClient, []string{"ghcr.io"})
 	}, defaultTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if common.HasRegistryCacheExtension(f.Shoot) {
 			By("Disable the registry-cache extension")

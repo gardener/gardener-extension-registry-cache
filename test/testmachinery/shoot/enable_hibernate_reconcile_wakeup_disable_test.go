@@ -40,16 +40,16 @@ var _ = Describe("Shoot registry cache testing", func() {
 			}
 
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-				{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
+				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
 
 			return nil
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		// We are using nginx:1.24.0 as nginx:1.23.0 is already used by the "should enable and disable the registry-cache extension" test.
-		// Hence, nginx:1.23.0 will be present in the Node.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.PublicEcrAwsNginx1240Image)
+		// We are using ghcr.io/jitesoft/alpine:3.19.4 as ghcr.io/jitesoft/alpine:3.18.9 is already used by the "should enable and disable the registry-cache extension" test.
+		// Hence, ghcr.io/jitesoft/alpine:3.18.9 will be present in the Node.
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3194Image, common.SleepInfinity)
 
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
@@ -72,8 +72,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 		Expect(f.WakeUpShoot(ctx)).To(Succeed())
 
 		By("Verify registry-cache works after wake up")
-		// We are using nginx:1.25.0 as nginx:1.24.0 is already used above and already present in the Node and in the registry cache.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.PublicEcrAwsNginx1250Image)
+		// We are using ghcr.io/jitesoft/alpine:3.20.3 as ghcr.io/jitesoft/alpine:3.19.4 is already used above and already present in the Node and in the registry cache.
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3203Image, common.SleepInfinity)
 	}, hibernationTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if v1beta1helper.HibernationIsEnabled(f.Shoot) {
 			By("Wake up Shoot")

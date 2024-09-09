@@ -37,22 +37,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-				{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
-			})
-
-			return nil
-		})).To(Succeed())
-
-		By("[public.ecr.aws] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.PublicEcrAwsNginx1230Image)
-
-		By("Add the ghcr.io upstream to the registry-cache extension")
-		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
-		defer cancel()
-		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
-			size := resource.MustParse("2Gi")
-			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-				{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
 
@@ -60,24 +44,40 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("[ghcr.io] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryNginx1261Image)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3189Image, common.SleepInfinity)
 
-		By("Remove the ghcr.io upstream from the registry-cache extension")
+		By("Add the registry.gitlab.com upstream to the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			size := resource.MustParse("2Gi")
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-				{Upstream: "public.ecr.aws", Volume: &v1alpha3.Volume{Size: &size}},
+				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
+				{Upstream: "registry.gitlab.com", Volume: &v1alpha3.Volume{Size: &size}},
 			})
 
 			return nil
 		})).To(Succeed())
 
-		By("[ghcr.io] Verify registry configuration is removed")
+		By("[registry.gitlab.com] Verify registry-cache works")
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GitlabRegistryJitesoftAlpine31710Image, common.SleepInfinity)
+
+		By("Remove the registry.gitlab.com upstream from the registry-cache extension")
+		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
+		defer cancel()
+		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
+			size := resource.MustParse("2Gi")
+			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
+				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
+			})
+
+			return nil
+		})).To(Succeed())
+
+		By("[registry.gitlab.com] Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"ghcr.io"})
+		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"registry.gitlab.com"})
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -88,10 +88,10 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			return nil
 		})).To(Succeed())
 
-		By("[public.ecr.aws] Verify registry configuration is removed")
+		By("[ghcr.io] Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"public.ecr.aws"})
+		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootFramework.ShootClient, []string{"ghcr.io"})
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
