@@ -96,9 +96,6 @@ The `providerConfig.caches[].secretReferenceName` is the name of the reference f
 > [!NOTE]
 > It is only possible to provide one set of credentials for one private upstream registry.
 
-> [!WARNING]
-> The `public.ecr.aws` upstream for Amazon ECR Public Gallery is currently not supported. For details see [here](https://github.com/distribution/distribution/issues/4383).
-
 ## Garbage Collection
 
 When the registry cache receives a request for an image that is not present in its local store, it fetches the image from the upstream, returns it to the client and stores the image in the local store. The registry cache runs a scheduler that deletes images when their time to live (ttl) expires. When adding an image to the local store, the registry cache also adds a time to live for the image. The ttl defaults to `168h` (7 days) and is configurable. The garbage collection can be disabled by setting the ttl to `0s`. Requesting an image from the registry cache does not extend the time to live of the image. Hence, an image is always garbage collected from the registry cache store when its ttl expires.
@@ -170,3 +167,5 @@ The registry cache runs with a single replica. This fact may lead to concerns fo
    Example: If the Service of a registry cache is deleted, then a new Service will be created. containerd's registry config will still contain the old Service's cluster IP. containerd requests against the old Service's cluster IP will time out and containerd will fall back to upstream.
    - Image pull of `docker.io/library/alpine:3.13.2` from the upstream takes ~2s while image pull of the same image with invalid registry cache cluster IP takes ~2m.2s.
    - Image pull of `eu.gcr.io/gardener-project/gardener/ops-toolbelt:0.18.0` from the upstream takes ~10s while image pull of the same image with invalid registry cache cluster IP takes ~3m.10s.
+
+3. Amazon Elastic Container Registry is currently not supported. For details see [distribution/distribution#4383](https://github.com/distribution/distribution/issues/4383).

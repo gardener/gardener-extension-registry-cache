@@ -41,10 +41,10 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		f.Verify()
 
 		By("[europe-docker.pkg.dev] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.ArtifactRegistryNginx1176Image, nil)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.ArtifactRegistryNginx1176Image)
 
 		By("[registry.k8s.io] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.RegistryK8sNginx1154Image, nil)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.RegistryK8sNginx1154Image)
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
