@@ -180,6 +180,7 @@ func Convert_registry_RegistryConfig_To_v1alpha3_RegistryConfig(in *registry.Reg
 }
 
 func autoConvert_v1alpha3_RegistryStatus_To_registry_RegistryStatus(in *RegistryStatus, out *registry.RegistryStatus, s conversion.Scope) error {
+	out.CASecretName = in.CASecretName
 	out.Caches = *(*[]registry.RegistryCacheStatus)(unsafe.Pointer(&in.Caches))
 	return nil
 }
@@ -190,6 +191,7 @@ func Convert_v1alpha3_RegistryStatus_To_registry_RegistryStatus(in *RegistryStat
 }
 
 func autoConvert_registry_RegistryStatus_To_v1alpha3_RegistryStatus(in *registry.RegistryStatus, out *RegistryStatus, s conversion.Scope) error {
+	out.CASecretName = in.CASecretName
 	out.Caches = *(*[]RegistryCacheStatus)(unsafe.Pointer(&in.Caches))
 	return nil
 }

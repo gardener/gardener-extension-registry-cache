@@ -227,6 +227,17 @@ string
 <tbody>
 <tr>
 <td>
+<code>caSecretName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>CASecretName is the name of the CA secret</p>
+</td>
+</tr>
+<tr>
+<td>
 <code>caches</code></br>
 <em>
 <a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCacheStatus">
