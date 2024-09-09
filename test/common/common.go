@@ -7,6 +7,7 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -50,9 +51,11 @@ const (
 
 	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
 	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
-	// jqCountManifests is a jq command that counts the number of image manifests in the manifest index.
-	// Ref: https://github.com/opencontainers/image-spec/blob/main/image-index.md#example-image-index.
-	jqCountManifests = `jq -j '.manifests | length' %s/docker/registry/v2/blobs/%s/data`
+	// jqCurrentManifestDigest is a jq command that extracts the manifest digest for the current OS architecture
+	jqCurrentManifestDigest = `jq -j '.manifests[] | select(.platform.architecture=="%s") | .digest' %s/docker/registry/v2/blobs/%s/data`
+	// jqLayersDigests is a jq command that extracts layers digests from the manifest
+	// Ref: https://github.com/opencontainers/image-spec/blob/main/manifest.md
+	jqLayersDigests = `jq -r '.layers[].digest'  %s/docker/registry/v2/blobs/%s/data`
 )
 
 // AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
@@ -234,24 +237,58 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		}(ctx, rootPodExecutor)
 
 		containerID := strings.TrimPrefix(registryPod.Status.ContainerStatuses[0].ContainerID, "containerd://")
-		registryRootPath, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractRegistryLocation, containerID))
+		log.Info("Registry container ID", "containerID", containerID)
+		output, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractRegistryLocation, containerID))
 		if err != nil {
-			return fmt.Errorf("failed to extract the source localtion of the '/var/lib/registry' mount from the container's config.json file: %w", err)
+			log.Error(err, "Failed to extract the source location of the '/var/lib/registry' mount from the container's config.json file", "output", string(output))
+			return fmt.Errorf("failed to extract the source location of the '/var/lib/registry' mount from the container's config.json file: command failed with err %w", err)
+		}
+		registryRootPath := string(output)
+		log.Info("Registry root path on node", "registryRootPath", registryRootPath)
+
+		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(`cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link`, registryRootPath, path, tag))
+		if err != nil {
+			log.Error(err, "Failed to get the image index digest", "image", image, "output", string(output))
+			return fmt.Errorf("failed to get the %s image index digest: %w", image, err)
+		}
+		imageIndexPath := sha256Path(string(output))
+		log.Info("Image index path under <repo-root>/docker/registry/v2/blobs/", "imageIndexPath", imageIndexPath)
+
+		output, err = rootPodExecutor.Execute(ctx, `dpkg --print-architecture | tr -d '\n'`)
+		if err != nil {
+			log.Error(err, "Failed to get the node architecture", "output", string(output))
+			return fmt.Errorf("failed to get the node architecture: %w", err)
+		}
+		arch := string(output)
+		log.Info("Node architecture", "arch", arch)
+
+		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCurrentManifestDigest, arch, registryRootPath, imageIndexPath))
+		if err != nil {
+			log.Error(err, "Failed to get the image manifests digest", "image", image, "output", string(output))
+			return fmt.Errorf("failed to get the %s image manifests digest: %w", image, err)
+		}
+		manifestPath := sha256Path(string(output))
+		log.Info("Image manifest path under <repo-root>/docker/registry/v2/blobs/", "image", image, "manifestPath", manifestPath)
+
+		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqLayersDigests, registryRootPath, manifestPath))
+		if err != nil {
+			log.Error(err, "Failed to get the image layers digests", "image", image, "output", string(output))
+			return fmt.Errorf("failed to get the %s image layers digests: %w", image, err)
+		}
+		layerDigests := strings.Split(strings.TrimSpace(string(output)), "\n")
+		log.Info("Image layers", "count", len(layerDigests))
+
+		var errs []error
+		for _, layerDigest := range layerDigests {
+			_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(`[ -f %s/docker/registry/v2/blobs/%s/data ]`, registryRootPath, sha256Path(layerDigest)))
+			if err != nil {
+				log.Error(err, "Failed to find image layer", "image", image, "digest", layerDigest)
+				errs = append(errs, fmt.Errorf("failed to find image %s layer with digest %s", image, layerDigest))
+			}
+			log.Info(fmt.Sprintf("Image %s layer with digest %s exist", image, layerDigest))
 		}
 
-		imageDigest, err := rootPodExecutor.Execute(ctx, fmt.Sprintf("cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link", string(registryRootPath), path, tag))
-		if err != nil {
-			return fmt.Errorf("failed to get the %s image digest: %w", image, err)
-		}
-		imageSha256Value := strings.TrimPrefix(string(imageDigest), "sha256:")
-		imageIndexPath := fmt.Sprintf("sha256/%s/%s", imageSha256Value[:2], imageSha256Value)
-
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCountManifests, string(registryRootPath), imageIndexPath))
-		if err != nil {
-			return fmt.Errorf("failed to get the %s image index manifests count: %w", image, err)
-		}
-
-		return nil
+		return errors.Join(errs...)
 	}).WithPolling(10*time.Second).Should(Succeed(), fmt.Sprintf("Expected to successfully find the %s image in the registry's volume", image))
 
 	By(fmt.Sprintf("Delete %s Pod", name))
@@ -270,4 +307,14 @@ func splitImage(image string) (upstream, path, tag string) {
 	tag = path[index+1:]
 	path = path[:index]
 	return
+}
+
+// sha256Path construct the path under <repo-root>/docker/registry/v2/blobs/
+// e.g. sha256:d72807a326fbca3a3bf68a9add2f10248a19205557ddd44b5ad629d8d6c0f805 -> sha256/d7/d72807a326fbca3a3bf68a9add2f10248a19205557ddd44b5ad629d8d6c0f805
+func sha256Path(digest string) string {
+	if len(digest) < 64 {
+		return digest
+	}
+	value := strings.TrimPrefix(digest, "sha256:")
+	return fmt.Sprintf("sha256/%s/%s", value[:2], value)
 }
