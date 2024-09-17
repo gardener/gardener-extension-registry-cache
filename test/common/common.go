@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mirrorv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
 	registryv1alpha3 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
@@ -51,11 +52,11 @@ const (
 
 	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
 	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
-	// jqCurrentManifestDigest is a jq command that extracts the manifest digest for the current OS architecture
-	jqCurrentManifestDigest = `jq -j '.manifests[] | select(.platform.architecture=="%s") | .digest' %s/docker/registry/v2/blobs/%s/data`
-	// jqLayersDigests is a jq command that extracts layers digests from the manifest
-	// Ref: https://github.com/opencontainers/image-spec/blob/main/manifest.md
-	jqLayersDigests = `jq -r '.layers[].digest'  %s/docker/registry/v2/blobs/%s/data`
+	// jqExtractManifestDigest is a jq command that extracts the manifest digest for the current OS architecture.
+	jqExtractManifestDigest = `jq -j '.manifests[] | select(.platform.architecture=="%s") | .digest' %s/docker/registry/v2/blobs/%s/data`
+	// jqExtractLayersDigests is a jq command that extracts layers digests from the manifest.
+	// Ref: https://github.com/opencontainers/image-spec/blob/main/manifest.md.
+	jqExtractLayersDigests = `jq -r '.layers[].digest' %s/docker/registry/v2/blobs/%s/data`
 )
 
 // AddOrUpdateRegistryCacheExtension adds or updates registry-cache extension with the given caches to the given Shoot.
@@ -220,6 +221,17 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	By(fmt.Sprintf("Wait until %s Pod is running", name))
 	ExpectWithOffset(1, framework.WaitUntilPodIsRunning(ctx, log, pod.Name, pod.Namespace, shootClient)).To(Succeed())
 
+	// get the architecture of Node the Pod is running on
+	ExpectWithOffset(1, shootClient.Client().Get(ctx, client.ObjectKeyFromObject(pod), pod)).To(Succeed())
+	node := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pod.Spec.NodeName,
+		},
+	}
+	ExpectWithOffset(1, shootClient.Client().Get(ctx, client.ObjectKeyFromObject(node), node)).To(Succeed())
+	arch := node.Status.NodeInfo.Architecture
+	log.Info("Node architecture", "arch", arch)
+
 	By(fmt.Sprintf("Verify the registry cache pulled the %s image", image))
 	ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 	defer cancel()
@@ -254,15 +266,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		imageIndexPath := sha256Path(string(output))
 		log.Info("Image index path under <repo-root>/docker/registry/v2/blobs/", "imageIndexPath", imageIndexPath)
 
-		output, err = rootPodExecutor.Execute(ctx, `dpkg --print-architecture | tr -d '\n'`)
-		if err != nil {
-			log.Error(err, "Failed to get the node architecture", "output", string(output))
-			return fmt.Errorf("failed to get the node architecture: %w", err)
-		}
-		arch := string(output)
-		log.Info("Node architecture", "arch", arch)
-
-		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqCurrentManifestDigest, arch, registryRootPath, imageIndexPath))
+		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractManifestDigest, arch, registryRootPath, imageIndexPath))
 		if err != nil {
 			log.Error(err, "Failed to get the image manifests digest", "image", image, "output", string(output))
 			return fmt.Errorf("failed to get the %s image manifests digest: %w", image, err)
@@ -270,7 +274,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		manifestPath := sha256Path(string(output))
 		log.Info("Image manifest path under <repo-root>/docker/registry/v2/blobs/", "image", image, "manifestPath", manifestPath)
 
-		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqLayersDigests, registryRootPath, manifestPath))
+		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractLayersDigests, registryRootPath, manifestPath))
 		if err != nil {
 			log.Error(err, "Failed to get the image layers digests", "image", image, "output", string(output))
 			return fmt.Errorf("failed to get the %s image layers digests: %w", image, err)
@@ -285,7 +289,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 				log.Error(err, "Failed to find image layer", "image", image, "digest", layerDigest)
 				errs = append(errs, fmt.Errorf("failed to find image %s layer with digest %s", image, layerDigest))
 			}
-			log.Info(fmt.Sprintf("Image %s layer with digest %s exist", image, layerDigest))
+			log.Info("Image layer exists", "image", image, "digest", layerDigest)
 		}
 
 		return errors.Join(errs...)
