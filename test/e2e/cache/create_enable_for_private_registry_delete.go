@@ -103,8 +103,15 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
 
-		By("Setup test upstream registry")
-		upstreamHostPort := deployUpstreamRegistry(parentCtx, f, password)
+		By("Deploy test upstream registry")
+		ctx, cancel = context.WithTimeout(parentCtx, 3*time.Minute)
+		defer cancel()
+		upstreamHostPort := deployUpstreamRegistry(ctx, f, password)
+
+		By("Push image to the test upstream registry")
+		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
+		defer cancel()
+		pushImageToUpstreamRegistry(ctx, f, upstreamHostPort, password)
 
 		By("Enable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -298,7 +305,11 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, testRegistry)).To(Succeed())
 	ExpectWithOffset(1, f.WaitUntilStatefulSetIsRunning(ctx, "test-registry", metav1.NamespaceSystem, f.ShootFramework.ShootClient)).To(Succeed())
 
-	// Push alpine:3.18.9 to the upstream registry
+	return
+}
+
+// pushImageToUpstreamRegistry pushes the alpine:3.18.9 image to the upstream registry.
+func pushImageToUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFramework, upstreamHostPort, password string) {
 	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
@@ -316,5 +327,4 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	ExpectWithOffset(1, rootPodExecutor.Clean(ctx)).To(Succeed())
-	return
 }
