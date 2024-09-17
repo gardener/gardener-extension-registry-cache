@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	nginx1240             = "nginx:1.24.0"
+	alpine3189            = "alpine:3.18.9"
 	registry300beta1Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-beta.1"
 	upstreamConfigYAML    = `version: 0.1
 log:
@@ -59,20 +59,19 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	f.Shoot = e2e.DefaultShoot("e2e-cache-pr")
 
 	var (
-		password          string
-		encryptedPassword []byte
-		secret            *corev1.Secret
+		password string
+		secret   *corev1.Secret
 	)
 
 	BeforeEach(func() {
-		ctx, cancel := context.WithTimeout(parentCtx, 2*time.Minute)
+		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 		defer cancel()
 
 		// Prepare htpasswd
 		var err error
 		password, err = utils.GenerateRandomString(32)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(password)).To(Equal(32))
+		Expect(password).To(HaveLen(32))
 
 		// Create Secret in the Project namespace
 		secret = &corev1.Secret{
@@ -88,14 +87,10 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			},
 		}
 		Expect(f.GardenClient.Client().Create(ctx, secret)).To(Succeed())
-
-		encryptedPassword, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		Expect(err).ToNot(HaveOccurred())
-		encryptedPassword = append([]byte("admin:"), encryptedPassword...)
 	})
 
 	AfterEach(func() {
-		ctx, cancel := context.WithTimeout(parentCtx, 2*time.Minute)
+		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Second)
 		defer cancel()
 
 		Expect(f.GardenClient.Client().Delete(ctx, secret)).To(Succeed())
@@ -109,191 +104,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		f.Verify()
 
 		By("Setup test upstream registry")
-		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
-		defer cancel()
-
-		// Create htpasswd Secret
-		htpasswdSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-registry-auth",
-				Namespace: metav1.NamespaceSystem,
-			},
-			Data: map[string][]byte{
-				"htpasswd": encryptedPassword,
-			},
-		}
-		Expect(f.ShootFramework.ShootClient.Client().Create(ctx, htpasswdSecret)).To(Succeed())
-
-		// Create upstream registry config Secret
-		configSecret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-registry-config",
-				Namespace: metav1.NamespaceSystem,
-			},
-			Data: map[string][]byte{
-				"config.yml": []byte(upstreamConfigYAML),
-			},
-		}
-		Expect(f.ShootFramework.ShootClient.Client().Create(ctx, configSecret)).To(Succeed())
-
-		// Create upstream registry Service
-		service := &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-registry",
-				Namespace: metav1.NamespaceSystem,
-			},
-			Spec: corev1.ServiceSpec{
-				Selector: map[string]string{
-					"app": "test-registry",
-				},
-				Ports: []corev1.ServicePort{{
-					Port:     5000,
-					Protocol: corev1.ProtocolTCP,
-				}},
-				Type: corev1.ServiceTypeClusterIP,
-			},
-		}
-		Expect(f.ShootFramework.ShootClient.Client().Create(ctx, service)).To(Succeed())
-
-		// Get Service's cluster IP
-		Expect(f.ShootFramework.ShootClient.Client().Get(ctx, client.ObjectKeyFromObject(service), service)).To(Succeed())
-		upstreamHostPort := service.Spec.ClusterIP + ":5000"
-
-		// Create PersistentVolume
-		testRegistryPV := &corev1.PersistentVolume{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-registry-store",
-			},
-			Spec: corev1.PersistentVolumeSpec{
-				AccessModes: []corev1.PersistentVolumeAccessMode{
-					corev1.ReadWriteOnce,
-				},
-				StorageClassName: "manual",
-				Capacity: map[corev1.ResourceName]resource.Quantity{
-					corev1.ResourceStorage: resource.MustParse("1Gi"),
-				},
-				PersistentVolumeSource: corev1.PersistentVolumeSource{
-					HostPath: &corev1.HostPathVolumeSource{
-						Path: "/test-registry-store",
-					},
-				},
-			},
-		}
-		Expect(f.ShootFramework.ShootClient.Client().Create(ctx, testRegistryPV)).To(Succeed())
-
-		// Create upstream registry StatefulSet
-		testRegistry := &appsv1.StatefulSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-registry",
-				Namespace: metav1.NamespaceSystem,
-			},
-			Spec: appsv1.StatefulSetSpec{
-				ServiceName: service.Name,
-				Selector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"app": "test-registry",
-					},
-				},
-				Replicas: ptr.To(int32(1)),
-				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{
-							"app": "test-registry",
-						},
-					},
-					Spec: corev1.PodSpec{
-						AutomountServiceAccountToken: ptr.To(false),
-						PriorityClassName:            "system-cluster-critical",
-						SecurityContext: &corev1.PodSecurityContext{
-							SeccompProfile: &corev1.SeccompProfile{
-								Type: corev1.SeccompProfileTypeRuntimeDefault,
-							},
-						},
-						Containers: []corev1.Container{
-							{
-								Name:            "registry",
-								Image:           registry300beta1Image,
-								ImagePullPolicy: corev1.PullIfNotPresent,
-								Ports: []corev1.ContainerPort{
-									{
-										ContainerPort: 5000,
-									},
-								},
-								VolumeMounts: []corev1.VolumeMount{
-									{
-										Name:      "test-registry-store",
-										ReadOnly:  false,
-										MountPath: "/var/lib/registry",
-									},
-									{
-										Name:      "htpasswd-volume",
-										MountPath: "/var/lib/password/htpasswd",
-										SubPath:   "htpasswd",
-									},
-									{
-										Name:      "config-volume",
-										MountPath: "/etc/distribution",
-									},
-								},
-							},
-						},
-						Volumes: []corev1.Volume{
-							{
-								Name: "config-volume",
-								VolumeSource: corev1.VolumeSource{
-									Secret: &corev1.SecretVolumeSource{
-										SecretName: configSecret.Name,
-									},
-								},
-							},
-							{
-								Name: "htpasswd-volume",
-								VolumeSource: corev1.VolumeSource{
-									Secret: &corev1.SecretVolumeSource{
-										SecretName: htpasswdSecret.Name,
-									},
-								},
-							},
-						},
-					},
-				},
-				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "test-registry-store",
-						},
-						Spec: corev1.PersistentVolumeClaimSpec{
-							AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-							StorageClassName: ptr.To("manual"),
-							Resources: corev1.VolumeResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceStorage: resource.MustParse("1Gi"),
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		Expect(f.ShootFramework.ShootClient.Client().Create(ctx, testRegistry)).To(Succeed())
-		Expect(f.WaitUntilStatefulSetIsRunning(ctx, "test-registry", metav1.NamespaceSystem, f.ShootFramework.ShootClient)).To(Succeed())
-
-		// Push nginx:1.24.0 to the upstream registry
-		nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
-		framework.ExpectNoError(err)
-		rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --all-platforms %s > /dev/null", common.PublicEcrAwsNginx1240Image))
-		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", common.PublicEcrAwsNginx1240Image, upstreamHostPort, nginx1240))
-		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, nginx1240))
-		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, nginx1240))
-		framework.ExpectNoError(err)
-		_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", common.PublicEcrAwsNginx1240Image))
-		framework.ExpectNoError(err)
-
-		Expect(rootPodExecutor.Clean(ctx)).To(Succeed())
+		upstreamHostPort := deployUpstreamRegistry(parentCtx, f, password)
 
 		By("Enable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -301,7 +112,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 
 		Expect(f.UpdateShoot(ctx, f.Shoot, func(shoot *gardencorev1beta1.Shoot) error {
 			addPrivateRegistrySecret(shoot)
-			size := resource.MustParse("2Gi")
+			size := resource.MustParse("1Gi")
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{
 					Upstream:            upstreamHostPort,
@@ -315,7 +126,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("[" + upstreamHostPort + "] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, nginx1240))
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, alpine3189), common.SleepInfinity)
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -333,4 +144,177 @@ func addPrivateRegistrySecret(shoot *gardencorev1beta1.Shoot) {
 			Name:       "ro-upstream-secret",
 		},
 	})
+}
+
+// deployUpstreamRegistry deploy test upstream registry and return the <host:port> to it
+func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFramework, password string) (upstreamHostPort string) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
+	// Create htpasswd Secret
+	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	encryptedPassword = append([]byte("admin:"), encryptedPassword...)
+
+	htpasswdSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-registry-auth",
+			Namespace: metav1.NamespaceSystem,
+		},
+		Data: map[string][]byte{
+			"htpasswd": encryptedPassword,
+		},
+	}
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, htpasswdSecret)).To(Succeed())
+
+	// Create upstream registry config Secret
+	configSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-registry-config",
+			Namespace: metav1.NamespaceSystem,
+		},
+		Data: map[string][]byte{
+			"config.yml": []byte(upstreamConfigYAML),
+		},
+	}
+	Expect(f.ShootFramework.ShootClient.Client().Create(ctx, configSecret)).To(Succeed())
+
+	// Create upstream registry Service
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-registry",
+			Namespace: metav1.NamespaceSystem,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app": "test-registry",
+			},
+			Ports: []corev1.ServicePort{{
+				Port:     5000,
+				Protocol: corev1.ProtocolTCP,
+			}},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, service)).To(Succeed())
+
+	// Get Service's cluster IP
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Get(ctx, client.ObjectKeyFromObject(service), service)).To(Succeed())
+	upstreamHostPort = service.Spec.ClusterIP + ":5000"
+
+	// Create upstream registry StatefulSet
+	testRegistry := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-registry",
+			Namespace: metav1.NamespaceSystem,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			ServiceName: service.Name,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "test-registry",
+				},
+			},
+			Replicas: ptr.To(int32(1)),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "test-registry",
+					},
+				},
+				Spec: corev1.PodSpec{
+					AutomountServiceAccountToken: ptr.To(false),
+					PriorityClassName:            "system-cluster-critical",
+					SecurityContext: &corev1.PodSecurityContext{
+						SeccompProfile: &corev1.SeccompProfile{
+							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:            "registry",
+							Image:           registry300beta1Image,
+							ImagePullPolicy: corev1.PullIfNotPresent,
+							Ports: []corev1.ContainerPort{
+								{
+									ContainerPort: 5000,
+								},
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "test-registry-store",
+									ReadOnly:  false,
+									MountPath: "/var/lib/registry",
+								},
+								{
+									Name:      "htpasswd-volume",
+									MountPath: "/var/lib/password/htpasswd",
+									SubPath:   "htpasswd",
+								},
+								{
+									Name:      "config-volume",
+									MountPath: "/etc/distribution",
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "config-volume",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: configSecret.Name,
+								},
+							},
+						},
+						{
+							Name: "htpasswd-volume",
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName: htpasswdSecret.Name,
+								},
+							},
+						},
+					},
+				},
+			},
+			VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-registry-store",
+					},
+					Spec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, testRegistry)).To(Succeed())
+	ExpectWithOffset(1, f.WaitUntilStatefulSetIsRunning(ctx, "test-registry", metav1.NamespaceSystem, f.ShootFramework.ShootClient)).To(Succeed())
+
+	// Push alpine:3.18.9 to the upstream registry
+	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
+
+	rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --all-platforms %s > /dev/null", common.GithubRegistryJitesoftAlpine3189Image))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", common.GithubRegistryJitesoftAlpine3189Image, upstreamHostPort, alpine3189))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, alpine3189))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, alpine3189))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", common.GithubRegistryJitesoftAlpine3189Image))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	ExpectWithOffset(1, rootPodExecutor.Clean(ctx)).To(Succeed())
+	return
 }
