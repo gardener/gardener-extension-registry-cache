@@ -5,11 +5,4 @@ resources:
 - ../example
 
 patches:
-- patch: |
-    - op: replace
-      path: /helm/values/image
-      value: local-skaffold/gardener-extension-registry-cache
-  target:
-    group: core.gardener.cloud
-    kind: ControllerDeployment
-    name: extension-registry-cache
+- path: patch-controllerdeployment-image.yaml
