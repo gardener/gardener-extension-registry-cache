@@ -37,6 +37,20 @@ gardener-extension-registry-cache:
     traits:
       version:
         preprocess: 'inject-commit-hash'
+      publish:
+        oci-builder: 'docker-buildx'
+        platforms:
+        - linux/amd64
+        - linux/arm64
+        dockerimages:
+          gardener-extension-registry-cache:
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/registry-cache
+            dockerfile: 'Dockerfile'
+            target: registry-cache
+          gardener-extension-registry-cache-admission:
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/extensions/registry-cache-admission
+            dockerfile: 'Dockerfile'
+            target: registry-cache-admission
   jobs:
     head-update:
       traits:
@@ -72,17 +86,12 @@ gardener-extension-registry-cache:
               channel_name: 'C9CEBQPGE' #sap-tech-gardener
               slack_cfg_name: 'scp_workspace'
         publish:
-          oci-builder: 'docker-buildx'
           dockerimages:
             gardener-extension-registry-cache:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/registry-cache
-              dockerfile: 'Dockerfile'
-              target: registry-cache
               tag_as_latest: true
             gardener-extension-registry-cache-admission:
               image: europe-docker.pkg.dev/gardener-project/releases/gardener/extensions/registry-cache-admission
-              dockerfile: 'Dockerfile'
-              target: registry-cache-admission
               tag_as_latest: true
           helmcharts:
           - <<: *registry-cache
