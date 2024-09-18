@@ -66,16 +66,6 @@ gardener-extension-registry-cache:
           - *registry-cache
           - *registry-cache-admission-application
           - *registry-cache-admission-runtime
-    pull-request:
-      traits:
-        pull-request: ~
-        options:
-          public_build_logs: true
-        publish:
-          helmcharts:
-          - *registry-cache
-          - *registry-cache-admission-application
-          - *registry-cache-admission-runtime
     release:
       steps:
         verify:
