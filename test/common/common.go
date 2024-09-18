@@ -53,7 +53,7 @@ const (
 	// jqExtractRegistryLocation is a jq command that extracts the source location of the '/var/lib/registry' mount from the container's config.json file.
 	jqExtractRegistryLocation = `jq -j '.mounts[] | select(.destination=="/var/lib/registry") | .source' /run/containerd/io.containerd.runtime.v2.task/k8s.io/%s/config.json`
 	// jqExtractManifestDigest is a jq command that extracts the manifest digest for the current OS architecture.
-	jqExtractManifestDigest = `jq -j '.manifests[] | select(.platform.architecture=="%s") | .digest' %s/docker/registry/v2/blobs/%s/data`
+	jqExtractManifestDigest = `jq -j '.manifests[] | select(.platform.os=="linux" and .platform.architecture=="%s") | .digest' %s/docker/registry/v2/blobs/%s/data`
 	// jqExtractLayersDigests is a jq command that extracts layers digests from the manifest.
 	// Ref: https://github.com/opencontainers/image-spec/blob/main/manifest.md.
 	jqExtractLayersDigests = `jq -r '.layers[].digest' %s/docker/registry/v2/blobs/%s/data`
@@ -221,16 +221,12 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 	By(fmt.Sprintf("Wait until %s Pod is running", name))
 	ExpectWithOffset(1, framework.WaitUntilPodIsRunning(ctx, log, pod.Name, pod.Namespace, shootClient)).To(Succeed())
 
-	// get the architecture of Node the Pod is running on
+	// Get the architecture of Node the Pod is running on
 	ExpectWithOffset(1, shootClient.Client().Get(ctx, client.ObjectKeyFromObject(pod), pod)).To(Succeed())
-	node := &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pod.Spec.NodeName,
-		},
-	}
-	ExpectWithOffset(1, shootClient.Client().Get(ctx, client.ObjectKeyFromObject(node), node)).To(Succeed())
+	node := &corev1.Node{}
+	ExpectWithOffset(1, shootClient.Client().Get(ctx, client.ObjectKey{Name: pod.Spec.NodeName}, node)).To(Succeed())
 	arch := node.Status.NodeInfo.Architecture
-	log.Info("Node architecture", "arch", arch)
+	log.Info("Node architecture", "name", node.Name, "arch", arch)
 
 	By(fmt.Sprintf("Verify the registry cache pulled the %s image", image))
 	ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
