@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
-	github.com/gardener/gardener v1.104.1
+	github.com/gardener/gardener v1.105.0
 	github.com/go-logr/logr v1.4.2
 	github.com/onsi/ginkgo/v2 v2.20.0
 	github.com/onsi/gomega v1.34.1
@@ -20,7 +20,7 @@ require (
 	k8s.io/client-go v0.29.9
 	k8s.io/code-generator v0.29.9
 	k8s.io/component-base v0.29.9
-	k8s.io/utils v0.0.0-20240902221715-702e33fdd3c3
+	k8s.io/utils v0.0.0-20240921022957-49e7df575cb6
 	sigs.k8s.io/controller-runtime v0.17.6
 )
 
@@ -44,7 +44,7 @@ require (
 	github.com/fluent/fluent-operator/v2 v2.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gardener/cert-management v0.15.0 // indirect
-	github.com/gardener/etcd-druid v0.22.5 // indirect
+	github.com/gardener/etcd-druid v0.22.7 // indirect
 	github.com/gardener/hvpa-controller/api v0.17.0 // indirect
 	github.com/gardener/machine-controller-manager v0.53.1 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
@@ -115,7 +115,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.14.4 // indirect
-	istio.io/api v1.22.4 // indirect
+	istio.io/api v1.22.5 // indirect
 	istio.io/client-go v1.22.0 // indirect
 	k8s.io/apiextensions-apiserver v0.29.9 // indirect
 	k8s.io/apiserver v0.29.9 // indirect
