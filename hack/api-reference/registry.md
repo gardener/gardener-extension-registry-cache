@@ -70,7 +70,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>HTTPProxy is used as HTTP_PROXY env in the StatefulSet.</p>
+<p>HTTPProxy field represents the proxy server for HTTP connections which is used by the registry cache.</p>
 </td>
 </tr>
 <tr>
@@ -82,7 +82,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>HTTPSProxy is used as HTTPS_PROXY env in the StatefulSet.</p>
+<p>HTTPSProxy field represents the proxy server for HTTPS connections which is used by the registry cache.</p>
 </td>
 </tr>
 <tr>
@@ -94,7 +94,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>NoProxy is used as NO_PROXY env in the StatefulSet.</p>
+<p>NoProxy field can be set to a comma separated list of IPs which should not connect over the specified proxy server.</p>
 </td>
 </tr>
 </tbody>

@@ -71,15 +71,15 @@ type GarbageCollection struct {
 
 // Proxy contains settings for a proxy used in the registry cache.
 type Proxy struct {
-	// HTTPProxy is used as HTTP_PROXY env in the StatefulSet.
+	// HTTPProxy field represents the proxy server for HTTP connections which is used by the registry cache.
 	// +optional
-	HTTPProxy *string `json:"httpProxy"`
-	// HTTPSProxy is used as HTTPS_PROXY env in the StatefulSet.
+	HTTPProxy *string `json:"httpProxy,omitempty"`
+	// HTTPSProxy field represents the proxy server for HTTPS connections which is used by the registry cache.
 	// +optional
-	HTTPSProxy *string `json:"httpsProxy"`
-	// NoProxy is used as NO_PROXY env in the StatefulSet.
+	HTTPSProxy *string `json:"httpsProxy,omitempty"`
+	// NoProxy field can be set to a comma separated list of IPs which should not connect over the specified proxy server.
 	// +optional
-	NoProxy *string `json:"noProxy"`
+	NoProxy *string `json:"noProxy,omitempty"`
 }
 
 var (

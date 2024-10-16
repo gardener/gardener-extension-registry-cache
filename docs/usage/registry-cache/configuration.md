@@ -96,14 +96,11 @@ The `providerConfig.caches[].secretReferenceName` is the name of the reference f
 > [!NOTE]
 > It is only possible to provide one set of credentials for one private upstream registry.
 
-The `providerConfig.caches[].proxy.httpProxy` field contains settings for a proxy which is used by the registry cache.
-The registry-cache extension sets this value as `HTTP_PROXY` ENV in the StatefulSet.
+The `providerConfig.caches[].proxy.httpProxy` field represents the proxy server for HTTP connections which is used by the registry cache. It must include an `https://` or `http://` scheme.
 
-The `providerConfig.caches[].proxy.httpsProxy` field contains settings for a proxy which is used by the registry cache.
-The registry-cache extension sets this value as `HTTPS_PROXY` ENV in the StatefulSet.
+The `providerConfig.caches[].proxy.httpsProxy` field represents the proxy server for HTTPS connections which is used by the registry cache. It must include an `https://` or `http://` scheme.
 
-The `providerConfig.caches[].proxy.noProxy` field contains settings for a proxy which is used by the registry cache.
-The registry-cache extension sets this value as `NO_PROXY` ENV in the StatefulSet.
+The `providerConfig.caches[].proxy.noProxy` field can be set to a comma separated list of IPs which should not connect over the specified proxy server. It can be only set of `httpProxy` and/or `httpsProxy` is set.
 
 ## Garbage Collection
 
