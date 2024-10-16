@@ -57,6 +57,11 @@ var _ = Describe("Validation", func() {
 				api.RegistryCache{
 					Upstream:  "my-registry.io:5000",
 					RemoteURL: ptr.To("http://my-registry.io:5000"),
+					Proxy: &api.Proxy{
+						HTTPProxy:  ptr.To("http://127.0.0.1"),
+						HTTPSProxy: ptr.To("https://127.0.0.1:1234"),
+						NoProxy:    ptr.To("127.0.0.1,127.0.0.2"),
+					},
 				},
 				api.RegistryCache{
 					Upstream:  "quay.io",
@@ -221,6 +226,49 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[3].remoteURL"),
 					"BadValue": Equal("mirror-host.io:8443"),
+				})),
+			))
+		})
+
+		It("should deny invalid proxy config", func() {
+			registryConfig.Caches[0].Proxy = &api.Proxy{
+				HTTPProxy:  ptr.To("10.10.10.10"),
+				HTTPSProxy: nil,
+				NoProxy:    nil,
+			}
+			registryConfig.Caches = append(registryConfig.Caches,
+				api.RegistryCache{
+					Upstream: "my-registry.io",
+					Proxy: &api.Proxy{
+						HTTPProxy:  nil,
+						HTTPSProxy: ptr.To("http://foo!bar"),
+						NoProxy:    nil,
+					},
+				},
+				api.RegistryCache{
+					Upstream: "my-registry2.io",
+					Proxy: &api.Proxy{
+						HTTPProxy:  nil,
+						HTTPSProxy: nil,
+						NoProxy:    ptr.To("127.0.0.1"),
+					},
+				},
+			)
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].proxy.httpProxy"),
+					"BadValue": Equal("10.10.10.10"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[1].proxy.httpsProxy"),
+					"BadValue": Equal("http://foo!bar"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[2].proxy.noProxy"),
+					"BadValue": Equal("127.0.0.1"),
 				})),
 			))
 		})

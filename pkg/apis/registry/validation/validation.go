@@ -86,6 +86,17 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("garbageCollection").Child("ttl"), ttl.Duration.String(), "ttl must be a non-negative duration"))
 		}
 	}
+	if cache.Proxy != nil {
+		if cache.Proxy.HTTPProxy != nil {
+			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpProxy"), *cache.Proxy.HTTPProxy)...)
+		}
+		if cache.Proxy.HTTPSProxy != nil {
+			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpsProxy"), *cache.Proxy.HTTPSProxy)...)
+		}
+		if cache.Proxy.NoProxy != nil && cache.Proxy.HTTPProxy == nil && cache.Proxy.HTTPSProxy == nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("proxy").Child("noProxy"), *cache.Proxy.NoProxy, "noProxy can only be set if HTTPProxy and/or HTTPSProxy is set."))
+		}
+	}
 
 	return allErrs
 }
