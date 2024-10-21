@@ -26,6 +26,8 @@ import (
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
+const caBundlePath = "/etc/containerd/certs.d/ca-bundle.pem"
+
 // NewEnsurer creates a new registry cache ensurer.
 func NewEnsurer(client client.Client, decoder runtime.Decoder, logger logr.Logger) genericmutator.Ensurer {
 	return &ensurer{
@@ -42,7 +44,6 @@ type ensurer struct {
 	logger  logr.Logger
 }
 
-const caBundlePath = "/etc/containerd/certs.d/ca-bundle.pem" //TODO: is the location OK?
 // EnsureCRIConfig ensures the CRI config.
 func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, new, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)

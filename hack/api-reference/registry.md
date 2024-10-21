@@ -290,7 +290,7 @@ string
 </em>
 </td>
 <td>
-<p>CASecretName is the name of the CA secret</p>
+<p>CASecretName is the name of the CA bundle secret.</p>
 </td>
 </tr>
 <tr>

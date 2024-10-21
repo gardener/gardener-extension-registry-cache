@@ -192,8 +192,8 @@ http:
       path: /metrics
   draintimeout: 25s
   tls:
-    certificate: /etc/docker/registry/certs/tls.crt
-    key: /etc/docker/registry/certs/tls.key
+    certificate: /etc/distribution/certs/tls.crt
+    key: /etc/distribution/certs/tls.key
   headers:
     X-Content-Type-Options: [nosniff]
 health:
@@ -370,7 +370,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 											},
 											{
 												Name:      "certs-volume",
-												MountPath: "/etc/docker/registry/certs",
+												MountPath: "/etc/distribution/certs",
 											},
 										},
 									},
@@ -497,8 +497,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
-				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
+				dockerConfigSecretName := "registry-docker-io-config-1f752684"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-6bc6fc48"
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
 				Expect(ok).To(BeTrue())
@@ -530,8 +530,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
+				dockerConfigSecretName := "registry-docker-io-config-1f752684"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-6bc6fc48"
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
 				Expect(ok).To(BeTrue())
@@ -568,8 +568,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
+				dockerConfigSecretName := "registry-docker-io-config-1f752684"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-6bc6fc48"
 				additionalEnvs := []corev1.EnvVar{
 					{
 						Name:  "HTTP_PROXY",
@@ -650,8 +650,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecretName := "registry-docker-io-config-e561062e"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-0accd8a8"
+				dockerConfigSecretName := "registry-docker-io-config-1458b53f"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-32aca758"
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
 				Expect(ok).To(BeTrue())

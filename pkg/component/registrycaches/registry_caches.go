@@ -118,27 +118,9 @@ type registryCaches struct {
 
 // Deploy implements component.DeployWaiter.
 func (r *registryCaches) Deploy(ctx context.Context) error {
-	// TODO(dimitar-kostadinov): If services are previously created with ManagedResource remove service object references from ManagedResource status - remove this after v0.11.0
-	mr := &resourcesv1alpha1.ManagedResource{
-		ObjectMeta: metav1.ObjectMeta{Name: managedResourceName, Namespace: r.namespace},
-	}
-	err := r.client.Get(ctx, client.ObjectKeyFromObject(mr), mr)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	}
-	var updatedRefs []resourcesv1alpha1.ObjectReference
-	for _, objectRef := range mr.Status.Resources {
-		if objectRef.Kind != "Service" {
-			updatedRefs = append(updatedRefs, objectRef)
-		}
-	}
-	if len(updatedRefs) != len(mr.Status.Resources) {
-		patch := client.MergeFrom(mr.DeepCopy())
-		mr.Status.Resources = updatedRefs
-		err = r.client.Status().Patch(ctx, mr, patch)
-		if err != nil {
-			return fmt.Errorf("failed to update ManagedResource status: %w", err)
-		}
+	// TODO(dimitar-kostadinov): Clean up this invocation after March 2025.
+	if err := r.removeServicesFromManagedResourceStatus(ctx); err != nil {
+		return fmt.Errorf("failed to remove Services from the ManagedResource status: %w", err)
 	}
 
 	//create registry cache services
@@ -157,10 +139,6 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 	generatedSecrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, r.secretManager, secretsConfig)
 	if err != nil {
 		return err
-	}
-
-	if len(r.values.Caches) != len(generatedSecrets)-1 {
-		return fmt.Errorf("not all secrets are generated for configured caches")
 	}
 
 	caSecret, found := r.secretManager.Get(secrets.CAName)
@@ -463,7 +441,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 								},
 								{
 									Name:      registryCertsVolumeName,
-									MountPath: "/etc/docker/registry/certs",
+									MountPath: "/etc/distribution/certs",
 								},
 							},
 						},
@@ -725,4 +703,38 @@ func computeUpstreamLabelValue(upstream string) string {
 		upstreamLabel = fmt.Sprintf("%s-%s", upstreamLabel[:limit], hash)
 	}
 	return upstreamLabel
+}
+
+// removeServicesFromManagedResourceStatus removes all resources with kind=Service from the ManagedResources .status.resources field.
+//
+// TODO(dimitar-kostadinov): Clean up this function after March 2025.
+func (r *registryCaches) removeServicesFromManagedResourceStatus(ctx context.Context) error {
+	mr := &resourcesv1alpha1.ManagedResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      managedResourceName,
+			Namespace: r.namespace,
+		},
+	}
+	if err := r.client.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	var updatedRefs []resourcesv1alpha1.ObjectReference
+	for _, objectRef := range mr.Status.Resources {
+		if objectRef.Kind != "Service" {
+			updatedRefs = append(updatedRefs, objectRef)
+		}
+	}
+	if len(updatedRefs) == len(mr.Status.Resources) {
+		// No changes, no need to patch. Exit early.
+		return nil
+	}
+
+	patch := client.MergeFrom(mr.DeepCopy())
+	mr.Status.Resources = updatedRefs
+	if err := r.client.Status().Patch(ctx, mr, patch); err != nil {
+		return fmt.Errorf("failed to update ManagedResource status: %w", err)
+	}
+
+	return nil
 }

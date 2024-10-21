@@ -48,15 +48,6 @@ type actuator struct {
 
 // Reconcile the Extension resource.
 func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extensionsv1alpha1.Extension) error {
-	if ex.Spec.ProviderConfig == nil {
-		return fmt.Errorf("providerConfig is required for the registry-cache extension")
-	}
-
-	registryConfig := &api.RegistryConfig{}
-	if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, registryConfig); err != nil {
-		return fmt.Errorf("failed to decode provider config: %w", err)
-	}
-
 	namespace := ex.GetNamespace()
 	cluster, err := extensionscontroller.GetCluster(ctx, a.client, namespace)
 	if err != nil {
@@ -65,6 +56,15 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 
 	if v1beta1helper.HibernationIsEnabled(cluster.Shoot) {
 		return nil
+	}
+
+	if ex.Spec.ProviderConfig == nil {
+		return fmt.Errorf("providerConfig is required for the registry-cache extension")
+	}
+
+	registryConfig := &api.RegistryConfig{}
+	if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, registryConfig); err != nil {
+		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
 
 	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfig.RESTOptions{})
