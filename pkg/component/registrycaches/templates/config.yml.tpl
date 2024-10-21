@@ -23,8 +23,8 @@ http:
       path: /metrics
   draintimeout: 25s
   tls:
-    certificate: /etc/docker/registry/certs/tls.crt
-    key: /etc/docker/registry/certs/tls.key
+    certificate: /etc/distribution/certs/tls.crt
+    key: /etc/distribution/certs/tls.key
   headers:
     X-Content-Type-Options: [nosniff]
 health:

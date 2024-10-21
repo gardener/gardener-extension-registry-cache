@@ -79,7 +79,7 @@ var (
 type RegistryStatus struct {
 	metav1.TypeMeta
 
-	// CASecretName is the name of the CA secret
+	// CASecretName is the name of the CA bundle secret.
 	CASecretName string
 	// Caches is a slice of deployed registry caches.
 	Caches []RegistryCacheStatus
