@@ -31,7 +31,7 @@ Resource Types:
 <td>
 <code>ttl</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.25/#duration-v1-meta">
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.31/#duration-v1-meta">
 Kubernetes meta/v1.Duration
 </a>
 </em>
@@ -261,7 +261,9 @@ string
 <td>
 <code>size</code></br>
 <em>
+<a href="https://godoc.org/k8s.io/apimachinery/pkg/api/resource#Quantity">
 k8s.io/apimachinery/pkg/api/resource.Quantity
+</a>
 </em>
 </td>
 <td>
