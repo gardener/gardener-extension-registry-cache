@@ -517,16 +517,16 @@ status: {}
 		It("should deploy a monitoring objects", func() {
 			Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
-			configMapDashboards := &corev1.ConfigMap{
+			dashboardsConfigMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cache-dashboards",
 					Namespace: namespace,
 				},
 			}
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(configMapDashboards), configMapDashboards)).To(Succeed())
-			Expect(configMapDashboards.Labels).To(HaveKeyWithValue("dashboard.monitoring.gardener.cloud/shoot", "true"))
-			Expect(configMapDashboards.Labels).To(HaveKeyWithValue("component", "registry-cache"))
-			Expect(configMapDashboards.Data).To(HaveKey("registry-cache.dashboard.json"))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(dashboardsConfigMap), dashboardsConfigMap)).To(Succeed())
+			Expect(dashboardsConfigMap.Labels).To(HaveKeyWithValue("dashboard.monitoring.gardener.cloud/shoot", "true"))
+			Expect(dashboardsConfigMap.Labels).To(HaveKeyWithValue("component", "registry-cache"))
+			Expect(dashboardsConfigMap.Data).To(HaveKey("registry-cache.dashboard.json"))
 
 			prometheusRule := &monitoringv1.PrometheusRule{
 				ObjectMeta: metav1.ObjectMeta{
@@ -563,16 +563,40 @@ status: {}
 
 	Describe("#Destroy", func() {
 		It("should successfully destroy all resources", func() {
+			var (
+				dashboardsConfigMap = &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "registry-cache-dashboards",
+						Namespace: namespace,
+					},
+				}
+				prometheusRule = &monitoringv1.PrometheusRule{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "shoot-registry-cache",
+						Namespace: namespace,
+					},
+				}
+				scrapeConfig = &monitoringv1alpha1.ScrapeConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "shoot-registry-cache",
+						Namespace: namespace,
+					},
+				}
+			)
+
 			Expect(c.Create(ctx, managedResource)).To(Succeed())
 			Expect(c.Create(ctx, managedResourceSecret)).To(Succeed())
-
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
+			Expect(c.Create(ctx, dashboardsConfigMap)).To(Succeed())
+			Expect(c.Create(ctx, prometheusRule)).To(Succeed())
+			Expect(c.Create(ctx, scrapeConfig)).To(Succeed())
 
 			Expect(registryCaches.Destroy(ctx)).To(Succeed())
 
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "secrets"}, managedResourceSecret.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(dashboardsConfigMap), dashboardsConfigMap)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "configmaps"}, dashboardsConfigMap.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(prometheusRule), prometheusRule)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "prometheusrules"}, prometheusRule.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(scrapeConfig), scrapeConfig)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "scrapeconfigs"}, scrapeConfig.Name)))
 		})
 	})
 

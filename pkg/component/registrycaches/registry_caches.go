@@ -126,11 +126,19 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 func (r *registryCaches) Destroy(ctx context.Context) error {
 	if r.values.KeepObjectsOnDestroy {
 		if err := managedresources.SetKeepObjects(ctx, r.client, r.namespace, managedResourceName, true); err != nil {
-			return err
+			return fmt.Errorf("failed to set keep objects to managed resource: %w", err)
 		}
 	}
 
-	return managedresources.Delete(ctx, r.client, r.namespace, managedResourceName, false)
+	if err := managedresources.Delete(ctx, r.client, r.namespace, managedResourceName, false); err != nil {
+		return fmt.Errorf("failed to delete managed resource: %w", err)
+	}
+
+	if err := r.destroyMonitoringConfig(ctx); err != nil {
+		return fmt.Errorf("failed to destroy monitoring config: %w", err)
+	}
+
+	return nil
 }
 
 // TimeoutWaitForManagedResource is the timeout used while waiting for the ManagedResources to become healthy
