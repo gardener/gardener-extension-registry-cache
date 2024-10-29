@@ -40,6 +40,7 @@ build:
             - pkg/component/registrycaches
             - pkg/component/registrycaches/monitoring/dashboard.json
             - pkg/component/registrycaches/templates/config.yml.tpl
+            - pkg/component/registrycacheservices
             - pkg/constants
             - pkg/controller/cache
             - pkg/controller/mirror

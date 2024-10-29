@@ -225,7 +225,7 @@ string
 </td>
 <td>
 <p>Endpoint is the registry cache endpoint.
-Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:5000&rdquo;</a></p>
+Example: &ldquo;<a href="https://10.4.246.205:5000&quot;">https://10.4.246.205:5000&rdquo;</a></p>
 </td>
 </tr>
 <tr>
