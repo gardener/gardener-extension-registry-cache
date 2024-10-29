@@ -12,7 +12,6 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
 	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/retry"
@@ -21,7 +20,6 @@ import (
 	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	"github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
-	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
@@ -42,8 +40,8 @@ import (
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 var _ = Describe("RegistryCaches", func() {
@@ -58,26 +56,49 @@ var _ = Describe("RegistryCaches", func() {
 		ctx        = context.Background()
 		dockerSize = resource.MustParse("10Gi")
 		arSize     = resource.MustParse("20Gi")
-		logger     = logr.Discard()
 
 		c                     client.Client
-		shootClient           client.Client
 		secretsManager        secretsmanager.Interface
 		values                Values
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
 		consistOf             func(...client.Object) types.GomegaMatcher
 
-		registryCaches component.DeployWaiter
+		registryCaches Interface
 	)
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
-		shootClient = fakeclient.NewClientBuilder().WithScheme(kubernetes.ShootScheme).Build()
 		secretsManager = fakesecretsmanager.New(c, namespace)
 		values = Values{
 			Image:      image,
 			VPAEnabled: true,
+			Services: []corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "registry-docker-io",
+						Namespace: metav1.NamespaceSystem,
+						Annotations: map[string]string{
+							constants.UpstreamAnnotation: "docker.io",
+						},
+					},
+					Spec: corev1.ServiceSpec{
+						ClusterIP: "10.4.0.10",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "registry-europe-docker-pkg-dev",
+						Namespace: metav1.NamespaceSystem,
+						Annotations: map[string]string{
+							constants.UpstreamAnnotation: "europe-docker.pkg.dev",
+						},
+					},
+					Spec: corev1.ServiceSpec{
+						ClusterIP: "10.4.0.11",
+					},
+				},
+			},
 			Caches: []api.RegistryCache{
 				{
 					Upstream: "docker.io",
@@ -100,8 +121,6 @@ var _ = Describe("RegistryCaches", func() {
 				},
 			},
 			ResourceReferences: []gardencorev1beta1.NamedResourceReference{},
-			CacheStatuses:      []api.RegistryCacheStatus{},
-			RegistryStatus:     &v1alpha3.RegistryStatus{},
 		}
 
 		managedResource = &resourcesv1alpha1.ManagedResource{
@@ -120,7 +139,7 @@ var _ = Describe("RegistryCaches", func() {
 	})
 
 	JustBeforeEach(func() {
-		registryCaches = New(c, shootClient, secretsManager, logger, namespace, values)
+		registryCaches = NewComponent(c, secretsManager, namespace, values)
 	})
 
 	Describe("#Deploy", func() {
@@ -453,6 +472,16 @@ source /entrypoint.sh /etc/distribution/config.yml
 				}
 			}
 		)
+
+		Context("when services are empty", func() {
+			BeforeEach(func() {
+				values.Services = []corev1.Service{}
+			})
+
+			It("should return error", func() {
+				Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("secret for docker.io upstream not found")))
+			})
+		})
 
 		Context("when cache volume size is nil", func() {
 			BeforeEach(func() {
@@ -864,20 +893,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 		})
 	})
 
-	DescribeTable("#computeUpstreamLabel",
-		func(upstream, expected string) {
-			actual := ComputeUpstreamLabelValue(upstream)
-			Expect(len(actual)).NotTo(BeNumerically(">", 43))
-			Expect(actual).To(Equal(expected))
-		},
-
-		Entry("short upstream", "my-registry.io", "my-registry.io"),
-		Entry("short upstream ends with port", "my-registry.io:5000", "my-registry.io-5000"),
-		Entry("short upstream ends like a port", "my-registry.io-5000", "my-registry.io-5000"),
-		Entry("long upstream", "my-very-long-registry.very-long-subdomain.io", "my-very-long-registry.very-long-subdo-2fae3"),
-		Entry("long upstream ends with port", "my-very-long-registry.long-subdomain.io:8443", "my-very-long-registry.long-subdomain.-8cb9e"),
-		Entry("long upstream ends like a port", "my-very-long-registry.long-subdomain.io-8443", "my-very-long-registry.long-subdomain.-e91ed"),
-	)
 })
 
 func encodeBase64(val string) string {
