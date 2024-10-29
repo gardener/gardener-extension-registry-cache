@@ -80,17 +80,17 @@ var _ = Describe("Ensurer", func() {
 								Caches: []v1alpha3.RegistryCacheStatus{
 									{
 										Upstream:  "docker.io",
-										Endpoint:  "http://10.0.0.1:5000",
+										Endpoint:  "https://10.0.0.1:5000",
 										RemoteURL: "https://registry-1.docker.io",
 									},
 									{
 										Upstream:  "europe-docker.pkg.dev",
-										Endpoint:  "http://10.0.0.2:5000",
+										Endpoint:  "https://10.0.0.2:5000",
 										RemoteURL: "https://europe-docker.pkg.dev",
 									},
 									{
 										Upstream:  "my-registry.io:5000",
-										Endpoint:  "http://10.0.0.3:5000",
+										Endpoint:  "https://10.0.0.3:5000",
 										RemoteURL: "http://my-registry.io:5000",
 									},
 								},
@@ -203,9 +203,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			expectedRegistries := []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
-				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000"),
-				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "http://10.0.0.3:5000"),
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000"),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "https://10.0.0.2:5000"),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000"),
 			}
 
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
@@ -221,9 +221,9 @@ var _ = Describe("Ensurer", func() {
 
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
-				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000"),
-				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "http://10.0.0.3:5000"),
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000"),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "https://10.0.0.2:5000"),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000"),
 			}...)
 
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
@@ -239,9 +239,9 @@ var _ = Describe("Ensurer", func() {
 
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "https://registry-1.docker.io", "http://10.0.0.1:5000"),
-				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000"),
-				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "http://10.0.0.3:5000"),
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000"),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "https://10.0.0.2:5000"),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000"),
 			}...)
 
 			criConfig.Containerd.Registries = append(criConfig.Containerd.Registries, []extensionsv1alpha1.RegistryConfig{
