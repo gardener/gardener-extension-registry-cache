@@ -4,11 +4,11 @@ metadata:
   name: local
   namespace: garden-local
   annotations:
-    shoot.gardener.cloud/infrastructure-cleanup-wait-period-seconds: "0"
     shoot.gardener.cloud/cloud-config-execution-max-delay-seconds: "0"
 spec:
   seedName: local
-  cloudProfileName: local
+  cloudProfile:
+    name: local
   secretBindingName: local # dummy, doesn't contain any credentials
   region: local
   purpose: testing
