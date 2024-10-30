@@ -23,3 +23,6 @@ TODO
 .go-version
 
 /gardener
+
+# gosec
+gosec-report.sarif

@@ -90,6 +90,14 @@ generate-in-docker:
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg ./test
 
+.PHONY: sast
+sast: tidy $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh
+
+.PHONY: sast-report
+sast-report: tidy $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh --gosec-report true
+
 .PHONY: test
 test:
 	@bash $(GARDENER_HACK_DIR)/test.sh ./cmd/... ./pkg/...
@@ -103,10 +111,10 @@ test-clean:
 	@bash $(GARDENER_HACK_DIR)/test-cover-clean.sh
 
 .PHONY: verify
-verify: check format test
+verify: check format test sast
 
 .PHONY: verify-extended
-verify-extended: check-generate check format test-cov test-clean
+verify-extended: check-generate check format test-cov test-clean sast-report
 
 test-e2e-local: $(GINKGO)
 	./hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) ./test/e2e/...
