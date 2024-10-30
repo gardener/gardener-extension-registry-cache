@@ -12,10 +12,12 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
-	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
+	"github.com/gardener/gardener/pkg/utils"
 	"github.com/gardener/gardener/pkg/utils/retry"
 	retryfake "github.com/gardener/gardener/pkg/utils/retry/fake"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
+	fakesecretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager/fake"
 	"github.com/gardener/gardener/pkg/utils/test"
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
@@ -35,6 +37,7 @@ import (
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 var _ = Describe("RegistryCaches", func() {
@@ -51,18 +54,46 @@ var _ = Describe("RegistryCaches", func() {
 		arSize     = resource.MustParse("20Gi")
 
 		c                     client.Client
+		secretsManager        secretsmanager.Interface
 		values                Values
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
 
-		registryCaches component.DeployWaiter
+		registryCaches Interface
 	)
 
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
+		secretsManager = fakesecretsmanager.New(c, namespace)
 		values = Values{
 			Image:      image,
 			VPAEnabled: true,
+			Services: []corev1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "registry-docker-io",
+						Namespace: metav1.NamespaceSystem,
+						Annotations: map[string]string{
+							constants.UpstreamAnnotation: "docker.io",
+						},
+					},
+					Spec: corev1.ServiceSpec{
+						ClusterIP: "10.4.0.10",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "registry-europe-docker-pkg-dev",
+						Namespace: metav1.NamespaceSystem,
+						Annotations: map[string]string{
+							constants.UpstreamAnnotation: "europe-docker.pkg.dev",
+						},
+					},
+					Spec: corev1.ServiceSpec{
+						ClusterIP: "10.4.0.11",
+					},
+				},
+			},
 			Caches: []api.RegistryCache{
 				{
 					Upstream: "docker.io",
@@ -102,7 +133,7 @@ var _ = Describe("RegistryCaches", func() {
 	})
 
 	JustBeforeEach(func() {
-		registryCaches = New(c, namespace, values)
+		registryCaches = NewComponent(c, secretsManager, namespace, values)
 	})
 
 	Describe("#Deploy", func() {
@@ -149,6 +180,9 @@ http:
       enabled: true
       path: /metrics
   draintimeout: 25s
+  tls:
+    certificate: /etc/distribution/certs/tls.crt
+    key: /etc/distribution/certs/tls.key
   headers:
     X-Content-Type-Options: [nosniff]
 health:
@@ -170,35 +204,27 @@ proxy:
 				return config
 			}
 
-			serviceYAMLFor = func(name, upstream, remoteURL string) string {
-				return `apiVersion: v1
-kind: Service
+			secretYAMLFor = func(crt, key []byte, name, upstream, secretName string) string {
+				secret := `apiVersion: v1
+data:
+  ca.crt: ` + encodeBase64(string(crt)) + `
+  ca.key: ` + encodeBase64(string(key)) + `
+immutable: true
+kind: Secret
 metadata:
-  annotations:
-    remote-url: ` + remoteURL + `
-    upstream: ` + upstream + `
   creationTimestamp: null
   labels:
     app: ` + name + `
+    resources.gardener.cloud/garbage-collectable-reference: "true"
     upstream-host: ` + upstream + `
-  name: ` + name + `
+  name: ` + secretName + `
   namespace: kube-system
-spec:
-  ports:
-  - name: registry-cache
-    port: 5000
-    protocol: TCP
-    targetPort: registry-cache
-  selector:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  type: ClusterIP
-status:
-  loadBalancer: {}
+type: Opaque
 `
+				return secret
 			}
 
-			statefulSetYAMLFor = func(name, upstream, size, configSecretName string, storageClassName *string) string {
+			statefulSetYAMLFor = func(name, upstream, size, configSecretName, tlsSecretName, checksum string, storageClassName *string) string {
 				out := `apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -217,6 +243,8 @@ spec:
   serviceName: ` + name + `
   template:
     metadata:
+      annotations:
+        checksum/secret-` + name + `-tls: ` + checksum + `
       creationTimestamp: null
       labels:
         app: ` + name + `
@@ -260,6 +288,8 @@ spec:
           name: cache-volume
         - mountPath: /etc/distribution
           name: config-volume
+        - mountPath: /etc/distribution/certs
+          name: certs-volume
       priorityClassName: system-cluster-critical
       securityContext:
         seccompProfile:
@@ -268,6 +298,9 @@ spec:
       - name: config-volume
         secret:
           secretName: ` + configSecretName + `
+      - name: certs-volume
+        secret:
+          secretName: ` + tlsSecretName + `
   updateStrategy: {}
   volumeClaimTemplates:
   - metadata:
@@ -326,6 +359,16 @@ status: {}
 			}
 		)
 
+		Context("when services are empty", func() {
+			BeforeEach(func() {
+				values.Services = []corev1.Service{}
+			})
+
+			It("should return error", func() {
+				Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("secret for docker.io upstream not found")))
+			})
+		})
+
 		Context("when cache volume size is nil", func() {
 			BeforeEach(func() {
 				values.Caches = []api.RegistryCache{
@@ -374,16 +417,26 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(8))
 
-				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
+				dockerConfigSecretName := "registry-docker-io-config-1f752684"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-6bc6fc48"
+
+				dockerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				arSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecretData := map[string][]byte{"ca.crt": dockerSecret.Data["ca.crt"], "ca.key": dockerSecret.Data["ca.key"]}
+				dockerTLSSecretName := "registry-docker-io-tls-" + utils.ComputeSecretChecksum(dockerTLSSecretData)[:8]
+				arTLSSecretData := map[string][]byte{"ca.crt": arSecret.Data["ca.crt"], "ca.key": arSecret.Data["ca.key"]}
+				arTLSSecretName := "registry-europe-docker-pkg-dev-tls-" + utils.ComputeSecretChecksum(arTLSSecretData)[:8]
+
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					secretYAMLFor(dockerSecret.Data["ca.crt"], dockerSecret.Data["ca.key"], "registry-docker-io", "docker.io", dockerTLSSecretName),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecretName, utils.ComputeChecksum(dockerTLSSecretData), nil),
 					vpaYAMLFor("registry-docker-io"),
 					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					secretYAMLFor(arSecret.Data["ca.crt"], arSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", arTLSSecretName),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecretName, utils.ComputeChecksum(arTLSSecretData), ptr.To("premium")),
 					vpaYAMLFor("registry-europe-docker-pkg-dev"),
 				}
 				Expect(manifests).To(ConsistOf(expectedManifests))
@@ -406,15 +459,25 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(6))
 
-				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
+				dockerConfigSecretName := "registry-docker-io-config-1f752684"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-6bc6fc48"
+
+				dockerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				arSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecretData := map[string][]byte{"ca.crt": dockerSecret.Data["ca.crt"], "ca.key": dockerSecret.Data["ca.key"]}
+				dockerTLSSecretName := "registry-docker-io-tls-" + utils.ComputeSecretChecksum(dockerTLSSecretData)[:8]
+				arTLSSecretData := map[string][]byte{"ca.crt": arSecret.Data["ca.crt"], "ca.key": arSecret.Data["ca.key"]}
+				arTLSSecretName := "registry-europe-docker-pkg-dev-tls-" + utils.ComputeSecretChecksum(arTLSSecretData)[:8]
+
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					secretYAMLFor(dockerSecret.Data["ca.crt"], dockerSecret.Data["ca.key"], "registry-docker-io", "docker.io", dockerTLSSecretName),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecretName, utils.ComputeChecksum(dockerTLSSecretData), nil),
 					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					secretYAMLFor(arSecret.Data["ca.crt"], arSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", arTLSSecretName),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecretName, utils.ComputeChecksum(arTLSSecretData), ptr.To("premium")),
 				}
 				Expect(manifests).To(ConsistOf(expectedManifests))
 			})
@@ -475,16 +538,26 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(8))
 
-				dockerConfigSecretName := "registry-docker-io-config-90f6f66c"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-bc1d0d16"
+				dockerConfigSecretName := "registry-docker-io-config-1458b53f"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-32aca758"
+
+				dockerSecret, ok := secretsManager.Get("docker.io-tls")
+				Expect(ok).To(BeTrue())
+				arSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecretData := map[string][]byte{"ca.crt": dockerSecret.Data["ca.crt"], "ca.key": dockerSecret.Data["ca.key"]}
+				dockerTLSSecretName := "registry-docker-io-tls-" + utils.ComputeSecretChecksum(dockerTLSSecretData)[:8]
+				arTLSSecretData := map[string][]byte{"ca.crt": arSecret.Data["ca.crt"], "ca.key": arSecret.Data["ca.key"]}
+				arTLSSecretName := "registry-europe-docker-pkg-dev-tls-" + utils.ComputeSecretChecksum(arTLSSecretData)[:8]
+
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					secretYAMLFor(dockerSecret.Data["ca.crt"], dockerSecret.Data["ca.key"], "registry-docker-io", "docker.io", dockerTLSSecretName),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, dockerTLSSecretName, utils.ComputeChecksum(dockerTLSSecretData), nil),
 					vpaYAMLFor("registry-docker-io"),
 					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`)),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					secretYAMLFor(arSecret.Data["ca.crt"], arSecret.Data["ca.key"], "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", arTLSSecretName),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, arTLSSecretName, utils.ComputeChecksum(arTLSSecretData), ptr.To("premium")),
 					vpaYAMLFor("registry-europe-docker-pkg-dev"),
 				}
 				Expect(manifests).To(ConsistOf(expectedManifests))
@@ -682,20 +755,6 @@ status: {}
 		})
 	})
 
-	DescribeTable("#computeUpstreamLabel",
-		func(upstream, expected string) {
-			actual := ComputeUpstreamLabelValue(upstream)
-			Expect(len(actual)).NotTo(BeNumerically(">", 43))
-			Expect(actual).To(Equal(expected))
-		},
-
-		Entry("short upstream", "my-registry.io", "my-registry.io"),
-		Entry("short upstream ends with port", "my-registry.io:5000", "my-registry.io-5000"),
-		Entry("short upstream ends like a port", "my-registry.io-5000", "my-registry.io-5000"),
-		Entry("long upstream", "my-very-long-registry.very-long-subdomain.io", "my-very-long-registry.very-long-subdo-2fae3"),
-		Entry("long upstream ends with port", "my-very-long-registry.long-subdomain.io:8443", "my-very-long-registry.long-subdomain.-8cb9e"),
-		Entry("long upstream ends like a port", "my-very-long-registry.long-subdomain.io-8443", "my-very-long-registry.long-subdomain.-e91ed"),
-	)
 })
 
 func encodeBase64(val string) string {

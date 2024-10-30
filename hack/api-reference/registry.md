@@ -168,7 +168,7 @@ string
 </td>
 <td>
 <p>Endpoint is the registry cache endpoint.
-Example: &ldquo;<a href="http://10.4.246.205:5000&quot;">http://10.4.246.205:5000&rdquo;</a></p>
+Example: &ldquo;<a href="https://10.4.246.205:5000&quot;">https://10.4.246.205:5000&rdquo;</a></p>
 </td>
 </tr>
 <tr>
@@ -225,6 +225,17 @@ string
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<code>caSecretName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<p>CASecretName is the name of the CA bundle secret.</p>
+</td>
+</tr>
 <tr>
 <td>
 <code>caches</code></br>
