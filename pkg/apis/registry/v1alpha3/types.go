@@ -77,9 +77,6 @@ type Proxy struct {
 	// HTTPSProxy field represents the proxy server for HTTPS connections which is used by the registry cache.
 	// +optional
 	HTTPSProxy *string `json:"httpsProxy,omitempty"`
-	// NoProxy field can be set to a comma separated list of IPs which should not connect over the specified proxy server.
-	// +optional
-	NoProxy *string `json:"noProxy,omitempty"`
 }
 
 var (

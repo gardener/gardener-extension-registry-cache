@@ -120,7 +120,6 @@ func Convert_registry_GarbageCollection_To_v1alpha3_GarbageCollection(in *regist
 func autoConvert_v1alpha3_Proxy_To_registry_Proxy(in *Proxy, out *registry.Proxy, s conversion.Scope) error {
 	out.HTTPProxy = (*string)(unsafe.Pointer(in.HTTPProxy))
 	out.HTTPSProxy = (*string)(unsafe.Pointer(in.HTTPSProxy))
-	out.NoProxy = (*string)(unsafe.Pointer(in.NoProxy))
 	return nil
 }
 
@@ -132,7 +131,6 @@ func Convert_v1alpha3_Proxy_To_registry_Proxy(in *Proxy, out *registry.Proxy, s 
 func autoConvert_registry_Proxy_To_v1alpha3_Proxy(in *registry.Proxy, out *Proxy, s conversion.Scope) error {
 	out.HTTPProxy = (*string)(unsafe.Pointer(in.HTTPProxy))
 	out.HTTPSProxy = (*string)(unsafe.Pointer(in.HTTPSProxy))
-	out.NoProxy = (*string)(unsafe.Pointer(in.NoProxy))
 	return nil
 }
 

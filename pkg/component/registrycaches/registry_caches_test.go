@@ -432,12 +432,10 @@ status: {}
 				values.Caches[0].Proxy = &api.Proxy{
 					HTTPProxy:  ptr.To("http://127.0.0.1"),
 					HTTPSProxy: ptr.To("http://127.0.0.1"),
-					NoProxy:    ptr.To("localhost"),
 				}
 				values.Caches[1].Proxy = &api.Proxy{
 					HTTPProxy:  ptr.To("http://127.0.0.1"),
 					HTTPSProxy: ptr.To("http://127.0.0.1"),
-					NoProxy:    ptr.To("localhost"),
 				}
 			})
 
@@ -462,10 +460,6 @@ status: {}
 					{
 						Name:  "HTTPS_PROXY",
 						Value: "http://127.0.0.1",
-					},
-					{
-						Name:  "NO_PROXY",
-						Value: "localhost",
 					},
 				}
 				expectedManifests := []string{

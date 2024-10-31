@@ -66,8 +66,6 @@ type Proxy struct {
 	HTTPProxy *string
 	// HTTPSProxy field represents the proxy server for HTTPS connections which is used by the registry cache.
 	HTTPSProxy *string
-	// NoProxy field can be set to a comma separated list of IPs which should not connect over the specified proxy server.
-	NoProxy *string
 }
 
 var (

@@ -60,7 +60,6 @@ var _ = Describe("Validation", func() {
 					Proxy: &api.Proxy{
 						HTTPProxy:  ptr.To("http://127.0.0.1"),
 						HTTPSProxy: ptr.To("https://127.0.0.1:1234"),
-						NoProxy:    ptr.To("127.0.0.1,127.0.0.2"),
 					},
 				},
 				api.RegistryCache{
@@ -234,7 +233,6 @@ var _ = Describe("Validation", func() {
 			registryConfig.Caches[0].Proxy = &api.Proxy{
 				HTTPProxy:  ptr.To("10.10.10.10"),
 				HTTPSProxy: nil,
-				NoProxy:    nil,
 			}
 			registryConfig.Caches = append(registryConfig.Caches,
 				api.RegistryCache{
@@ -242,7 +240,6 @@ var _ = Describe("Validation", func() {
 					Proxy: &api.Proxy{
 						HTTPProxy:  nil,
 						HTTPSProxy: ptr.To("http://foo!bar"),
-						NoProxy:    nil,
 					},
 				},
 				api.RegistryCache{
@@ -250,7 +247,6 @@ var _ = Describe("Validation", func() {
 					Proxy: &api.Proxy{
 						HTTPProxy:  nil,
 						HTTPSProxy: nil,
-						NoProxy:    ptr.To("127.0.0.1"),
 					},
 				},
 			)
@@ -264,11 +260,6 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[1].proxy.httpsProxy"),
 					"BadValue": Equal("http://foo!bar"),
-				})),
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":     Equal(field.ErrorTypeInvalid),
-					"Field":    Equal("providerConfig.caches[2].proxy.noProxy"),
-					"BadValue": Equal("127.0.0.1"),
 				})),
 			))
 		})

@@ -85,18 +85,6 @@ string
 <p>HTTPSProxy field represents the proxy server for HTTPS connections which is used by the registry cache.</p>
 </td>
 </tr>
-<tr>
-<td>
-<code>noProxy</code></br>
-<em>
-string
-</em>
-</td>
-<td>
-<em>(Optional)</em>
-<p>NoProxy field can be set to a comma separated list of IPs which should not connect over the specified proxy server.</p>
-</td>
-</tr>
 </tbody>
 </table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache

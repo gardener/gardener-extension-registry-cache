@@ -42,11 +42,6 @@ func (in *Proxy) DeepCopyInto(out *Proxy) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.NoProxy != nil {
-		in, out := &in.NoProxy, &out.NoProxy
-		*out = new(string)
-		**out = **in
-	}
 	return
 }
 

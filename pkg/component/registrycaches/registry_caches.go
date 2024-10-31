@@ -393,12 +393,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 				Value: *cache.Proxy.HTTPSProxy,
 			})
 		}
-		if cache.Proxy.NoProxy != nil {
-			statefulSet.Spec.Template.Spec.Containers[0].Env = append(statefulSet.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
-				Name:  "NO_PROXY",
-				Value: *cache.Proxy.NoProxy,
-			})
-		}
 	}
 
 	var vpa *vpaautoscalingv1.VerticalPodAutoscaler
