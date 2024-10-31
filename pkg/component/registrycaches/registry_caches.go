@@ -388,6 +388,21 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		},
 	}
 
+	if cache.Proxy != nil {
+		if cache.Proxy.HTTPProxy != nil {
+			statefulSet.Spec.Template.Spec.Containers[0].Env = append(statefulSet.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+				Name:  "HTTP_PROXY",
+				Value: *cache.Proxy.HTTPProxy,
+			})
+		}
+		if cache.Proxy.HTTPSProxy != nil {
+			statefulSet.Spec.Template.Spec.Containers[0].Env = append(statefulSet.Spec.Template.Spec.Containers[0].Env, corev1.EnvVar{
+				Name:  "HTTPS_PROXY",
+				Value: *cache.Proxy.HTTPSProxy,
+			})
+		}
+	}
+
 	var vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	if r.values.VPAEnabled {
 		updateMode := vpaautoscalingv1.UpdateModeAuto

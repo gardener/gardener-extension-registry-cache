@@ -96,6 +96,10 @@ The `providerConfig.caches[].secretReferenceName` is the name of the reference f
 > [!NOTE]
 > It is only possible to provide one set of credentials for one private upstream registry.
 
+The `providerConfig.caches[].proxy.httpProxy` field represents the proxy server for HTTP connections which is used by the registry cache. It must include an `https://` or `http://` scheme.
+
+The `providerConfig.caches[].proxy.httpsProxy` field represents the proxy server for HTTPS connections which is used by the registry cache. It must include an `https://` or `http://` scheme.
+
 ## Garbage Collection
 
 When the registry cache receives a request for an image that is not present in its local store, it fetches the image from the upstream, returns it to the client and stores the image in the local store. The registry cache runs a scheduler that deletes images when their time to live (ttl) expires. When adding an image to the local store, the registry cache also adds a time to live for the image. The ttl defaults to `168h` (7 days) and is configurable. The garbage collection can be disabled by setting the ttl to `0s`. Requesting an image from the registry cache does not extend the time to live of the image. Hence, an image is always garbage collected from the registry cache store when its ttl expires.
