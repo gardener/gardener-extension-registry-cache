@@ -4,6 +4,8 @@ kind: Config
 metadata:
   name: extension
 build:
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
   artifacts:
     - image: local-skaffold/gardener-extension-registry-cache
       ko:
@@ -54,6 +56,8 @@ kind: Config
 metadata:
   name: admission
 build:
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
   artifacts:
     - image: local-skaffold/gardener-extension-registry-cache-admission
       ko:
