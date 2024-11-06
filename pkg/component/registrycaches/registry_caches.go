@@ -199,13 +199,15 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, secrets map[s
 
 	remappedSecrets := make(map[string]*corev1.Secret, len(secrets))
 	for _, secret := range secrets {
-		remappedSecrets[strings.TrimSuffix(secret.Labels["name"], "-tls")] = secret
+		remappedSecrets[secret.Labels["name"]] = secret
 	}
 
 	for _, cache := range r.values.Caches {
-		secret, ok := remappedSecrets[cache.Upstream]
+		tlsSecretName := strings.ReplaceAll(cache.Upstream, ":", "-") + "-tls"
+
+		secret, ok := remappedSecrets[tlsSecretName]
 		if !ok {
-			return nil, fmt.Errorf("secret for %s upstream not found", cache.Upstream)
+			return nil, fmt.Errorf("secret for upstream %s not found", cache.Upstream)
 		}
 		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, secret)
 		if err != nil {

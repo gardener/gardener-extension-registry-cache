@@ -365,7 +365,7 @@ status: {}
 			})
 
 			It("should return error", func() {
-				Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("secret for docker.io upstream not found")))
+				Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("secret for upstream docker.io not found")))
 			})
 		})
 
