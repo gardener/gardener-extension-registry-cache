@@ -1,5 +1,5 @@
 ---
-apiVersion: skaffold/v4beta3
+apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: extension
@@ -58,9 +58,18 @@ manifests:
     paths:
     - local-setup
 deploy:
-  kubectl: {}
+  # --server-side apply is a workaround for https://github.com/gardener/gardener/issues/10267.
+  # kubectl apply attempts a strategic merge patch which fails for a ControllerDeployment.
+  # For more details, see https://github.com/gardener/gardener/issues/10267.
+  #
+  # TODO: Switch back to "kubectl: {}" when the above issue is resolved.
+  kubectl:
+    flags:
+      apply:
+        - --server-side
+        - --force-conflicts
 ---
-apiVersion: skaffold/v4beta3
+apiVersion: skaffold/v4beta7
 kind: Config
 metadata:
   name: admission
