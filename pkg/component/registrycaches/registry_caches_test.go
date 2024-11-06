@@ -397,7 +397,7 @@ status: {}
 			})
 
 			It("should return error", func() {
-				Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("secret for docker.io upstream not found")))
+				Expect(registryCaches.Deploy(ctx)).To(MatchError(ContainSubstring("secret for upstream docker.io not found")))
 			})
 		})
 
@@ -538,8 +538,8 @@ status: {}
 				Expect(err).NotTo(HaveOccurred())
 				Expect(manifests).To(HaveLen(8))
 
-				dockerConfigSecretName := "registry-docker-io-config-c5a518bf"
-				arConfigSecretName := "registry-europe-docker-pkg-dev-config-b666ec9c"
+				dockerConfigSecretName := "registry-docker-io-config-1f752684"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-6bc6fc48"
 				dockerSecret, ok := secretsManager.Get("docker.io-tls")
 				Expect(ok).To(BeTrue())
 				arSecret, ok := secretsManager.Get("europe-docker.pkg.dev-tls")
