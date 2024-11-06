@@ -6,6 +6,7 @@ package secrets
 
 import (
 	"net"
+	"strings"
 	"time"
 
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -38,10 +39,13 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 		},
 	}
 	for _, service := range services {
+		upstream := service.Annotations[constants.UpstreamAnnotation]
+		name := strings.ReplaceAll(upstream, ":", "-") + "-tls"
+
 		configs = append(configs, extensionssecretsmanager.SecretConfigWithOptions{
 			Config: &secretutils.CertificateSecretConfig{
-				Name:                        service.Annotations[constants.UpstreamAnnotation] + "-tls",
-				CommonName:                  service.Annotations[constants.UpstreamAnnotation] + "-tls",
+				Name:                        name,
+				CommonName:                  name,
 				CertType:                    secretutils.ServerCert,
 				IPAddresses:                 []net.IP{net.ParseIP(service.Spec.ClusterIP).To4()},
 				Validity:                    ptr.To(90 * 24 * time.Hour),
