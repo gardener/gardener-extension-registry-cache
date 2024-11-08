@@ -32,7 +32,7 @@ func GetLabels(name, upstreamLabel string) map[string]string {
 
 // ComputeUpstreamLabelValue computes upstream-host label value by given upstream.
 //
-// Upstream is a valid DNS subdomain (RFC 1123) and optionally a port (e.g. my-registry.io[:5000])
+// Upstream is a valid DNS subdomain (RFC 1123) and optionally a port (e.g. my-registry.io[:5000]).
 // It is used as an 'upstream-host' label value on registry cache resources (Service, Secret, StatefulSet and VPA).
 // Label values cannot contain ':' char, so if upstream is '<host>:<port>' the label value is transformed to '<host>-<port>'.
 // It is also used to build the resources names escaping the '.' with '-'; e.g. `registry-<escaped_upstreamLabel>`.

@@ -155,11 +155,19 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 func (r *registryCaches) Destroy(ctx context.Context) error {
 	if r.values.KeepObjectsOnDestroy {
 		if err := managedresources.SetKeepObjects(ctx, r.client, r.namespace, managedResourceName, true); err != nil {
-			return err
+			return fmt.Errorf("failed to set keep objects to managed resource: %w", err)
 		}
 	}
 
-	return managedresources.Delete(ctx, r.client, r.namespace, managedResourceName, false)
+	if err := managedresources.Delete(ctx, r.client, r.namespace, managedResourceName, false); err != nil {
+		return fmt.Errorf("failed to delete managed resource: %w", err)
+	}
+
+	if err := r.destroyMonitoringConfig(ctx); err != nil {
+		return fmt.Errorf("failed to destroy monitoring config: %w", err)
+	}
+
+	return nil
 }
 
 // TimeoutWaitForManagedResource is the timeout used while waiting for the ManagedResources to become healthy
@@ -191,13 +199,15 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, secrets map[s
 
 	remappedSecrets := make(map[string]*corev1.Secret, len(secrets))
 	for _, secret := range secrets {
-		remappedSecrets[strings.TrimSuffix(secret.Labels["name"], "-tls")] = secret
+		remappedSecrets[secret.Labels["name"]] = secret
 	}
 
 	for _, cache := range r.values.Caches {
-		secret, ok := remappedSecrets[cache.Upstream]
+		tlsSecretName := strings.ReplaceAll(cache.Upstream, ":", "-") + "-tls"
+
+		secret, ok := remappedSecrets[tlsSecretName]
 		if !ok {
-			return nil, fmt.Errorf("secret for %s upstream not found", cache.Upstream)
+			return nil, fmt.Errorf("secret for upstream %s not found", cache.Upstream)
 		}
 		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, secret)
 		if err != nil {

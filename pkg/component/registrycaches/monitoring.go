@@ -13,6 +13,7 @@ import (
 	kubeapiserverconstants "github.com/gardener/gardener/pkg/component/kubernetes/apiserver/constants"
 	monitoringutils "github.com/gardener/gardener/pkg/component/observability/monitoring/utils"
 	"github.com/gardener/gardener/pkg/controllerutils"
+	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,17 +28,17 @@ var (
 )
 
 func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
-	configMapDashboards := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "registry-cache-dashboards", Namespace: r.namespace}}
-	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.client, configMapDashboards, func() error {
-		metav1.SetMetaDataLabel(&configMapDashboards.ObjectMeta, "component", "registry-cache")
-		metav1.SetMetaDataLabel(&configMapDashboards.ObjectMeta, "dashboard.monitoring.gardener.cloud/shoot", "true")
-		configMapDashboards.Data = map[string]string{"registry-cache.dashboard.json": dashboard}
+	dashboardsConfigMap := r.emptyDashboardsConfigMap()
+	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.client, dashboardsConfigMap, func() error {
+		metav1.SetMetaDataLabel(&dashboardsConfigMap.ObjectMeta, "component", "registry-cache")
+		metav1.SetMetaDataLabel(&dashboardsConfigMap.ObjectMeta, "dashboard.monitoring.gardener.cloud/shoot", "true")
+		dashboardsConfigMap.Data = map[string]string{"registry-cache.dashboard.json": dashboard}
 		return nil
 	}); err != nil {
 		return err
 	}
 
-	prometheusRule := &monitoringv1.PrometheusRule{ObjectMeta: monitoringutils.ConfigObjectMeta("registry-cache", r.namespace, "shoot")}
+	prometheusRule := r.emptyPrometheusRule()
 	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.client, prometheusRule, func() error {
 		metav1.SetMetaDataLabel(&prometheusRule.ObjectMeta, "component", "registry-cache")
 		metav1.SetMetaDataLabel(&prometheusRule.ObjectMeta, "prometheus", "shoot")
@@ -104,7 +105,7 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 		return err
 	}
 
-	scrapeConfig := &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("registry-cache", r.namespace, "shoot")}
+	scrapeConfig := r.emptyScrapeConfig()
 	if _, err := controllerutils.GetAndCreateOrMergePatch(ctx, r.client, scrapeConfig, func() error {
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "component", "registry-cache")
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "prometheus", "shoot")
@@ -166,4 +167,24 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 	}
 
 	return nil
+}
+
+func (r *registryCaches) destroyMonitoringConfig(ctx context.Context) error {
+	return kubernetesutils.DeleteObjects(ctx, r.client,
+		r.emptyDashboardsConfigMap(),
+		r.emptyPrometheusRule(),
+		r.emptyScrapeConfig(),
+	)
+}
+
+func (r *registryCaches) emptyDashboardsConfigMap() *corev1.ConfigMap {
+	return &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "registry-cache-dashboards", Namespace: r.namespace}}
+}
+
+func (r *registryCaches) emptyPrometheusRule() *monitoringv1.PrometheusRule {
+	return &monitoringv1.PrometheusRule{ObjectMeta: monitoringutils.ConfigObjectMeta("registry-cache", r.namespace, "shoot")}
+}
+
+func (r *registryCaches) emptyScrapeConfig() *monitoringv1alpha1.ScrapeConfig {
+	return &monitoringv1alpha1.ScrapeConfig{ObjectMeta: monitoringutils.ConfigObjectMeta("registry-cache", r.namespace, "shoot")}
 }
