@@ -36,6 +36,12 @@ const (
 	// - gcr.io, registry.k8s.io, quay.io, europe-docker.pkg.dev: These are all registries used in the Gardener's local setup. Avoid using them to do not have conflicts with provider-local in some corner cases.
 	// - Amazon ECR: The Distribution project does not support image pulls from Amazon ECR. Ref https://github.com/distribution/distribution/issues/4383.
 
+	// GithubRegistryJitesoftAlpine31511Image is the ghcr.io/jitesoft/alpine:3.15.11 image.
+	GithubRegistryJitesoftAlpine31511Image = "ghcr.io/jitesoft/alpine:3.15.11"
+	// GithubRegistryJitesoftAlpine3169Image is the ghcr.io/jitesoft/alpine:3.16.9 image.
+	GithubRegistryJitesoftAlpine3169Image = "ghcr.io/jitesoft/alpine:3.16.9"
+	// GithubRegistryJitesoftAlpine3179Image is the ghcr.io/jitesoft/alpine:3.17.9 image.
+	GithubRegistryJitesoftAlpine3179Image = "ghcr.io/jitesoft/alpine:3.17.9"
 	// GithubRegistryJitesoftAlpine3189Image is the ghcr.io/jitesoft/alpine:3.18.9 image.
 	GithubRegistryJitesoftAlpine3189Image = "ghcr.io/jitesoft/alpine:3.18.9"
 	// GithubRegistryJitesoftAlpine3194Image is the ghcr.io/jitesoft/alpine:3.19.4 image.
