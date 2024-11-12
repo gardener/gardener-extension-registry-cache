@@ -1,0 +1,26 @@
+apiVersion: testmachinery.sapcloud.io
+kind: TestDefinition
+metadata:
+  name: registry-cache-beta-disruptive-test-suite
+spec:
+  owner: gardener-oq@listserv.sap.com
+  description: registry-cache extension test suite that includes all disruptive beta tests
+
+  activeDeadlineSeconds: 9000
+  labels: ["shoot", "beta"]
+  behavior:
+  - disruptive
+
+  command: [bash, -c]
+  args:
+    - >-
+      go test -timeout=0 ./test/testmachinery/shoot
+      --v -ginkgo.v -ginkgo.show-node-events -ginkgo.no-color
+      -kubecfg=$TM_KUBECONFIG_PATH/gardener.config
+      -project-namespace=$PROJECT_NAMESPACE
+      -shoot-name=$SHOOT_NAME
+      -ginkgo.focus="\[BETA\].*\[DISRUPTIVE\]"
+      -ginkgo.skip="\[SERIAL\]"
+      -ginkgo.timeout=9000s
+
+  image: golang:1.23.4
