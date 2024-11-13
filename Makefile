@@ -92,11 +92,11 @@ format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 
 .PHONY: sast
 sast: $(GOSEC)
-	@bash $(GARDENER_HACK_DIR)/sast.sh
+	@bash $(GARDENER_HACK_DIR)/sast.sh --exclude-dirs gardener,hack
 
 .PHONY: sast-report
 sast-report: $(GOSEC)
-	@bash $(GARDENER_HACK_DIR)/sast.sh --gosec-report true --report-dir $(REPO_ROOT)
+	@bash $(GARDENER_HACK_DIR)/sast.sh --exclude-dirs gardener,hack --gosec-report true --report-dir $(REPO_ROOT)
 
 .PHONY: test
 test:
