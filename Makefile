@@ -91,12 +91,12 @@ format: $(GOIMPORTS) $(GOIMPORTSREVISER)
 	@bash $(GARDENER_HACK_DIR)/format.sh ./cmd ./pkg ./test
 
 .PHONY: sast
-sast: tidy $(GOSEC)
+sast: $(GOSEC)
 	@bash $(GARDENER_HACK_DIR)/sast.sh
 
 .PHONY: sast-report
-sast-report: tidy $(GOSEC)
-	@bash $(GARDENER_HACK_DIR)/sast.sh --gosec-report true
+sast-report: $(GOSEC)
+	@bash $(GARDENER_HACK_DIR)/sast.sh --gosec-report true --report-dir $(REPO_ROOT)
 
 .PHONY: test
 test:
