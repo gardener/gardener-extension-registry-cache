@@ -43,6 +43,7 @@ var _ = Describe("RegistryCaches", func() {
 
 		namespace = "some-namespace"
 		image     = "some-image:some-tag"
+		initImage = "some-init-image:some-tag"
 	)
 
 	var (
@@ -62,6 +63,7 @@ var _ = Describe("RegistryCaches", func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		values = Values{
 			Image:      image,
+			InitImage:  initImage,
 			VPAEnabled: true,
 			Caches: []api.RegistryCache{
 				{
@@ -260,6 +262,22 @@ spec:
           name: cache-volume
         - mountPath: /etc/distribution
           name: config-volume
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - if [ -f /var/lib/registry/scheduler-state.json ]; then if [ -s /var/lib/registry/scheduler-state.json
+          ]; then echo 'scheduler-state.json is OK'; else echo 'cleanup corrupted
+          scheduler-state.json'; rm -f /var/lib/registry/scheduler-state.json; echo
+          'clean up docker directory'; rm -rf /var/lib/registry/docker; fi; else echo
+          'scheduler-state.json is not created yet'; fi
+        image: ` + initImage + `
+        imagePullPolicy: IfNotPresent
+        name: cleanup-volume
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/lib/registry
+          name: cache-volume
       priorityClassName: system-cluster-critical
       securityContext:
         seccompProfile:

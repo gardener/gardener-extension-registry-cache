@@ -61,6 +61,8 @@ func init() {
 type Values struct {
 	// Image is the container image used for the registry cache.
 	Image string
+	// InitImage is the image used for registry cache init container.
+	InitImage string
 	// VPAEnabled marks whether VerticalPodAutoscaler is enabled for the shoot.
 	VPAEnabled bool
 	// Caches are the registry caches to deploy.
@@ -290,6 +292,22 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 					SecurityContext: &corev1.PodSecurityContext{
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							// Mitigation for  https://github.com/distribution/distribution/issues/4478.
+							Name:            "cleanup-volume",
+							Image:           r.values.InitImage,
+							ImagePullPolicy: corev1.PullIfNotPresent,
+							Command:         []string{"sh", "-c", "if [ -f /var/lib/registry/scheduler-state.json ]; then if [ -s /var/lib/registry/scheduler-state.json ]; then echo 'scheduler-state.json is OK'; else echo 'cleanup corrupted scheduler-state.json'; rm -f /var/lib/registry/scheduler-state.json; echo 'clean up docker directory'; rm -rf /var/lib/registry/docker; fi; else echo 'scheduler-state.json is not created yet'; fi"},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      registryCacheVolumeName,
+									ReadOnly:  false,
+									MountPath: "/var/lib/registry",
+								},
+							},
 						},
 					},
 					Containers: []corev1.Container{
