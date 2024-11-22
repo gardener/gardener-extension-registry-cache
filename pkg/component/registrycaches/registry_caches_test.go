@@ -43,7 +43,6 @@ var _ = Describe("RegistryCaches", func() {
 
 		namespace = "some-namespace"
 		image     = "some-image:some-tag"
-		initImage = "some-init-image:some-tag"
 	)
 
 	var (
@@ -63,7 +62,6 @@ var _ = Describe("RegistryCaches", func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		values = Values{
 			Image:      image,
-			InitImage:  initImage,
 			VPAEnabled: true,
 			Caches: []api.RegistryCache{
 				{
@@ -266,15 +264,27 @@ spec:
       - command:
         - sh
         - -c
-        - if [ -f /var/lib/registry/scheduler-state.json ]; then if [ -s /var/lib/registry/scheduler-state.json
-          ]; then echo 'scheduler-state.json is OK'; else echo 'cleanup corrupted
-          scheduler-state.json'; rm -f /var/lib/registry/scheduler-state.json; echo
-          'clean up docker directory'; rm -rf /var/lib/registry/docker; fi; else echo
-          'scheduler-state.json is not created yet'; fi
-        image: ` + initImage + `
+        - |-
+          repoRoot=/var/lib/registry
+          if [ -f "${repoRoot}/scheduler-state.json" ]; then
+              if [ -s "${repoRoot}/scheduler-state.json" ]; then
+                  echo "The scheduler-state.json file is OK"
+              else
+                  echo "Cleanup corrupted scheduler-state.json file"
+                  rm -f "${repoRoot}/scheduler-state.json"
+                  echo "Cleanup docker directory"
+                  rm -rf "${repoRoot}/docker"
+              fi
+          else
+              echo "The scheduler-state.json file is not created yet"
+          fi
+        image: ` + image + `
         imagePullPolicy: IfNotPresent
         name: cleanup-volume
-        resources: {}
+        resources:
+          requests:
+            cpu: 10m
+            memory: 2Mi
         volumeMounts:
         - mountPath: /var/lib/registry
           name: cache-volume

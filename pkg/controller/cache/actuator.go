@@ -67,14 +67,9 @@ func (a *actuator) Reconcile(ctx context.Context, _ logr.Logger, ex *extensionsv
 	if err != nil {
 		return fmt.Errorf("failed to find the registry image: %w", err)
 	}
-	initImage, err := imagevector.ImageVector().FindImage("alpine")
-	if err != nil {
-		return fmt.Errorf("failed to find the alpine image: %w", err)
-	}
 
 	registryCaches := registrycaches.New(a.client, namespace, registrycaches.Values{
 		Image:              image.String(),
-		InitImage:          initImage.String(),
 		VPAEnabled:         v1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
 		Caches:             registryConfig.Caches,
 		ResourceReferences: cluster.Shoot.Spec.Resources,

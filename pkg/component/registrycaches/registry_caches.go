@@ -61,8 +61,6 @@ func init() {
 type Values struct {
 	// Image is the container image used for the registry cache.
 	Image string
-	// InitImage is the image used for registry cache init container.
-	InitImage string
 	// VPAEnabled marks whether VerticalPodAutoscaler is enabled for the shoot.
 	VPAEnabled bool
 	// Caches are the registry caches to deploy.
@@ -188,6 +186,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	const (
 		registryCacheVolumeName  = "cache-volume"
 		registryConfigVolumeName = "config-volume"
+		repositoryMountPath      = "/var/lib/registry"
 		debugPort                = 5001
 	)
 
@@ -298,14 +297,32 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 						{
 							// Mitigation for  https://github.com/distribution/distribution/issues/4478.
 							Name:            "cleanup-volume",
-							Image:           r.values.InitImage,
+							Image:           r.values.Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"sh", "-c", "if [ -f /var/lib/registry/scheduler-state.json ]; then if [ -s /var/lib/registry/scheduler-state.json ]; then echo 'scheduler-state.json is OK'; else echo 'cleanup corrupted scheduler-state.json'; rm -f /var/lib/registry/scheduler-state.json; echo 'clean up docker directory'; rm -rf /var/lib/registry/docker; fi; else echo 'scheduler-state.json is not created yet'; fi"},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("10m"),
+									corev1.ResourceMemory: resource.MustParse("2Mi"),
+								},
+							},
+							Command: []string{"sh", "-c", `repoRoot=` + repositoryMountPath + `
+if [ -f "${repoRoot}/scheduler-state.json" ]; then
+    if [ -s "${repoRoot}/scheduler-state.json" ]; then
+        echo "The scheduler-state.json file is OK"
+    else
+        echo "Cleanup corrupted scheduler-state.json file"
+        rm -f "${repoRoot}/scheduler-state.json"
+        echo "Cleanup docker directory"
+        rm -rf "${repoRoot}/docker"
+    fi
+else
+    echo "The scheduler-state.json file is not created yet"
+fi`},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      registryCacheVolumeName,
 									ReadOnly:  false,
-									MountPath: "/var/lib/registry",
+									MountPath: repositoryMountPath,
 								},
 							},
 						},
@@ -364,7 +381,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 								{
 									Name:      registryCacheVolumeName,
 									ReadOnly:  false,
-									MountPath: "/var/lib/registry",
+									MountPath: repositoryMountPath,
 								},
 								{
 									Name:      registryConfigVolumeName,
