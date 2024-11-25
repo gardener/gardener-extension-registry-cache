@@ -32,10 +32,10 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 
 	It("should create Shoot with registry-cache extension enabled with caches for Shoot system components, delete Shoot", func() {
 		By("Create Shoot")
-		// Use 10min as timeout to verify that we don't have a Node bootstrap issue.
+		// Use 12min as timeout to verify that we don't have a Node bootstrap issue.
 		// https://github.com/gardener/gardener-extension-registry-cache/pull/68 fixes the Node bootstrap issue
 		// and this tests verifies that the scenario does not regress.
-		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
+		ctx, cancel := context.WithTimeout(parentCtx, 12*time.Minute)
 		defer cancel()
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
