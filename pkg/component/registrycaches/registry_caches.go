@@ -293,40 +293,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
 					},
-					InitContainers: []corev1.Container{
-						{
-							// Mitigation for  https://github.com/distribution/distribution/issues/4478.
-							Name:            "cleanup-volume",
-							Image:           r.values.Image,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("2Mi"),
-								},
-							},
-							Command: []string{"sh", "-c", `repoRoot=` + repositoryMountPath + `
-if [ -f "${repoRoot}/scheduler-state.json" ]; then
-    if [ -s "${repoRoot}/scheduler-state.json" ]; then
-        echo "The scheduler-state.json file is OK"
-    else
-        echo "Cleanup corrupted scheduler-state.json file"
-        rm -f "${repoRoot}/scheduler-state.json"
-        echo "Cleanup docker directory"
-        rm -rf "${repoRoot}/docker"
-    fi
-else
-    echo "The scheduler-state.json file is not created yet"
-fi`},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      registryCacheVolumeName,
-									ReadOnly:  false,
-									MountPath: repositoryMountPath,
-								},
-							},
-						},
-					},
 					Containers: []corev1.Container{
 						{
 							Name:            "registry-cache",
@@ -338,6 +304,24 @@ fi`},
 									corev1.ResourceMemory: resource.MustParse("50Mi"),
 								},
 							},
+							// Mitigation for https://github.com/distribution/distribution/issues/4478.
+							// Extend registry image ENTRYPOINT https://github.com/distribution/distribution-library-image/blob/be4eca0a5f3af34a026d1e9294d63f3464c06131/Dockerfile#L31.
+							Command: []string{"/bin/sh", "-c", `repoRoot=` + repositoryMountPath + `
+if [ -f "${repoRoot}/scheduler-state.json" ]; then
+    if [ -s "${repoRoot}/scheduler-state.json" ]; then
+        echo "The scheduler-state.json file is OK"
+    else
+        echo "Cleanup corrupted scheduler-state.json file"
+        rm -f "${repoRoot}/scheduler-state.json"
+        echo "Cleanup docker directory"
+        rm -rf "${repoRoot}/docker"
+    fi
+else
+    echo "The scheduler-state.json file is not created yet"
+fi
+
+source /entrypoint.sh /etc/distribution/config.yml
+`},
 							Ports: []corev1.ContainerPort{
 								{
 									ContainerPort: constants.RegistryCachePort,

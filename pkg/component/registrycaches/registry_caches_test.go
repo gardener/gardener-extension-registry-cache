@@ -226,7 +226,26 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - env:
+      - command:
+        - /bin/sh
+        - -c
+        - |
+          repoRoot=/var/lib/registry
+          if [ -f "${repoRoot}/scheduler-state.json" ]; then
+              if [ -s "${repoRoot}/scheduler-state.json" ]; then
+                  echo "The scheduler-state.json file is OK"
+              else
+                  echo "Cleanup corrupted scheduler-state.json file"
+                  rm -f "${repoRoot}/scheduler-state.json"
+                  echo "Cleanup docker directory"
+                  rm -rf "${repoRoot}/docker"
+              fi
+          else
+              echo "The scheduler-state.json file is not created yet"
+          fi
+
+          source /entrypoint.sh /etc/distribution/config.yml
+        env:
         - name: OTEL_TRACES_EXPORTER
           value: none
         image: ` + image + `
@@ -260,34 +279,6 @@ spec:
           name: cache-volume
         - mountPath: /etc/distribution
           name: config-volume
-      initContainers:
-      - command:
-        - sh
-        - -c
-        - |-
-          repoRoot=/var/lib/registry
-          if [ -f "${repoRoot}/scheduler-state.json" ]; then
-              if [ -s "${repoRoot}/scheduler-state.json" ]; then
-                  echo "The scheduler-state.json file is OK"
-              else
-                  echo "Cleanup corrupted scheduler-state.json file"
-                  rm -f "${repoRoot}/scheduler-state.json"
-                  echo "Cleanup docker directory"
-                  rm -rf "${repoRoot}/docker"
-              fi
-          else
-              echo "The scheduler-state.json file is not created yet"
-          fi
-        image: ` + image + `
-        imagePullPolicy: IfNotPresent
-        name: cleanup-volume
-        resources:
-          requests:
-            cpu: 10m
-            memory: 2Mi
-        volumeMounts:
-        - mountPath: /var/lib/registry
-          name: cache-volume
       priorityClassName: system-cluster-critical
       securityContext:
         seccompProfile:
