@@ -304,22 +304,30 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 									corev1.ResourceMemory: resource.MustParse("50Mi"),
 								},
 							},
-							// Mitigation for https://github.com/distribution/distribution/issues/4478.
-							// Extend registry image ENTRYPOINT https://github.com/distribution/distribution-library-image/blob/be4eca0a5f3af34a026d1e9294d63f3464c06131/Dockerfile#L31.
-							Command: []string{"/bin/sh", "-c", `repoRoot=` + repositoryMountPath + `
-if [ -f "${repoRoot}/scheduler-state.json" ]; then
-    if [ -s "${repoRoot}/scheduler-state.json" ]; then
-        echo "The scheduler-state.json file is OK"
+							// Mitigation for https://github.com/distribution/distribution/issues/4478:
+							// The registry image entrypoint (https://github.com/distribution/distribution-library-image/blob/be4eca0a5f3af34a026d1e9294d63f3464c06131/Dockerfile#L31)
+							// is extended with a mitigation logic for https://github.com/distribution/distribution/issues/4478.
+							// Keep in sync the registry image entrypoint with the below invocation when updating the registry image version.
+							Command: []string{"/bin/sh", "-c", `REPO_ROOT=` + repositoryMountPath + `
+SCHEDULER_STATE_FILE="${REPO_ROOT}/scheduler-state.json"
+
+if [ -f "${SCHEDULER_STATE_FILE}" ]; then
+    if [ -s "${SCHEDULER_STATE_FILE}" ]; then
+        echo "The scheduler-state.json file exists and it is not empty. Won't clean up anything..."
     else
-        echo "Cleanup corrupted scheduler-state.json file"
-        rm -f "${repoRoot}/scheduler-state.json"
-        echo "Cleanup docker directory"
-        rm -rf "${repoRoot}/docker"
+        echo "Detected a corrupted scheduler-state.json file"
+
+        echo "Cleaning up the scheduler-state.json file"
+        rm -f "${SCHEDULER_STATE_FILE}"
+
+        echo "Cleaning up the docker directory"
+        rm -rf "${REPO_ROOT}/docker"
     fi
 else
-    echo "The scheduler-state.json file is not created yet"
+    echo "The scheduler-state.json file is not created yet. Won't clean up anything..."
 fi
 
+echo "Starting..."
 source /entrypoint.sh /etc/distribution/config.yml
 `},
 							Ports: []corev1.ContainerPort{
