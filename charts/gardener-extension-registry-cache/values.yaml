@@ -20,9 +20,6 @@ vpa:
   resourcePolicy:
     minAllowed:
       memory: 32Mi
-    maxAllowed:
-      cpu: 2
-      memory: 2Gi
   updatePolicy:
     updateMode: "Auto"
 
