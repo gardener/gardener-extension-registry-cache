@@ -73,7 +73,7 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
 
-	// TODO(dimitar-kostadinov): Clean up this invocation after March 2025.
+	// TODO(dimitar-kostadinov): Clean up this invocation after May 2025.
 	{
 		if err := a.removeServicesFromManagedResourceStatus(ctx, namespace); err != nil {
 			return fmt.Errorf("failed to remove Services from the ManagedResource status: %w", err)
@@ -266,7 +266,7 @@ func (a *actuator) updateProviderStatus(ctx context.Context, ex *extensionsv1alp
 
 // removeServicesFromManagedResourceStatus removes all resources with kind=Service from the ManagedResources .status.resources field.
 //
-// TODO(dimitar-kostadinov): Clean up this function after March 2025.
+// TODO(dimitar-kostadinov): Clean up this function after May 2025.
 func (a *actuator) removeServicesFromManagedResourceStatus(ctx context.Context, namespace string) error {
 	mr := &resourcesv1alpha1.ManagedResource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -274,7 +274,11 @@ func (a *actuator) removeServicesFromManagedResourceStatus(ctx context.Context, 
 			Namespace: namespace,
 		},
 	}
-	if err := a.client.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil && !apierrors.IsNotFound(err) {
+	if err := a.client.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
 		return err
 	}
 

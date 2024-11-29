@@ -411,7 +411,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 										Name: "certs-volume",
 										VolumeSource: corev1.VolumeSource{
 											Secret: &corev1.SecretVolumeSource{
-												SecretName: tlsSecretName,
+												SecretName:  tlsSecretName,
+												DefaultMode: ptr.To[int32](0640),
 											},
 										},
 									},

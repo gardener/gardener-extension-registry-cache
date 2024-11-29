@@ -42,7 +42,7 @@ rules:
   - resources.gardener.cloud
   resources:
   - managedresources
-  # TODO(dimitar-kostadinov): Remove managedresources/status after v0.12.0.
+  # TODO(dimitar-kostadinov): Remove managedresources/status after May 2025.
   - managedresources/status
   verbs:
   - get
@@ -52,7 +52,7 @@ rules:
   - update
   - patch
   - delete
-# TODO(dimitar-kostadinov): Remove the below rule for managedresources/status after v0.12.0.
+# TODO(dimitar-kostadinov): Remove the below rule for managedresources/status after May 2025.
 - apiGroups:
   - resources.gardener.cloud
   resources:

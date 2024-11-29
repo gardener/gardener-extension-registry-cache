@@ -194,21 +194,16 @@ func (r *registryCaches) CASecretName() string {
 	return r.caSecretName
 }
 
-func (r *registryCaches) computeResourcesData(ctx context.Context, secrets map[string]*corev1.Secret) (map[string][]byte, error) {
+func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecrets map[string]*corev1.Secret) (map[string][]byte, error) {
 	var objects []client.Object
 
-	remappedSecrets := make(map[string]*corev1.Secret, len(secrets))
-	for _, secret := range secrets {
-		remappedSecrets[secret.Labels["name"]] = secret
-	}
-
 	for _, cache := range r.values.Caches {
-		tlsSecretName := strings.ReplaceAll(cache.Upstream, ":", "-") + "-tls"
-
-		secret, ok := remappedSecrets[tlsSecretName]
+		tlsSecretName := secrets.TLSSecretNameForUpstream(cache.Upstream)
+		secret, ok := generatedSecrets[tlsSecretName]
 		if !ok {
 			return nil, fmt.Errorf("secret for upstream %s not found", cache.Upstream)
 		}
+
 		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, secret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
@@ -290,7 +285,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 	utilruntime.Must(kubernetesutils.MakeUnique(configSecret))
 
-	secretTLS := &corev1.Secret{
+	tlsSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name + "-tls",
 			Namespace: metav1.NamespaceSystem,
@@ -299,7 +294,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		Type: corev1.SecretTypeOpaque,
 		Data: secret.Data,
 	}
-	utilruntime.Must(kubernetesutils.MakeUnique(secretTLS))
+	utilruntime.Must(kubernetesutils.MakeUnique(tlsSecret))
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -320,7 +315,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
 					Annotations: map[string]string{
-						fmt.Sprintf(checksumAnnotation, name): utils.ComputeChecksum(secretTLS.Data),
+						fmt.Sprintf(checksumAnnotation, name): utils.ComputeChecksum(tlsSecret.Data),
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -437,7 +432,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 							Name: registryCertsVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: secretTLS.Name,
+									SecretName:  tlsSecret.Name,
+									DefaultMode: ptr.To[int32](0640),
 								},
 							},
 						},
@@ -516,7 +512,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 	return []client.Object{
 		configSecret,
-		secretTLS,
+		tlsSecret,
 		statefulSet,
 		vpa,
 	}, nil
