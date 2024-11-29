@@ -198,7 +198,7 @@ status:
 `
 			}
 
-			statefulSetYAMLFor = func(name, upstream, size, configSecretName string, storageClassName *string) string {
+			statefulSetYAMLFor = func(name, upstream, size, configSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar) string {
 				out := `apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -253,7 +253,14 @@ spec:
           source /entrypoint.sh /etc/distribution/config.yml
         env:
         - name: OTEL_TRACES_EXPORTER
-          value: none
+          value: none`
+				for i := range additionalEnvs {
+					_ = i
+					out += `
+        - name: ` + additionalEnvs[i].Name + `
+          value: ` + additionalEnvs[i].Value
+				}
+				out += `
         image: ` + image + `
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -404,11 +411,11 @@ status: {}
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
 					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
 					vpaYAMLFor("registry-docker-io"),
 					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
 					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
 					vpaYAMLFor("registry-europe-docker-pkg-dev"),
 				}
 				Expect(manifests).To(ConsistOf(expectedManifests))
@@ -436,10 +443,59 @@ status: {}
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
 					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
 					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
 					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+				}
+				Expect(manifests).To(ConsistOf(expectedManifests))
+			})
+		})
+
+		Context("when a proxy is set", func() {
+			BeforeEach(func() {
+				values.Caches[0].Proxy = &api.Proxy{
+					HTTPProxy:  ptr.To("http://127.0.0.1"),
+					HTTPSProxy: ptr.To("http://127.0.0.1"),
+				}
+				values.Caches[1].Proxy = &api.Proxy{
+					HTTPProxy:  ptr.To("http://127.0.0.1"),
+					HTTPSProxy: ptr.To("http://127.0.0.1"),
+				}
+			})
+
+			It("should successfully deploy the resources", func() {
+				Expect(registryCaches.Deploy(ctx)).To(Succeed())
+
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
+				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
+
+				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(manifests).To(HaveLen(8))
+
+				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
+				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
+				additionalEnvs := []corev1.EnvVar{
+					{
+						Name:  "HTTP_PROXY",
+						Value: "http://127.0.0.1",
+					},
+					{
+						Name:  "HTTPS_PROXY",
+						Value: "http://127.0.0.1",
+					},
+				}
+				expectedManifests := []string{
+					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
+					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, additionalEnvs),
+					vpaYAMLFor("registry-docker-io"),
+					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
+					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), additionalEnvs),
+					vpaYAMLFor("registry-europe-docker-pkg-dev"),
 				}
 				Expect(manifests).To(ConsistOf(expectedManifests))
 			})
@@ -505,11 +561,11 @@ status: {}
 				expectedManifests := []string{
 					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
 					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil),
+					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
 					vpaYAMLFor("registry-docker-io"),
 					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`)),
 					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium")),
+					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
 					vpaYAMLFor("registry-europe-docker-pkg-dev"),
 				}
 				Expect(manifests).To(ConsistOf(expectedManifests))
