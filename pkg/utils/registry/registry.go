@@ -22,7 +22,7 @@ func GetUpstreamURL(upstream string) string {
 	return "https://" + upstream
 }
 
-// GetLabels returns a map with 'app' and 'upstream-host' labels
+// GetLabels returns a map with 'app' and 'upstream-host' labels.
 func GetLabels(name, upstreamLabel string) map[string]string {
 	return map[string]string{
 		"app":                       name,

@@ -38,9 +38,10 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 			Options: []secretsmanager.GenerateOption{secretsmanager.Persist()},
 		},
 	}
+
 	for _, service := range services {
 		upstream := service.Annotations[constants.UpstreamAnnotation]
-		name := strings.ReplaceAll(upstream, ":", "-") + "-tls"
+		name := TLSSecretNameForUpstream(upstream)
 
 		configs = append(configs, extensionssecretsmanager.SecretConfigWithOptions{
 			Config: &secretutils.CertificateSecretConfig{
@@ -54,5 +55,11 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 			Options: []secretsmanager.GenerateOption{secretsmanager.SignedByCA(CAName, secretsmanager.UseOldCA)},
 		})
 	}
+
 	return configs
+}
+
+// TLSSecretNameForUpstream returns a TLS Secret name for a given upstream.
+func TLSSecretNameForUpstream(upstream string) string {
+	return strings.ReplaceAll(upstream, ":", "-") + "-tls"
 }

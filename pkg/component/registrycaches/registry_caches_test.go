@@ -332,6 +332,7 @@ spec:
           secretName: ` + configSecretName + `
       - name: certs-volume
         secret:
+          defaultMode: 416
           secretName: ` + tlsSecretName + `
   updateStrategy: {}
   volumeClaimTemplates:

@@ -51,7 +51,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
 	}
 
-	if !e.mutate(cluster) {
+	if !e.shouldMutate(cluster) {
 		return nil
 	}
 
@@ -95,7 +95,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
 	}
 
-	if !e.mutate(cluster) {
+	if !e.shouldMutate(cluster) {
 		return nil
 	}
 
@@ -110,9 +110,13 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 			Namespace: cluster.ObjectMeta.Name,
 		},
 	}
-
 	if err := e.client.Get(ctx, client.ObjectKeyFromObject(caSecret), caSecret); err != nil {
-		return fmt.Errorf("failed to get secret CA bundle '%s': %w", client.ObjectKeyFromObject(caSecret), err)
+		return fmt.Errorf("failed to get CA bundle secret '%s': %w", client.ObjectKeyFromObject(caSecret), err)
+	}
+
+	caBundle, ok := caSecret.Data["bundle.crt"]
+	if !ok {
+		return fmt.Errorf("failed to find 'bundle.crt' key in the CA bundle secret '%s'", client.ObjectKeyFromObject(caSecret))
 	}
 
 	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
@@ -121,7 +125,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",
-				Data:     base64.StdEncoding.EncodeToString(caSecret.Data["bundle.crt"]),
+				Data:     base64.StdEncoding.EncodeToString(caBundle),
 			},
 		},
 	})
@@ -129,11 +133,12 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 	return nil
 }
 
-func (e *ensurer) mutate(cluster *extensionscontroller.Cluster) bool {
+func (e *ensurer) shouldMutate(cluster *extensionscontroller.Cluster) bool {
 	if cluster.Shoot.DeletionTimestamp != nil {
 		e.logger.Info("Shoot has a deletion timestamp set, skipping the OperatingSystemConfig mutation", "shoot", client.ObjectKeyFromObject(cluster.Shoot))
 		return false
 	}
+
 	// If hibernation is enabled for Shoot, then the .status.providerStatus field of the registry-cache Extension can be missing (on Shoot creation)
 	// or outdated (if for hibernated Shoot a new registry is added). Hence, we skip the OperatingSystemConfig mutation when hibernation is enabled.
 	// When Shoot is waking up, then .status.providerStatus will be updated in the Extension and the OperatingSystemConfig will be mutated according to it.
@@ -141,6 +146,7 @@ func (e *ensurer) mutate(cluster *extensionscontroller.Cluster) bool {
 		e.logger.Info("Hibernation is enabled for Shoot, skipping the OperatingSystemConfig mutation", "shoot", client.ObjectKeyFromObject(cluster.Shoot))
 		return false
 	}
+
 	return true
 }
 
