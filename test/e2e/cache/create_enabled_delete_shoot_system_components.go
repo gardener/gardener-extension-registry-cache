@@ -35,7 +35,8 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		// Use 10min as timeout to verify that we don't have a Node bootstrap issue.
 		// https://github.com/gardener/gardener-extension-registry-cache/pull/68 fixes the Node bootstrap issue
 		// and this tests verifies that the scenario does not regress.
-		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
+		// Mitigate https://github.com/gardener/gardener-extension-registry-cache/issues/290 by increasing context timeout to 15min
+		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
