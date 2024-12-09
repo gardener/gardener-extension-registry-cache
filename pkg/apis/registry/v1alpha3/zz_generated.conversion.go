@@ -146,6 +146,7 @@ func autoConvert_v1alpha3_RegistryCache_To_registry_RegistryCache(in *RegistryCa
 	out.GarbageCollection = (*registry.GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
 	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
 	out.Proxy = (*registry.Proxy)(unsafe.Pointer(in.Proxy))
+	out.HighAvailability = (*bool)(unsafe.Pointer(in.HighAvailability))
 	return nil
 }
 
@@ -161,6 +162,7 @@ func autoConvert_registry_RegistryCache_To_v1alpha3_RegistryCache(in *registry.R
 	out.GarbageCollection = (*GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
 	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
 	out.Proxy = (*Proxy)(unsafe.Pointer(in.Proxy))
+	out.HighAvailability = (*bool)(unsafe.Pointer(in.HighAvailability))
 	return nil
 }
 
