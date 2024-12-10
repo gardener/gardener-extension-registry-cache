@@ -20,15 +20,19 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	monitoringv1alpha1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -54,6 +58,7 @@ var _ = Describe("RegistryCaches", func() {
 		values                Values
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
+		consistOf             func(...client.Object) types.GomegaMatcher
 
 		registryCaches component.DeployWaiter
 	)
@@ -99,6 +104,7 @@ var _ = Describe("RegistryCaches", func() {
 				Namespace: namespace,
 			},
 		}
+		consistOf = NewManagedResourceConsistOfObjectsMatcher(c)
 	})
 
 	JustBeforeEach(func() {
@@ -107,21 +113,22 @@ var _ = Describe("RegistryCaches", func() {
 
 	Describe("#Deploy", func() {
 		var (
-			configSecretYAMLFor = func(secretName, name, upstream, configYAML string) string {
-				return `apiVersion: v1
-data:
-  config.yml: ` + encodeBase64(configYAML) + `
-immutable: true
-kind: Secret
-metadata:
-  creationTimestamp: null
-  labels:
-    app: ` + name + `
-    resources.gardener.cloud/garbage-collectable-reference: "true"
-    upstream-host: ` + upstream + `
-  name: ` + secretName + `
-  namespace: kube-system
-`
+			configSecretFor = func(secretName, name, upstream, configYAML string) *corev1.Secret {
+				return &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      secretName,
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+							"resources.gardener.cloud/garbage-collectable-reference": "true",
+						},
+					},
+					Immutable: ptr.To(true),
+					Data: map[string][]byte{
+						"config.yml": []byte(configYAML),
+					},
+				}
 			}
 
 			configYAMLFor = func(upstreamURL string, ttl string, username, password string) string {
@@ -170,191 +177,227 @@ proxy:
 				return config
 			}
 
-			serviceYAMLFor = func(name, upstream, remoteURL string) string {
-				return `apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    remote-url: ` + remoteURL + `
-    upstream: ` + upstream + `
-  creationTimestamp: null
-  labels:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  name: ` + name + `
-  namespace: kube-system
-spec:
-  ports:
-  - name: registry-cache
-    port: 5000
-    protocol: TCP
-    targetPort: registry-cache
-  selector:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  type: ClusterIP
-status:
-  loadBalancer: {}
-`
+			serviceFor = func(name, upstream, remoteURL string) *corev1.Service {
+				return &corev1.Service{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+						},
+						Annotations: map[string]string{
+							"upstream":   upstream,
+							"remote-url": remoteURL,
+						},
+					},
+					Spec: corev1.ServiceSpec{
+						Selector: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+						},
+						Ports: []corev1.ServicePort{{
+							Name:       "registry-cache",
+							Port:       5000,
+							Protocol:   corev1.ProtocolTCP,
+							TargetPort: intstr.FromString("registry-cache"),
+						}},
+						Type: corev1.ServiceTypeClusterIP,
+					},
+				}
 			}
 
-			statefulSetYAMLFor = func(name, upstream, size, configSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar) string {
-				out := `apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  creationTimestamp: null
-  labels:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  name: ` + name + `
-  namespace: kube-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ` + name + `
-      upstream-host: ` + upstream + `
-  serviceName: ` + name + `
-  template:
-    metadata:
-      creationTimestamp: null
-      labels:
-        app: ` + name + `
-        networking.gardener.cloud/to-dns: allowed
-        networking.gardener.cloud/to-public-networks: allowed
-        upstream-host: ` + upstream + `
-    spec:
-      automountServiceAccountToken: false
-      containers:
-      - command:
-        - /bin/sh
-        - -c
-        - |
-          REPO_ROOT=/var/lib/registry
-          SCHEDULER_STATE_FILE="${REPO_ROOT}/scheduler-state.json"
-
-          if [ -f "${SCHEDULER_STATE_FILE}" ]; then
-              if [ -s "${SCHEDULER_STATE_FILE}" ]; then
-                  echo "The scheduler-state.json file exists and it is not empty. Won't clean up anything..."
-              else
-                  echo "Detected a corrupted scheduler-state.json file"
-
-                  echo "Cleaning up the scheduler-state.json file"
-                  rm -f "${SCHEDULER_STATE_FILE}"
-
-                  echo "Cleaning up the docker directory"
-                  rm -rf "${REPO_ROOT}/docker"
-              fi
-          else
-              echo "The scheduler-state.json file is not created yet. Won't clean up anything..."
-          fi
-
-          echo "Starting..."
-          source /entrypoint.sh /etc/distribution/config.yml
-        env:
-        - name: OTEL_TRACES_EXPORTER
-          value: none`
-				for i := range additionalEnvs {
-					_ = i
-					out += `
-        - name: ` + additionalEnvs[i].Name + `
-          value: ` + additionalEnvs[i].Value
+			statefulSetFor = func(name, upstream, size, configSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar) *appsv1.StatefulSet {
+				env := []corev1.EnvVar{
+					{
+						Name:  "OTEL_TRACES_EXPORTER",
+						Value: "none",
+					},
 				}
-				out += `
-        image: ` + image + `
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          failureThreshold: 6
-          httpGet:
-            path: /debug/health
-            port: 5001
-          periodSeconds: 20
-          successThreshold: 1
-        name: registry-cache
-        ports:
-        - containerPort: 5000
-          name: registry-cache
-        - containerPort: 5001
-          name: debug
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /debug/health
-            port: 5001
-          periodSeconds: 20
-          successThreshold: 1
-        resources:
-          requests:
-            cpu: 20m
-            memory: 50Mi
-        volumeMounts:
-        - mountPath: /var/lib/registry
-          name: cache-volume
-        - mountPath: /etc/distribution
-          name: config-volume
-      priorityClassName: system-cluster-critical
-      securityContext:
-        seccompProfile:
-          type: RuntimeDefault
-      volumes:
-      - name: config-volume
-        secret:
-          secretName: ` + configSecretName + `
-  updateStrategy: {}
-  volumeClaimTemplates:
-  - metadata:
-      creationTimestamp: null
-      labels:
-        app: ` + name + `
-        upstream-host: ` + upstream + `
-      name: cache-volume
-    spec:
-      accessModes:
-      - ReadWriteOnce
-      resources:
-        requests:
-          storage: ` + size
+				env = append(env, additionalEnvs...)
 
-				if storageClassName != nil {
-					out += `
-      storageClassName: ` + *storageClassName
+				return &appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+						},
+					},
+					Spec: appsv1.StatefulSetSpec{
+						ServiceName: name,
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app":           name,
+								"upstream-host": upstream,
+							},
+						},
+						Replicas: ptr.To[int32](1),
+						Template: corev1.PodTemplateSpec{
+							ObjectMeta: metav1.ObjectMeta{
+								Labels: map[string]string{
+									"app":                              name,
+									"upstream-host":                    upstream,
+									"networking.gardener.cloud/to-dns": "allowed",
+									"networking.gardener.cloud/to-public-networks": "allowed",
+								},
+							},
+							Spec: corev1.PodSpec{
+								AutomountServiceAccountToken: ptr.To(false),
+								PriorityClassName:            "system-cluster-critical",
+								SecurityContext: &corev1.PodSecurityContext{
+									SeccompProfile: &corev1.SeccompProfile{
+										Type: corev1.SeccompProfileTypeRuntimeDefault,
+									},
+								},
+								Containers: []corev1.Container{
+									{
+										Name:            "registry-cache",
+										Image:           image,
+										ImagePullPolicy: corev1.PullIfNotPresent,
+										Resources: corev1.ResourceRequirements{
+											Requests: corev1.ResourceList{
+												corev1.ResourceCPU:    resource.MustParse("20m"),
+												corev1.ResourceMemory: resource.MustParse("50Mi"),
+											},
+										},
+										Command: []string{"/bin/sh", "-c", `REPO_ROOT=/var/lib/registry
+SCHEDULER_STATE_FILE="${REPO_ROOT}/scheduler-state.json"
+
+if [ -f "${SCHEDULER_STATE_FILE}" ]; then
+    if [ -s "${SCHEDULER_STATE_FILE}" ]; then
+        echo "The scheduler-state.json file exists and it is not empty. Won't clean up anything..."
+    else
+        echo "Detected a corrupted scheduler-state.json file"
+
+        echo "Cleaning up the scheduler-state.json file"
+        rm -f "${SCHEDULER_STATE_FILE}"
+
+        echo "Cleaning up the docker directory"
+        rm -rf "${REPO_ROOT}/docker"
+    fi
+else
+    echo "The scheduler-state.json file is not created yet. Won't clean up anything..."
+fi
+
+echo "Starting..."
+source /entrypoint.sh /etc/distribution/config.yml
+`},
+										Ports: []corev1.ContainerPort{
+											{
+												ContainerPort: 5000,
+												Name:          "registry-cache",
+											},
+											{
+												ContainerPort: 5001,
+												Name:          "debug",
+											},
+										},
+										Env: env,
+										LivenessProbe: &corev1.Probe{
+											ProbeHandler: corev1.ProbeHandler{
+												HTTPGet: &corev1.HTTPGetAction{
+													Path: "/debug/health",
+													Port: intstr.FromInt32(5001),
+												},
+											},
+											FailureThreshold: 6,
+											SuccessThreshold: 1,
+											PeriodSeconds:    20,
+										},
+										ReadinessProbe: &corev1.Probe{
+											ProbeHandler: corev1.ProbeHandler{
+												HTTPGet: &corev1.HTTPGetAction{
+													Path: "/debug/health",
+													Port: intstr.FromInt32(5001),
+												},
+											},
+											FailureThreshold: 3,
+											SuccessThreshold: 1,
+											PeriodSeconds:    20,
+										},
+										VolumeMounts: []corev1.VolumeMount{
+											{
+												Name:      "cache-volume",
+												ReadOnly:  false,
+												MountPath: "/var/lib/registry",
+											},
+											{
+												Name:      "config-volume",
+												MountPath: "/etc/distribution",
+											},
+										},
+									},
+								},
+								Volumes: []corev1.Volume{
+									{
+										Name: "config-volume",
+										VolumeSource: corev1.VolumeSource{
+											Secret: &corev1.SecretVolumeSource{
+												SecretName: configSecretName,
+											},
+										},
+									},
+								},
+							},
+						},
+						VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+							{
+								ObjectMeta: metav1.ObjectMeta{
+									Name: "cache-volume",
+									Labels: map[string]string{
+										"app":           name,
+										"upstream-host": upstream,
+									},
+								},
+								Spec: corev1.PersistentVolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: corev1.ResourceList{
+											corev1.ResourceStorage: resource.MustParse(size),
+										},
+									},
+									StorageClassName: storageClassName,
+								},
+							},
+						},
+					},
 				}
-
-				out += `
-    status: {}
-status:
-  availableReplicas: 0
-  replicas: 0
-`
-
-				return out
 			}
 
-			vpaYAMLFor = func(name string) string {
-				return `apiVersion: autoscaling.k8s.io/v1
-kind: VerticalPodAutoscaler
-metadata:
-  creationTimestamp: null
-  name: ` + name + `
-  namespace: kube-system
-spec:
-  resourcePolicy:
-    containerPolicies:
-    - containerName: '*'
-      controlledValues: RequestsOnly
-      maxAllowed:
-        cpu: "4"
-        memory: 8Gi
-      minAllowed:
-        memory: 20Mi
-  targetRef:
-    apiVersion: apps/v1
-    kind: StatefulSet
-    name: ` + name + `
-  updatePolicy:
-    updateMode: Auto
-status: {}
-`
+			vpaFor = func(name string) *vpaautoscalingv1.VerticalPodAutoscaler {
+				return &vpaautoscalingv1.VerticalPodAutoscaler{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: "kube-system",
+					},
+					Spec: vpaautoscalingv1.VerticalPodAutoscalerSpec{
+						TargetRef: &autoscalingv1.CrossVersionObjectReference{
+							APIVersion: appsv1.SchemeGroupVersion.String(),
+							Kind:       "StatefulSet",
+							Name:       name,
+						},
+						UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
+							UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeAuto),
+						},
+						ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
+							ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
+								{
+									ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
+									ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
+									MinAllowed: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("20Mi"),
+									},
+									MaxAllowed: corev1.ResourceList{
+										corev1.ResourceCPU:    resource.MustParse("4"),
+										corev1.ResourceMemory: resource.MustParse("8Gi"),
+									},
+								},
+							},
+						},
+					},
+				}
 			}
 		)
 
@@ -373,7 +416,6 @@ status: {}
 
 		Context("when VPA is enabled", func() {
 			It("should successfully deploy the resources", func() {
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 				Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
@@ -402,23 +444,19 @@ status: {}
 				Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
-				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(manifests).To(HaveLen(8))
-
 				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
-				expectedManifests := []string{
-					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
-					vpaYAMLFor("registry-docker-io"),
-					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
-					vpaYAMLFor("registry-europe-docker-pkg-dev"),
-				}
-				Expect(manifests).To(ConsistOf(expectedManifests))
+
+				Expect(managedResource).To(consistOf(
+					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
+					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
+					vpaFor("registry-docker-io"),
+					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
+					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+					vpaFor("registry-europe-docker-pkg-dev"),
+				))
 			})
 		})
 
@@ -431,24 +469,18 @@ status: {}
 				Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
-
-				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(manifests).To(HaveLen(6))
 
 				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
-				expectedManifests := []string{
-					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
-					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
-				}
-				Expect(manifests).To(ConsistOf(expectedManifests))
+
+				Expect(managedResource).To(consistOf(
+					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
+					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
+					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
+					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+				))
 			})
 		})
 
@@ -468,12 +500,6 @@ status: {}
 				Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
-
-				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(manifests).To(HaveLen(8))
 
 				dockerConfigSecretName := "registry-docker-io-config-2935d46f"
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-245e2638"
@@ -487,17 +513,17 @@ status: {}
 						Value: "http://127.0.0.1",
 					},
 				}
-				expectedManifests := []string{
-					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, additionalEnvs),
-					vpaYAMLFor("registry-docker-io"),
-					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), additionalEnvs),
-					vpaYAMLFor("registry-europe-docker-pkg-dev"),
-				}
-				Expect(manifests).To(ConsistOf(expectedManifests))
+
+				Expect(managedResource).To(consistOf(
+					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "")),
+					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, additionalEnvs),
+					vpaFor("registry-docker-io"),
+					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "")),
+					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), additionalEnvs),
+					vpaFor("registry-europe-docker-pkg-dev"),
+				))
 			})
 		})
 
@@ -549,26 +575,20 @@ status: {}
 				Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
-				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
-
-				manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(manifests).To(HaveLen(8))
 
 				dockerConfigSecretName := "registry-docker-io-config-90f6f66c"
 				arConfigSecretName := "registry-europe-docker-pkg-dev-config-bc1d0d16"
-				expectedManifests := []string{
-					configSecretYAMLFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
-					serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-					statefulSetYAMLFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
-					vpaYAMLFor("registry-docker-io"),
-					configSecretYAMLFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`)),
-					serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-					statefulSetYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
-					vpaYAMLFor("registry-europe-docker-pkg-dev"),
-				}
-				Expect(manifests).To(ConsistOf(expectedManifests))
+
+				Expect(managedResource).To(consistOf(
+					configSecretFor(dockerConfigSecretName, "registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret")),
+					serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecretName, nil, nil),
+					vpaFor("registry-docker-io"),
+					configSecretFor(arConfigSecretName, "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`)),
+					serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecretName, ptr.To("premium"), nil),
+					vpaFor("registry-europe-docker-pkg-dev"),
+				))
 			})
 
 			When("get secret fails", func() {

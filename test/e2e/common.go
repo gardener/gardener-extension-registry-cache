@@ -51,8 +51,8 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 				Version: "1.31.1",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
 					SerializeImagePulls: ptr.To(false),
-					RegistryPullQPS:     ptr.To(int32(10)),
-					RegistryBurst:       ptr.To(int32(20)),
+					RegistryPullQPS:     ptr.To[int32](10),
+					RegistryBurst:       ptr.To[int32](20),
 				},
 				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
 			},
