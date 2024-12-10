@@ -277,7 +277,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Selector: &metav1.LabelSelector{
 				MatchLabels: getLabels(name, upstreamLabel),
 			},
-			Replicas: ptr.To(int32(1)),
+			Replicas: ptr.To[int32](1),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.MergeStringMaps(getLabels(name, upstreamLabel), map[string]string{
@@ -407,7 +407,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 								corev1.ResourceStorage: *cache.Volume.Size,
 							},
 						},
-
 						StorageClassName: storageClassName,
 					},
 				},
@@ -432,8 +431,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 	var vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	if r.values.VPAEnabled {
-		updateMode := vpaautoscalingv1.UpdateModeAuto
-		controlledValues := vpaautoscalingv1.ContainerControlledValuesRequestsOnly
 		vpa = &vpaautoscalingv1.VerticalPodAutoscaler{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -446,13 +443,13 @@ source /entrypoint.sh /etc/distribution/config.yml
 					Name:       name,
 				},
 				UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
-					UpdateMode: &updateMode,
+					UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeAuto),
 				},
 				ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
 					ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
 						{
 							ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
-							ControlledValues: &controlledValues,
+							ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
 							MinAllowed: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("20Mi"),
 							},

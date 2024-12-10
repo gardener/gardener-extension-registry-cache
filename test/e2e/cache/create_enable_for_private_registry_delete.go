@@ -222,7 +222,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 					"app": "test-registry",
 				},
 			},
-			Replicas: ptr.To(int32(1)),
+			Replicas: ptr.To[int32](1),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
