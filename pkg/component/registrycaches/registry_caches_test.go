@@ -140,7 +140,7 @@ var _ = Describe("RegistryCaches", func() {
 	})
 
 	JustBeforeEach(func() {
-		registryCaches = NewComponent(c, secretsManager, namespace, values)
+		registryCaches = New(c, namespace, secretsManager, values)
 	})
 
 	Describe("#Deploy", func() {

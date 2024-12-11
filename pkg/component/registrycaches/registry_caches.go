@@ -85,25 +85,25 @@ type Values struct {
 	KeepObjectsOnDestroy bool
 }
 
-// NewComponent creates a new instance of Interface for registry caches.
-func NewComponent(
+// New creates a new instance of Interface for registry caches.
+func New(
 	client client.Client,
-	secretManager secretsmanager.Interface,
 	namespace string,
+	secretManager secretsmanager.Interface,
 	values Values,
 ) Interface {
 	return &registryCaches{
 		client:        client,
-		secretManager: secretManager,
 		namespace:     namespace,
+		secretManager: secretManager,
 		values:        values,
 	}
 }
 
 type registryCaches struct {
 	client        client.Client
-	secretManager secretsmanager.Interface
 	namespace     string
+	secretManager secretsmanager.Interface
 	values        Values
 
 	caSecretName string

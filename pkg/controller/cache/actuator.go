@@ -107,7 +107,7 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		return fmt.Errorf("failed to find the registry image: %w", err)
 	}
 
-	registryCaches := registrycaches.NewComponent(a.client, secretsManager, namespace, registrycaches.Values{
+	registryCaches := registrycaches.New(a.client, namespace, secretsManager, registrycaches.Values{
 		Image:              image.String(),
 		VPAEnabled:         v1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
 		Services:           services,
@@ -147,10 +147,10 @@ func (a *actuator) Delete(ctx context.Context, logger logr.Logger, ex *extension
 
 	registryCacheServices := registrycacheservices.New(a.client, namespace, registrycacheservices.Values{})
 	if err := component.OpDestroyAndWait(registryCacheServices).Destroy(ctx); err != nil {
-		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
+		return fmt.Errorf("failed to destroy the registry cache services component: %w", err)
 	}
 
-	registryCaches := registrycaches.NewComponent(a.client, secretsManager, namespace, registrycaches.Values{})
+	registryCaches := registrycaches.New(a.client, namespace, secretsManager, registrycaches.Values{})
 	if err := component.OpDestroyAndWait(registryCaches).Destroy(ctx); err != nil {
 		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
 	}
@@ -174,7 +174,7 @@ func (a *actuator) Migrate(ctx context.Context, _ logr.Logger, ex *extensionsv1a
 		return fmt.Errorf("failed to destroy the registry cache services component: %w", err)
 	}
 
-	registryCaches := registrycaches.NewComponent(a.client, nil, namespace, registrycaches.Values{
+	registryCaches := registrycaches.New(a.client, namespace, nil, registrycaches.Values{
 		KeepObjectsOnDestroy: true,
 	})
 	if err := component.OpDestroyAndWait(registryCaches).Destroy(ctx); err != nil {
@@ -201,12 +201,12 @@ func (a *actuator) ForceDelete(ctx context.Context, logger logr.Logger, ex *exte
 	}
 
 	registryCacheServices := registrycacheservices.New(a.client, namespace, registrycacheservices.Values{})
-	if err := component.OpDestroyAndWait(registryCacheServices).Destroy(ctx); err != nil {
-		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
+	if err := registryCacheServices.Destroy(ctx); err != nil {
+		return fmt.Errorf("failed to destroy the registry cache services component: %w", err)
 	}
 
-	registryCaches := registrycaches.NewComponent(a.client, secretsManager, namespace, registrycaches.Values{})
-	if err := component.OpDestroy(registryCaches).Destroy(ctx); err != nil {
+	registryCaches := registrycaches.New(a.client, namespace, secretsManager, registrycaches.Values{})
+	if err := registryCaches.Destroy(ctx); err != nil {
 		return fmt.Errorf("failed to destroy the registry caches component: %w", err)
 	}
 

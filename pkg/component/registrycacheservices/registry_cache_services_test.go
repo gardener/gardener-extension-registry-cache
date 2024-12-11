@@ -19,10 +19,12 @@ import (
 	. "github.com/gardener/gardener/pkg/utils/test/matchers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +39,7 @@ func TestRegistryCacheServices(t *testing.T) {
 	RunSpecs(t, "Component RegistryCacheServices Suite")
 }
 
-var _ = Describe("RegistryCaches", func() {
+var _ = Describe("RegistryCacheServices", func() {
 	const (
 		managedResourceName = "extension-registry-cache-services"
 
@@ -51,8 +53,39 @@ var _ = Describe("RegistryCaches", func() {
 		values                Values
 		managedResource       *resourcesv1alpha1.ManagedResource
 		managedResourceSecret *corev1.Secret
+		consistOf             func(...client.Object) types.GomegaMatcher
 
 		registryCacheServices component.DeployWaiter
+
+		serviceFor = func(name, upstream, remoteURL string) *corev1.Service {
+			return &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: "kube-system",
+					Labels: map[string]string{
+						"app":           name,
+						"upstream-host": upstream,
+					},
+					Annotations: map[string]string{
+						"upstream":   upstream,
+						"remote-url": remoteURL,
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Selector: map[string]string{
+						"app":           name,
+						"upstream-host": upstream,
+					},
+					Ports: []corev1.ServicePort{{
+						Name:       "registry-cache",
+						Port:       5000,
+						Protocol:   corev1.ProtocolTCP,
+						TargetPort: intstr.FromString("registry-cache"),
+					}},
+					Type: corev1.ServiceTypeClusterIP,
+				},
+			}
+		}
 	)
 
 	BeforeEach(func() {
@@ -80,6 +113,7 @@ var _ = Describe("RegistryCaches", func() {
 				Namespace: namespace,
 			},
 		}
+		consistOf = NewManagedResourceConsistOfObjectsMatcher(c)
 	})
 
 	JustBeforeEach(func() {
@@ -87,36 +121,7 @@ var _ = Describe("RegistryCaches", func() {
 	})
 
 	Describe("#Deploy", func() {
-		var serviceYAMLFor = func(name, upstream, remoteURL string) string {
-			return `apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    remote-url: ` + remoteURL + `
-    upstream: ` + upstream + `
-  creationTimestamp: null
-  labels:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  name: ` + name + `
-  namespace: kube-system
-spec:
-  ports:
-  - name: registry-cache
-    port: 5000
-    protocol: TCP
-    targetPort: registry-cache
-  selector:
-    app: ` + name + `
-    upstream-host: ` + upstream + `
-  type: ClusterIP
-status:
-  loadBalancer: {}
-`
-		}
-
 		It("should successfully deploy the resources", func() {
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: resourcesv1alpha1.SchemeGroupVersion.Group, Resource: "managedresources"}, managedResource.Name)))
 			Expect(registryCacheServices.Deploy(ctx)).To(Succeed())
 
 			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
@@ -138,32 +143,17 @@ status:
 			utilruntime.Must(references.InjectAnnotations(expectedMr))
 			Expect(managedResource).To(DeepEqual(expectedMr))
 
-			managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
-			Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
-			Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
-			Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
-
-			manifests, err := test.ExtractManifestsFromManagedResourceData(managedResourceSecret.Data)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(manifests).To(HaveLen(2))
-
-			expectedManifests := []string{
-				serviceYAMLFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-				serviceYAMLFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
-			}
-			Expect(manifests).To(ConsistOf(expectedManifests))
-			Expect(manifests).To(ConsistOf(expectedManifests))
+			Expect(managedResource).To(consistOf(
+				serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
+				serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+			))
 		})
 	})
 
-	Describe("#Delete", func() {
+	Describe("#Destroy", func() {
 		It("should successfully destroy all resources", func() {
 			Expect(c.Create(ctx, managedResource)).To(Succeed())
 			Expect(c.Create(ctx, managedResourceSecret)).To(Succeed())
-
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
-			Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 
 			Expect(registryCacheServices.Destroy(ctx)).To(Succeed())
 
@@ -237,6 +227,8 @@ status:
 
 		Describe("#WaitCleanup", func() {
 			It("should fail when the wait for the managed resource deletion times out", func() {
+				fakeOps.MaxAttempts = 2
+
 				Expect(c.Create(ctx, managedResource)).To(Succeed())
 
 				Expect(registryCacheServices.WaitCleanup(ctx)).To(MatchError(ContainSubstring("still exists")))
