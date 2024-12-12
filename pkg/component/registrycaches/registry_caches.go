@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gardener/gardener/extensions/pkg/controller"
+	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
@@ -22,6 +23,7 @@ import (
 	"github.com/gardener/gardener/pkg/utils"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
+	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +38,7 @@ import (
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/secrets"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
@@ -57,12 +60,21 @@ func init() {
 	utilruntime.Must(err)
 }
 
+// Interface is an interface for managing Registry Caches.
+type Interface interface {
+	component.DeployWaiter
+	// CASecretName returns the name of the CA secret.
+	CASecretName() string
+}
+
 // Values is a set of configuration values for the registry caches.
 type Values struct {
 	// Image is the container image used for the registry cache.
 	Image string
 	// VPAEnabled marks whether VerticalPodAutoscaler is enabled for the shoot.
 	VPAEnabled bool
+	// Services are the registry cache services used for certificate generation.
+	Services []corev1.Service
 	// Caches are the registry caches to deploy.
 	Caches []api.RegistryCache
 	// ResourceReferences are the resource references from the Shoot spec (the .spec.resources field).
@@ -73,28 +85,45 @@ type Values struct {
 	KeepObjectsOnDestroy bool
 }
 
-// New creates a new instance of DeployWaiter for registry caches.
+// New creates a new instance of Interface for registry caches.
 func New(
 	client client.Client,
 	namespace string,
+	secretManager secretsmanager.Interface,
 	values Values,
-) component.DeployWaiter {
+) Interface {
 	return &registryCaches{
-		client:    client,
-		namespace: namespace,
-		values:    values,
+		client:        client,
+		namespace:     namespace,
+		secretManager: secretManager,
+		values:        values,
 	}
 }
 
 type registryCaches struct {
-	client    client.Client
-	namespace string
-	values    Values
+	client        client.Client
+	namespace     string
+	secretManager secretsmanager.Interface
+	values        Values
+
+	caSecretName string
 }
 
 // Deploy implements component.DeployWaiter.
 func (r *registryCaches) Deploy(ctx context.Context) error {
-	data, err := r.computeResourcesData(ctx)
+	secretsConfig := secrets.ConfigsFor(r.values.Services)
+	generatedSecrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, r.secretManager, secretsConfig)
+	if err != nil {
+		return err
+	}
+
+	caSecret, found := r.secretManager.Get(secrets.CAName)
+	if !found {
+		return fmt.Errorf("secret %q not found", secrets.CAName)
+	}
+	r.caSecretName = caSecret.Name
+
+	data, err := r.computeResourcesData(ctx, generatedSecrets)
 	if err != nil {
 		return err
 	}
@@ -161,11 +190,21 @@ func (r *registryCaches) WaitCleanup(ctx context.Context) error {
 	return managedresources.WaitUntilDeleted(timeoutCtx, r.client, r.namespace, managedResourceName)
 }
 
-func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][]byte, error) {
+func (r *registryCaches) CASecretName() string {
+	return r.caSecretName
+}
+
+func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecrets map[string]*corev1.Secret) (map[string][]byte, error) {
 	var objects []client.Object
 
 	for _, cache := range r.values.Caches {
-		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache)
+		tlsSecretName := secrets.TLSSecretNameForUpstream(cache.Upstream)
+		secret, ok := generatedSecrets[tlsSecretName]
+		if !ok {
+			return nil, fmt.Errorf("secret for upstream %s not found", cache.Upstream)
+		}
+
+		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, secret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
 		}
@@ -178,20 +217,22 @@ func (r *registryCaches) computeResourcesData(ctx context.Context) (map[string][
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *api.RegistryCache) ([]client.Object, error) {
+func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *api.RegistryCache, secret *corev1.Secret) ([]client.Object, error) {
 	if cache.Volume == nil || cache.Volume.Size == nil {
 		return nil, fmt.Errorf("registry cache volume size is required")
 	}
 
 	const (
+		checksumAnnotation       = "checksum/secret-%s-tls"
 		registryCacheVolumeName  = "cache-volume"
 		registryConfigVolumeName = "config-volume"
+		registryCertsVolumeName  = "certs-volume"
 		repositoryMountPath      = "/var/lib/registry"
 		debugPort                = 5001
 	)
 
 	var (
-		upstreamLabel = computeUpstreamLabelValue(cache.Upstream)
+		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		configValues  = map[string]interface{}{
@@ -236,7 +277,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name + "-config",
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, upstreamLabel),
+			Labels:    registryutils.GetLabels(name, upstreamLabel),
 		},
 		Data: map[string][]byte{
 			"config.yml": configYAML.Bytes(),
@@ -244,46 +285,38 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 	utilruntime.Must(kubernetesutils.MakeUnique(configSecret))
 
-	service := &corev1.Service{
+	tlsSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      name + "-tls",
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, upstreamLabel),
-			Annotations: map[string]string{
-				constants.UpstreamAnnotation:  cache.Upstream,
-				constants.RemoteURLAnnotation: remoteURL,
-			},
+			Labels:    registryutils.GetLabels(name, upstreamLabel),
 		},
-		Spec: corev1.ServiceSpec{
-			Selector: getLabels(name, upstreamLabel),
-			Ports: []corev1.ServicePort{{
-				Name:       "registry-cache",
-				Port:       constants.RegistryCachePort,
-				Protocol:   corev1.ProtocolTCP,
-				TargetPort: intstr.FromString("registry-cache"),
-			}},
-			Type: corev1.ServiceTypeClusterIP,
-		},
+		Type: corev1.SecretTypeOpaque,
+		Data: secret.Data,
 	}
+	utilruntime.Must(kubernetesutils.MakeUnique(tlsSecret))
 
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    getLabels(name, upstreamLabel),
+			Labels:    registryutils.GetLabels(name, upstreamLabel),
 		},
 		Spec: appsv1.StatefulSetSpec{
-			ServiceName: service.Name,
+			ServiceName: name,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: getLabels(name, upstreamLabel),
+				MatchLabels: registryutils.GetLabels(name, upstreamLabel),
 			},
 			Replicas: ptr.To[int32](1),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: utils.MergeStringMaps(getLabels(name, upstreamLabel), map[string]string{
+					Labels: utils.MergeStringMaps(registryutils.GetLabels(name, upstreamLabel), map[string]string{
 						v1beta1constants.LabelNetworkPolicyToDNS:            v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
+					Annotations: map[string]string{
+						fmt.Sprintf(checksumAnnotation, name): utils.ComputeChecksum(tlsSecret.Data),
+					},
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: ptr.To(false),
@@ -379,6 +412,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 									Name:      registryConfigVolumeName,
 									MountPath: "/etc/distribution",
 								},
+								{
+									Name:      registryCertsVolumeName,
+									MountPath: "/etc/distribution/certs",
+								},
 							},
 						},
 					},
@@ -391,6 +428,15 @@ source /entrypoint.sh /etc/distribution/config.yml
 								},
 							},
 						},
+						{
+							Name: registryCertsVolumeName,
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName:  tlsSecret.Name,
+									DefaultMode: ptr.To[int32](0640),
+								},
+							},
+						},
 					},
 				},
 			},
@@ -398,7 +444,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:   registryCacheVolumeName,
-						Labels: getLabels(name, upstreamLabel),
+						Labels: registryutils.GetLabels(name, upstreamLabel),
 					},
 					Spec: corev1.PersistentVolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -466,41 +512,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 	return []client.Object{
 		configSecret,
-		service,
+		tlsSecret,
 		statefulSet,
 		vpa,
 	}, nil
-}
-
-func getLabels(name, upstreamLabel string) map[string]string {
-	return map[string]string{
-		"app":                       name,
-		constants.UpstreamHostLabel: upstreamLabel,
-	}
-}
-
-// computeUpstreamLabelValue computes upstream-host label value by given upstream.
-//
-// Upstream is a valid DNS subdomain (RFC 1123) and optionally a port (e.g. my-registry.io[:5000])
-// It is used as a 'upstream-host' label value on registry cache resources (Service, Secret, StatefulSet and VPA).
-// Label values cannot contain ':' char, so if upstream is '<host>:<port>' the label value is transformed to '<host>-<port>'.
-// It is also used to build the resources names escaping the '.' with '-'; e.g. `registry-<escaped_upstreamLabel>`.
-//
-// Due to restrictions of resource names length, if upstream length > 43 it is truncated at 37 chars, and the
-// label value is transformed to <truncated-upstream>-<hash> where <hash> is first 5 chars of upstream sha256 hash.
-//
-// The returned upstreamLabel is at most 43 chars.
-func computeUpstreamLabelValue(upstream string) string {
-	// A label value length and a resource name length limits are 63 chars. However, Pods for a StatefulSet with name > 52 chars
-	// cannot be created due to https://github.com/kubernetes/kubernetes/issues/64023.
-	// The cache resources name have prefix 'registry-', thus the label value length is limited to 43.
-	const labelValueLimit = 43
-
-	upstreamLabel := strings.ReplaceAll(upstream, ":", "-")
-	if len(upstream) > labelValueLimit {
-		hash := utils.ComputeSHA256Hex([]byte(upstream))[:5]
-		limit := labelValueLimit - len(hash) - 1
-		upstreamLabel = fmt.Sprintf("%s-%s", upstreamLabel[:limit], hash)
-	}
-	return upstreamLabel
 }
