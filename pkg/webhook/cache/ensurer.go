@@ -45,7 +45,7 @@ type ensurer struct {
 }
 
 // EnsureCRIConfig ensures the CRI config.
-func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, new, _ *extensionsv1alpha1.CRIConfig) error {
+func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, newCRIConfig, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -60,8 +60,8 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 		return err
 	}
 
-	if new.Containerd == nil {
-		new.Containerd = &extensionsv1alpha1.ContainerdConfig{}
+	if newCRIConfig.Containerd == nil {
+		newCRIConfig.Containerd = &extensionsv1alpha1.ContainerdConfig{}
 	}
 
 	for _, cache := range registryStatus.Caches {
@@ -75,13 +75,13 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 			}},
 			ReadinessProbe: ptr.To(true),
 		}
-		i := slices.IndexFunc(new.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
+		i := slices.IndexFunc(newCRIConfig.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
 			return registryConfig.Upstream == cfg.Upstream
 		})
 		if i == -1 {
-			new.Containerd.Registries = append(new.Containerd.Registries, cfg)
+			newCRIConfig.Containerd.Registries = append(newCRIConfig.Containerd.Registries, cfg)
 		} else {
-			new.Containerd.Registries[i] = cfg
+			newCRIConfig.Containerd.Registries[i] = cfg
 		}
 	}
 
@@ -89,7 +89,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 }
 
 // EnsureAdditionalFiles ensures that the CA bundle is added to the <new> files.
-func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, new, _ *[]extensionsv1alpha1.File) error {
+func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, newFiles, _ *[]extensionsv1alpha1.File) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -119,7 +119,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 		return fmt.Errorf("failed to find 'bundle.crt' key in the CA bundle secret '%s'", client.ObjectKeyFromObject(caSecret))
 	}
 
-	*new = extensionswebhook.EnsureFileWithPath(*new, extensionsv1alpha1.File{
+	*newFiles = extensionswebhook.EnsureFileWithPath(*newFiles, extensionsv1alpha1.File{
 		Path:        caBundlePath,
 		Permissions: ptr.To[uint32](0644),
 		Content: extensionsv1alpha1.FileContent{

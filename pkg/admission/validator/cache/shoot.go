@@ -39,10 +39,10 @@ func NewShootValidator(apiReader client.Reader, decoder runtime.Decoder) extensi
 }
 
 // Validate validates the given shoot object
-func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
-	shoot, ok := new.(*core.Shoot)
+func (s *shoot) Validate(ctx context.Context, newObj, oldObj client.Object) error {
+	shoot, ok := newObj.(*core.Shoot)
 	if !ok {
-		return fmt.Errorf("wrong object type %T", new)
+		return fmt.Errorf("wrong object type %T", newObj)
 	}
 
 	i, ext := helper.FindExtension(shoot.Spec.Extensions, constants.RegistryCacheExtensionType)
@@ -68,10 +68,10 @@ func (s *shoot) Validate(ctx context.Context, new, old client.Object) error {
 
 	allErrs := field.ErrorList{}
 
-	if old != nil {
-		oldShoot, ok := old.(*core.Shoot)
+	if oldObj != nil {
+		oldShoot, ok := oldObj.(*core.Shoot)
 		if !ok {
-			return fmt.Errorf("wrong object type %T for old object", old)
+			return fmt.Errorf("wrong object type %T for old object", oldObj)
 		}
 
 		oldI, oldExt := helper.FindExtension(oldShoot.Spec.Extensions, constants.RegistryCacheExtensionType)

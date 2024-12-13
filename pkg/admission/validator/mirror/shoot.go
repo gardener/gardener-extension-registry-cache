@@ -34,10 +34,10 @@ func NewShootValidator(decoder runtime.Decoder) extensionswebhook.Validator {
 	}
 }
 
-func (s *shoot) Validate(_ context.Context, new, _ client.Object) error {
-	shoot, ok := new.(*core.Shoot)
+func (s *shoot) Validate(_ context.Context, newObj, _ client.Object) error {
+	shoot, ok := newObj.(*core.Shoot)
 	if !ok {
-		return fmt.Errorf("wrong object type %T", new)
+		return fmt.Errorf("wrong object type %T", newObj)
 	}
 
 	i, mirrorExt := helper.FindExtension(shoot.Spec.Extensions, "registry-mirror")
