@@ -39,7 +39,7 @@ type ensurer struct {
 }
 
 // EnsureCRIConfig ensures the CRI config.
-func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, new, _ *extensionsv1alpha1.CRIConfig) error {
+func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, newCRIConfig, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -68,8 +68,8 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 		return fmt.Errorf("failed to decode providerConfig of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}
 
-	if new.Containerd == nil {
-		new.Containerd = &extensionsv1alpha1.ContainerdConfig{}
+	if newCRIConfig.Containerd == nil {
+		newCRIConfig.Containerd = &extensionsv1alpha1.ContainerdConfig{}
 	}
 
 	for _, mirror := range mirrorConfig.Mirrors {
@@ -91,13 +91,13 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 			}
 			cfg.Hosts = append(cfg.Hosts, registryHost)
 		}
-		i := slices.IndexFunc(new.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
+		i := slices.IndexFunc(newCRIConfig.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
 			return registryConfig.Upstream == cfg.Upstream
 		})
 		if i == -1 {
-			new.Containerd.Registries = append(new.Containerd.Registries, cfg)
+			newCRIConfig.Containerd.Registries = append(newCRIConfig.Containerd.Registries, cfg)
 		} else {
-			new.Containerd.Registries[i] = cfg
+			newCRIConfig.Containerd.Registries[i] = cfg
 		}
 	}
 
