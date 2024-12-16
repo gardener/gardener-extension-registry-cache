@@ -15,7 +15,9 @@ spec:
       {{- with .Values.global.vpa.resourcePolicy.maxAllowed }}
       maxAllowed: {{ toYaml . | nindent 8 }}
       {{- end }}
-      controlledValues: RequestsOnly
+      {{- if .Values.global.vpa.resourcePolicy.controlledValues }}
+      controlledValues: {{ .Values.global.vpa.resourcePolicy.controlledValues }}
+      {{- end }}
   {{- end }}
   targetRef:
     apiVersion: apps/v1

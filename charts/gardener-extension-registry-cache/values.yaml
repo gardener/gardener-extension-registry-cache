@@ -20,6 +20,7 @@ vpa:
   resourcePolicy:
     minAllowed:
       memory: 32Mi
+    controlledValues: RequestsOnly
   updatePolicy:
     updateMode: "Auto"
 
