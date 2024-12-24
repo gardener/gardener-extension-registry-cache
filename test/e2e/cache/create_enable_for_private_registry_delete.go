@@ -155,9 +155,6 @@ func addPrivateRegistrySecret(shoot *gardencorev1beta1.Shoot) {
 
 // deployUpstreamRegistry deploy test upstream registry and return the <host:port> to it
 func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFramework, password string) (upstreamHostPort string) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
-
 	// Create htpasswd Secret
 	encryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
