@@ -143,7 +143,7 @@ There is always the option to remove the cache from the Shoot spec and to readd 
 
 > Drawback of this approach: The already cached images get lost and the cache starts with an empty disk.
 
-## High Аvailability
+## High Availability
 
 The registry cache runs with a single replica. This fact may lead to concerns for the high availability such as "What happens when the registry cache is down? Does containerd fail to pull the image?". As outlined in the [How does it work? section](#how-does-it-work), containerd is configured to fall back to the upstream registry if it fails to pull the image from the registry cache. Hence, when the registry cache is unavailable, the containerd's image pull operations are not affected because containerd falls back to image pull from the upstream registry.
 
