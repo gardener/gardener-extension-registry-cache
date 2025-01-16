@@ -71,11 +71,15 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		Expect(f.WaitForShootToBeReconciled(ctx, f.Shoot)).To(Succeed())
 		Expect(v1beta1helper.GetShootCARotationPhase(f.Shoot.Status.Credentials)).To(Equal(gardencorev1beta1.RotationCompleted))
 
-		By("Verify registry-cache works when CA rotation phase is Completed")
-		// After rotating the CA, the shoot client must be recreated so that it uses the new CA.
+		// After CA rotation, the shoot client must be recreated so that it uses the new CA.
+		// Overwrite the test framework's Shoot client as well because on test failure the framework
+		// needs to fetch resources and events from the Shoot cluster.
 		shootClient, err := access.CreateShootClientFromAdminKubeconfig(ctx, f.GardenClient, f.Shoot)
 		Expect(err).NotTo(HaveOccurred())
-		common.VerifyRegistryCache(parentCtx, f.Logger, shootClient, common.GithubRegistryJitesoftAlpine3179Image, common.SleepInfinity)
+		f.ShootClient = shootClient
+
+		By("Verify registry-cache works when CA rotation phase is Completed")
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3179Image, common.SleepInfinity)
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -89,7 +93,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		By("Verify registry configuration is removed")
 		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
 		defer cancel()
-		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, shootClient, []string{"ghcr.io"})
+		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootClient, []string{"ghcr.io"})
 	}, rotateCATestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if v1beta1helper.GetShootCARotationPhase(f.Shoot.Status.Credentials) == gardencorev1beta1.RotationPrepared {
 			Expect(f.AnnotateShoot(ctx, f.Shoot, map[string]string{v1beta1constants.GardenerOperation: v1beta1constants.OperationRotateCAComplete})).To(Succeed())
