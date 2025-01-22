@@ -69,7 +69,7 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	}
 
 	registryConfig := &api.RegistryConfig{}
-	if _, _, err := a.decoder.Decode(ex.Spec.ProviderConfig.Raw, nil, registryConfig); err != nil {
+	if err := runtime.DecodeInto(a.decoder, ex.Spec.ProviderConfig.Raw, registryConfig); err != nil {
 		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
 

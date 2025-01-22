@@ -166,7 +166,7 @@ func (e *ensurer) getProviderStatus(ctx context.Context, cluster *extensionscont
 	}
 
 	registryStatus := &api.RegistryStatus{}
-	if _, _, err := e.decoder.Decode(extension.Status.ProviderStatus.Raw, nil, registryStatus); err != nil {
+	if err := runtime.DecodeInto(e.decoder, extension.Status.ProviderStatus.Raw, registryStatus); err != nil {
 		return nil, fmt.Errorf("failed to decode providerStatus of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}
 	return registryStatus, nil
