@@ -60,7 +60,7 @@ func (o *RegistryOptions) Complete() error {
 	}
 
 	config := configapi.Configuration{}
-	if err = runtime.DecodeInto(decoder, data, &config); err != nil {
+	if err := runtime.DecodeInto(decoder, data, &config); err != nil {
 		return err
 	}
 
