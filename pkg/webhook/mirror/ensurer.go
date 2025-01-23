@@ -64,7 +64,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 	}
 
 	mirrorConfig := &api.MirrorConfig{}
-	if _, _, err := e.decoder.Decode(extension.Spec.ProviderConfig.Raw, nil, mirrorConfig); err != nil {
+	if err := runtime.DecodeInto(e.decoder, extension.Spec.ProviderConfig.Raw, mirrorConfig); err != nil {
 		return fmt.Errorf("failed to decode providerConfig of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}
 
