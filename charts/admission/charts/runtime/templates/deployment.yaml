@@ -62,6 +62,8 @@ spec:
         - name: SOURCE_CLUSTER
           value: enabled
         {{- end }}
+        securityContext:
+          allowPrivilegeEscalation: false
         livenessProbe:
           httpGet:
             path: /healthz
