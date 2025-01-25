@@ -75,8 +75,8 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 
 	// TODO(dimitar-kostadinov): Clean up this invocation after May 2025.
 	{
-		if err := a.removeServicesFromManagedResourceStatus(ctx, namespace); err != nil {
-			return fmt.Errorf("failed to remove Services from the ManagedResource status: %w", err)
+		if err := ignoreManagedResourceIfContainsServices(ctx, a.client, namespace); err != nil {
+			return fmt.Errorf("failed to ignore ManagedResource (if needed): %w", err)
 		}
 	}
 
@@ -117,6 +117,17 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 
 	if err = registryCaches.Deploy(ctx); err != nil {
 		return fmt.Errorf("failed to deploy the registry caches component: %w", err)
+	}
+
+	// TODO(dimitar-kostadinov): Clean up this invocation after May 2025.
+	{
+		if err := removeServicesFromManagedResourceStatus(ctx, a.client, namespace); err != nil {
+			return fmt.Errorf("failed to remove Services from the ManagedResource status: %w", err)
+		}
+
+		if err := removeIgnoreAnnotationFromManagedResource(ctx, a.client, namespace); err != nil {
+			return fmt.Errorf("failed to remove ignore annotation from ManagedResource (if needed): %w", err)
+		}
 	}
 
 	registryStatus := computeProviderStatus(services, registryCaches.CASecretName())
@@ -264,17 +275,55 @@ func (a *actuator) updateProviderStatus(ctx context.Context, ex *extensionsv1alp
 	return a.client.Status().Patch(ctx, ex, patch)
 }
 
-// removeServicesFromManagedResourceStatus removes all resources with kind=Service from the ManagedResources .status.resources field.
-//
 // TODO(dimitar-kostadinov): Clean up this function after May 2025.
-func (a *actuator) removeServicesFromManagedResourceStatus(ctx context.Context, namespace string) error {
+func ignoreManagedResourceIfContainsServices(ctx context.Context, c client.Client, namespace string) error {
 	mr := &resourcesv1alpha1.ManagedResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "extension-registry-cache",
 			Namespace: namespace,
 		},
 	}
-	if err := a.client.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil {
+	if err := c.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	containsService := false
+	for _, objectRef := range mr.Status.Resources {
+		if objectRef.Kind == "Service" {
+			containsService = true
+			break
+		}
+	}
+
+	if !containsService {
+		// No Services in the ManagedResource status, no need to ignore the ManagedResource. Exit early.
+		return nil
+	}
+
+	patch := client.MergeFrom(mr.DeepCopy())
+	metav1.SetMetaDataAnnotation(&mr.ObjectMeta, resourcesv1alpha1.Ignore, "true")
+	if err := c.Patch(ctx, mr, patch); err != nil {
+		return fmt.Errorf("failed to ignore ManagedResource: %w", err)
+	}
+
+	return nil
+}
+
+// removeServicesFromManagedResourceStatus removes all resources with kind=Service from the ManagedResources .status.resources field.
+//
+// TODO(dimitar-kostadinov): Clean up this function after May 2025.
+func removeServicesFromManagedResourceStatus(ctx context.Context, c client.Client, namespace string) error {
+	mr := &resourcesv1alpha1.ManagedResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "extension-registry-cache",
+			Namespace: namespace,
+		},
+	}
+	if err := c.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
@@ -295,8 +344,38 @@ func (a *actuator) removeServicesFromManagedResourceStatus(ctx context.Context, 
 
 	patch := client.MergeFrom(mr.DeepCopy())
 	mr.Status.Resources = updatedRefs
-	if err := a.client.Status().Patch(ctx, mr, patch); err != nil {
+	if err := c.Status().Patch(ctx, mr, patch); err != nil {
 		return fmt.Errorf("failed to update ManagedResource status: %w", err)
+	}
+
+	return nil
+}
+
+// TODO(dimitar-kostadinov): Clean up this function after May 2025.
+func removeIgnoreAnnotationFromManagedResource(ctx context.Context, c client.Client, namespace string) error {
+	mr := &resourcesv1alpha1.ManagedResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "extension-registry-cache",
+			Namespace: namespace,
+		},
+	}
+	if err := c.Get(ctx, client.ObjectKeyFromObject(mr), mr); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	if !metav1.HasAnnotation(mr.ObjectMeta, resourcesv1alpha1.Ignore) {
+		// ManagedResources is not ignored, nothing to do. Exit early.
+		return nil
+	}
+
+	patch := client.MergeFrom(mr.DeepCopy())
+	delete(mr.Annotations, resourcesv1alpha1.Ignore)
+	if err := c.Patch(ctx, mr, patch); err != nil {
+		return fmt.Errorf("failed to remove ignore annotation from ManagedResource: %w", err)
 	}
 
 	return nil
