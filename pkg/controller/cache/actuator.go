@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	extensionsconfig "github.com/gardener/gardener/extensions/pkg/apis/config"
+	extensionsconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
 	"github.com/gardener/gardener/extensions/pkg/util"
@@ -228,7 +228,7 @@ func (a *actuator) ForceDelete(ctx context.Context, logger logr.Logger, ex *exte
 }
 
 func (a *actuator) fetchRegistryCacheServices(ctx context.Context, namespace string, registryConfig *api.RegistryConfig) ([]corev1.Service, error) {
-	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfig.RESTOptions{})
+	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfigv1alpha1.RESTOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create shoot client: %w", err)
 	}

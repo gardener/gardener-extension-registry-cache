@@ -45,7 +45,7 @@ func AddToManager(ctx context.Context, mgr manager.Manager) error {
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
 	_ = serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 
-	return extension.Add(ctx, mgr, extension.AddArgs{
+	return extension.Add(mgr, extension.AddArgs{
 		Actuator:          NewActuator(),
 		ControllerOptions: opts.ControllerOptions,
 		Name:              ControllerName,
