@@ -4,7 +4,7 @@ The `registry-cache` extension exposes metrics for the registry caches running i
 
 ## Metrics
 
-A registry cache serves [several metrics]((https://github.com/distribution/distribution/blob/v3.0.0-rc.2/registry/proxy/proxymetrics.go#L12-L21)). The metrics are scraped by the [Shoot's Prometheus instance](https://github.com/gardener/gardener/blob/master/docs/monitoring/README.md#shoot-prometheus).
+A registry cache serves [several metrics](https://github.com/distribution/distribution/blob/v3.0.0-rc.2/registry/proxy/proxymetrics.go#L12-L21). The metrics are scraped by the [Shoot's Prometheus instance](https://github.com/gardener/gardener/blob/master/docs/monitoring/README.md#shoot-prometheus).
 
 The `Registry Caches` dashboard in the Shoot's Plutono instance contains several panels which are built using the registry cache metrics. From the `Registry` dropdown menu you can select the upstream for which you wish the metrics to be displayed (by default, metrics are summed for all upstream registries).
 
@@ -18,13 +18,13 @@ The number of total incoming request received.
 
 #### registry_proxy_hits_total
 
-The number of total cache hits; i.e. the requested content exists in the registry cache's image store.
+The number of total cache hits; i.e. the requested content exists in the registry cache's image store and it is served from there (upstream is not contacted at all for serving the requested content).
 - Type: Counter
 - Labels: `upstream_host` `type`
 
 #### registry_proxy_misses_total
 
-The number of total cache misses; i.e. the requested content is fetched from the upstream.
+The number of total cache misses; i.e. the requested content does not exist in the registry cache's image store and it is fetched from the upstream.
 - Type: Counter
 - Labels: `upstream_host` `type`
 
