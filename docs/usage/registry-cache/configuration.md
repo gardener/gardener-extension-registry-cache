@@ -84,7 +84,7 @@ The registry-cache extension deploys a StatefulSet with a volume claim template.
 
 The `providerConfig.caches[].volume.size` field is the size of the registry cache volume. Defaults to `10Gi`. The size must be a positive quantity (greater than 0).
 This field is immutable. See [Increase the cache disk size](#increase-the-cache-disk-size) on how to resize the disk.
-The extension defines [alerts](https://github.com/gardener/gardener-extension-registry-cache/blob/v0.10.0/pkg/component/registrycaches/monitoring.go#L40-L105) for the volume. See [Alerting for Users](https://github.com/gardener/gardener/blob/master/docs/monitoring/alerting.md#alerting-for-users) on how to enable notifications for Shoot cluster alerts.
+The extension defines alerts for the volume. More information about the registry cache alerts and how to enable notifications for them can be found in the [alerts documentation](observability.md#alerts).
 
 The `providerConfig.caches[].volume.storageClassName` field is the name of the StorageClass used by the registry cache volume.
 This field is immutable. If the field is not specified, then the [default StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/#default-storageclass) will be used.
