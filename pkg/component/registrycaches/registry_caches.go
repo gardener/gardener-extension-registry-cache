@@ -17,7 +17,7 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
-	"github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
@@ -299,8 +299,8 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	utilruntime.Must(kubernetesutils.MakeUnique(configSecret))
 
 	additionalStatefulSetLabels := map[string]string{}
-	if cache.HighAvailability != nil && *cache.HighAvailability {
-		additionalStatefulSetLabels[v1alpha1.HighAvailabilityConfigType] = v1alpha1.HighAvailabilityConfigTypeServer
+	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
+		additionalStatefulSetLabels[resourcesv1alpha1.HighAvailabilityConfigType] = resourcesv1alpha1.HighAvailabilityConfigTypeServer
 	}
 
 	statefulSet := &appsv1.StatefulSet{

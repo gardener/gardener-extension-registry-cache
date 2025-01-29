@@ -646,8 +646,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 		Context("when HA is enabled", func() {
 			BeforeEach(func() {
-				values.Caches[0].HighAvailability = ptr.To(true)
-				values.Caches[1].HighAvailability = ptr.To(true)
+				values.Caches[0].HighAvailability = &api.HighAvailability{Enabled: true}
+				values.Caches[1].HighAvailability = &api.HighAvailability{Enabled: true}
 			})
 
 			It("should successfully deploy the resources", func() {
