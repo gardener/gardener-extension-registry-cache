@@ -44,6 +44,36 @@ Defaults to 168h (7 days).</p>
 </tr>
 </tbody>
 </table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.HighAvailability">HighAvailability
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache</a>)
+</p>
+<p>
+<p>HighAvailability contains settings for high availability of the registry cache.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>Enabled defines if the registry cache is scaled with the <a href="https://gardener.cloud/docs/gardener/high-availability/#system-components">High Availability</a> feature.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.Proxy">Proxy
 </h3>
 <p>
@@ -190,12 +220,14 @@ Proxy
 <td>
 <code>highAvailability</code></br>
 <em>
-bool
+<a href="#registry.extensions.gardener.cloud/v1alpha3.HighAvailability">
+HighAvailability
+</a>
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>HighAvailability defines if the StatefulSet is scaled with the <a href="https://gardener.cloud/docs/gardener/high-availability/#system-components">High Availability</a> feature.</p>
+<p>HighAvailability contains settings for high availability of the registry cache.</p>
 </td>
 </tr>
 </tbody>
