@@ -298,16 +298,11 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 	utilruntime.Must(kubernetesutils.MakeUnique(configSecret))
 
-	additionalStatefulSetLabels := map[string]string{}
-	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
-		additionalStatefulSetLabels[resourcesv1alpha1.HighAvailabilityConfigType] = resourcesv1alpha1.HighAvailabilityConfigTypeServer
-	}
-
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
-			Labels:    utils.MergeStringMaps(registryutils.GetLabels(name, upstreamLabel), additionalStatefulSetLabels),
+			Labels:    registryutils.GetLabels(name, upstreamLabel),
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: name,
@@ -467,6 +462,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Value: *cache.Proxy.HTTPSProxy,
 			})
 		}
+	}
+
+	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
+		metav1.SetMetaDataLabel(&statefulSet.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeServer)
 	}
 
 	var tlsSecret *corev1.Secret
