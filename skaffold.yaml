@@ -108,13 +108,21 @@ build:
 deploy:
   helm:
     releases:
-      - name: gardener-extension-registry-cache-admission
+      - name: gardener-extension-registry-cache-admission-appl # gardener-extension-registry-cache-admission-application would be too long as release name
         namespace: garden
         wait: true
-        chartPath: charts/admission
+        chartPath: charts/admission/charts/application
         setValueTemplates:
-          global.image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
-          global.image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
+          gardener.virtualCluster.serviceAccount.name: gardener-extension-registry-cache-admission
+          gardener.virtualCluster.serviceAccount.namespace: garden
+      - name: gardener-extension-registry-cache-admission-runtime
+        namespace: garden
+        wait: true
+        chartPath: charts/admission/charts/runtime
+        setValueTemplates:
+          gardener.runtimeCluster.priorityClassName: gardener-system-400
+          image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
+          image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
 profiles:
 - name: remote-extensions
   patches:
