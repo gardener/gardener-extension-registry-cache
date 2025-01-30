@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mirrorv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
@@ -185,10 +186,14 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 // MutatePodFn is an optional function to change the Pod specification depending on the image used.
 type MutatePodFn func(pod *corev1.Pod) *corev1.Pod
 
-// SleepInfinity is MutatePodFn that keeps the container running indefinitely.
-func SleepInfinity(pod *corev1.Pod) *corev1.Pod {
+// AlpinePodMutateFn is MutatePodFn that keeps the container running indefinitely.
+func AlpinePodMutateFn(pod *corev1.Pod) *corev1.Pod {
 	pod.Spec.Containers[0].Command = []string{"sleep"}
 	pod.Spec.Containers[0].Args = []string{"infinity"}
+	// "sleep infinity" runs as pid 1, pid 1 does not handle SIGTERM.
+	// Use terminationGracePeriodSeconds=0 to do not wait 30 seconds (default) for container to be terminated.
+	pod.Spec.TerminationGracePeriodSeconds = ptr.To[int64](0)
+
 	return pod
 }
 

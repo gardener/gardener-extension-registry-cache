@@ -133,7 +133,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("[" + upstreamHostPort + "] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, alpine3189), common.SleepInfinity)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, alpine3189), common.AlpinePodMutateFn)
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
