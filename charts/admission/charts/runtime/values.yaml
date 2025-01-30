@@ -27,10 +27,6 @@ kubeconfig:
 #   baseMountPath: /var/run/secrets/gardener.cloud
 #   genericKubeconfigSecretName: generic-token-kubeconfig
 #   tokenSecretName: access-registry-cache-admission
-serviceAccountTokenVolumeProjection:
-  enabled: false
-  expirationSeconds: 43200
-  audience: ""
 service:
   topologyAwareRouting:
     enabled: false
