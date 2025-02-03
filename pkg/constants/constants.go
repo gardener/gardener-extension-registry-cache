@@ -21,4 +21,7 @@ const (
 	RemoteURLAnnotation = "remote-url"
 	// UpstreamAnnotation is an annotation on registry cache Service which denotes the upstream registry host and optionally a port.
 	UpstreamAnnotation = "upstream"
+	// SchemeAnnotation is an annotation on registry cache Service which donotes the scheme used to access the registry cache
+	// Supported values are "http" and "https".
+	SchemeAnnotation = "scheme"
 )

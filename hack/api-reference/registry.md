@@ -44,6 +44,37 @@ Defaults to 168h (7 days).</p>
 </tr>
 </tbody>
 </table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.HTTP">HTTP
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache</a>)
+</p>
+<p>
+<p>HTTP contains settings for the HTTP server that hosts the registry cache.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>tls</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>TLS indicates whether TLS is enabled for the HTTP server of the registry cache.
+Defaults to true.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.Proxy">Proxy
 </h3>
 <p>
@@ -186,6 +217,20 @@ Proxy
 <p>Proxy contains settings for a proxy used in the registry cache.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>http</code></br>
+<em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.HTTP">
+HTTP
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HTTP contains settings for the HTTP server that hosts the registry cache.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCacheStatus">RegistryCacheStatus
@@ -225,7 +270,7 @@ string
 </td>
 <td>
 <p>Endpoint is the registry cache endpoint.
-Example: &ldquo;<a href="https://10.4.246.205:5000&quot;">https://10.4.246.205:5000&rdquo;</a></p>
+Examples: &ldquo;<a href="https://10.4.246.205:5000&quot;">https://10.4.246.205:5000&rdquo;</a>, &ldquo;<a href="http://10.4.26.127:5000&quot;">http://10.4.26.127:5000&rdquo;</a></p>
 </td>
 </tr>
 <tr>
@@ -290,7 +335,9 @@ string
 </em>
 </td>
 <td>
-<p>CASecretName is the name of the CA bundle secret.</p>
+<em>(Optional)</em>
+<p>CASecretName is the name of the CA bundle secret.
+The field is nil when there is no registry cache that enables TLS for the HTTP server.</p>
 </td>
 </tr>
 <tr>

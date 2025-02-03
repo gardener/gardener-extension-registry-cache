@@ -19,6 +19,12 @@ func SetDefaults_RegistryCache(cache *RegistryCache) {
 			TTL: DefaultTTL,
 		}
 	}
+
+	if cache.HTTP == nil {
+		cache.HTTP = &HTTP{
+			TLS: true,
+		}
+	}
 }
 
 // SetDefaults_Volume sets the defaults for a Volume.

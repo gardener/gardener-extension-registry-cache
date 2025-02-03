@@ -55,3 +55,12 @@ func VolumeStorageClassName(cache *registry.RegistryCache) *string {
 
 	return cache.Volume.StorageClassName
 }
+
+// TLSEnabled returns whether TLS is enabled for the HTTP server of the registry cache.
+func TLSEnabled(cache *registry.RegistryCache) bool {
+	if cache.HTTP == nil {
+		return true
+	}
+
+	return cache.HTTP.TLS
+}
