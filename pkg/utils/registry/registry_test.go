@@ -43,4 +43,16 @@ var _ = Describe("Registry utils", func() {
 		Entry("long upstream ends with port", "my-very-long-registry.long-subdomain.io:8443", "my-very-long-registry.long-subdomain.-8cb9e"),
 		Entry("long upstream ends like a port", "my-very-long-registry.long-subdomain.io-8443", "my-very-long-registry.long-subdomain.-e91ed"),
 	)
+
+	DescribeTable("#ComputeKubernetesResourceName",
+		func(upstream, expected string) {
+			Expect(registryutils.ComputeKubernetesResourceName(upstream)).To(Equal(expected))
+		},
+		Entry("short upstream", "my-registry.io", "registry-my-registry-io"),
+		Entry("short upstream ends with port", "my-registry.io:5000", "registry-my-registry-io-5000"),
+		Entry("short upstream ends like a port", "my-registry.io-5000", "registry-my-registry-io-5000"),
+		Entry("long upstream", "my-very-long-registry.very-long-subdomain.io", "registry-my-very-long-registry-very-long-subdo-2fae3"),
+		Entry("long upstream ends with port", "my-very-long-registry.long-subdomain.io:8443", "registry-my-very-long-registry-long-subdomain--8cb9e"),
+		Entry("long upstream ends like a port", "my-very-long-registry.long-subdomain.io-8443", "registry-my-very-long-registry-long-subdomain--e91ed"),
+	)
 })

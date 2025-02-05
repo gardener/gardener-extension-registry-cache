@@ -522,7 +522,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "", true))
 				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "", false))
 
-				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
@@ -551,7 +551,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "", true))
 				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "", false))
 
-				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
@@ -596,7 +596,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "", true))
 				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "", false))
 
-				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
@@ -701,7 +701,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret", true))
 				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`, false))
 
-				dockerSecretsManagerSecret, ok := secretsManager.Get("docker.io-tls")
+				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 

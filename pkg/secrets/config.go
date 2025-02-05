@@ -6,7 +6,6 @@ package secrets
 
 import (
 	"net"
-	"strings"
 	"time"
 
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
@@ -18,6 +17,7 @@ import (
 	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
+	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
 const (
@@ -69,5 +69,6 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 
 // TLSSecretNameForUpstream returns a TLS Secret name for a given upstream.
 func TLSSecretNameForUpstream(upstream string) string {
-	return strings.ReplaceAll(upstream, ":", "-") + "-tls"
+	name := registryutils.ComputeKubernetesResourceName(upstream)
+	return name + "-tls"
 }
