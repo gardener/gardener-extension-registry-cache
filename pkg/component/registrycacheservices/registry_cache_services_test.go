@@ -57,7 +57,7 @@ var _ = Describe("RegistryCacheServices", func() {
 
 		registryCacheServices component.DeployWaiter
 
-		serviceFor = func(name, upstream, remoteURL string) *corev1.Service {
+		serviceFor = func(name, upstream, remoteURL, scheme string) *corev1.Service {
 			return &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
@@ -69,6 +69,7 @@ var _ = Describe("RegistryCacheServices", func() {
 					Annotations: map[string]string{
 						"upstream":   upstream,
 						"remote-url": remoteURL,
+						"scheme":     scheme,
 					},
 				},
 				Spec: corev1.ServiceSpec{
@@ -97,6 +98,9 @@ var _ = Describe("RegistryCacheServices", func() {
 				},
 				{
 					Upstream: "europe-docker.pkg.dev",
+					HTTP: &api.HTTP{
+						TLS: false,
+					},
 				},
 			},
 		}
@@ -144,8 +148,8 @@ var _ = Describe("RegistryCacheServices", func() {
 			Expect(managedResource).To(DeepEqual(expectedMr))
 
 			Expect(managedResource).To(consistOf(
-				serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io"),
-				serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+				serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "https"),
+				serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http"),
 			))
 		})
 	})

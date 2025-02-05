@@ -20,6 +20,7 @@ shoot_names=(
   e2e-cache-ssc.local
   e2e-cache-fd.local
   e2e-cache-pr.local
+  e2e-cache-tls.local
   e2e-mirror-def.local
 )
 

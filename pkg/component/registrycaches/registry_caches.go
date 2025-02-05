@@ -64,7 +64,8 @@ func init() {
 type Interface interface {
 	component.DeployWaiter
 	// CASecretName returns the name of the CA secret.
-	CASecretName() string
+	// Returns nil when there is no registry cache that enables TLS for the HTTP server.
+	CASecretName() *string
 }
 
 // Values is a set of configuration values for the registry caches.
@@ -106,22 +107,28 @@ type registryCaches struct {
 	secretManager secretsmanager.Interface
 	values        Values
 
-	caSecretName string
+	caSecretName *string
 }
 
 // Deploy implements component.DeployWaiter.
 func (r *registryCaches) Deploy(ctx context.Context) error {
-	secretsConfig := secrets.ConfigsFor(r.values.Services)
-	generatedSecrets, err := extensionssecretsmanager.GenerateAllSecrets(ctx, r.secretManager, secretsConfig)
-	if err != nil {
-		return err
-	}
+	secretConfigs := secrets.ConfigsFor(r.values.Services)
 
-	caSecret, found := r.secretManager.Get(secrets.CAName)
-	if !found {
-		return fmt.Errorf("secret %q not found", secrets.CAName)
+	var generatedSecrets map[string]*corev1.Secret
+	if len(secretConfigs) > 1 {
+		// There is at least one cache with TLS enabled. Hence, we need to generate all secrets.
+		var err error
+		generatedSecrets, err = extensionssecretsmanager.GenerateAllSecrets(ctx, r.secretManager, secretConfigs)
+		if err != nil {
+			return err
+		}
+
+		caSecret, found := r.secretManager.Get(secrets.CAName)
+		if !found {
+			return fmt.Errorf("secret %q not found", secrets.CAName)
+		}
+		r.caSecretName = &caSecret.Name
 	}
-	r.caSecretName = caSecret.Name
 
 	data, err := r.computeResourcesData(ctx, generatedSecrets)
 	if err != nil {
@@ -190,7 +197,7 @@ func (r *registryCaches) WaitCleanup(ctx context.Context) error {
 	return managedresources.WaitUntilDeleted(timeoutCtx, r.client, r.namespace, managedResourceName)
 }
 
-func (r *registryCaches) CASecretName() string {
+func (r *registryCaches) CASecretName() *string {
 	return r.caSecretName
 }
 
@@ -198,13 +205,18 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecr
 	var objects []client.Object
 
 	for _, cache := range r.values.Caches {
-		tlsSecretName := secrets.TLSSecretNameForUpstream(cache.Upstream)
-		secret, ok := generatedSecrets[tlsSecretName]
-		if !ok {
-			return nil, fmt.Errorf("secret for upstream %s not found", cache.Upstream)
+		var generatedTLSSecret *corev1.Secret
+		if helper.TLSEnabled(&cache) {
+			tlsSecretName := secrets.TLSSecretNameForUpstream(cache.Upstream)
+
+			var ok bool
+			generatedTLSSecret, ok = generatedSecrets[tlsSecretName]
+			if !ok {
+				return nil, fmt.Errorf("secret for upstream %s not found", cache.Upstream)
+			}
 		}
 
-		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, secret)
+		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, generatedTLSSecret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
 		}
@@ -217,7 +229,7 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecr
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *api.RegistryCache, secret *corev1.Secret) ([]client.Object, error) {
+func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *api.RegistryCache, generatedTLSSecret *corev1.Secret) ([]client.Object, error) {
 	if cache.Volume == nil || cache.Volume.Size == nil {
 		return nil, fmt.Errorf("registry cache volume size is required")
 	}
@@ -240,6 +252,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			"http_debug_addr": fmt.Sprintf(":%d", debugPort),
 			"proxy_remoteurl": remoteURL,
 			"proxy_ttl":       helper.GarbageCollectionTTL(cache).Duration.String(),
+			"http_tls":        helper.TLSEnabled(cache),
 		}
 	)
 
@@ -285,17 +298,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 	utilruntime.Must(kubernetesutils.MakeUnique(configSecret))
 
-	tlsSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + "-tls",
-			Namespace: metav1.NamespaceSystem,
-			Labels:    registryutils.GetLabels(name, upstreamLabel),
-		},
-		Type: corev1.SecretTypeOpaque,
-		Data: secret.Data,
-	}
-	utilruntime.Must(kubernetesutils.MakeUnique(tlsSecret))
-
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -314,9 +316,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 						v1beta1constants.LabelNetworkPolicyToDNS:            v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
-					Annotations: map[string]string{
-						fmt.Sprintf(checksumAnnotation, name): utils.ComputeChecksum(tlsSecret.Data),
-					},
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: ptr.To(false),
@@ -415,10 +414,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 									Name:      registryConfigVolumeName,
 									MountPath: "/etc/distribution",
 								},
-								{
-									Name:      registryCertsVolumeName,
-									MountPath: "/etc/distribution/certs",
-								},
 							},
 						},
 					},
@@ -428,15 +423,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
 									SecretName: configSecret.Name,
-								},
-							},
-						},
-						{
-							Name: registryCertsVolumeName,
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName:  tlsSecret.Name,
-									DefaultMode: ptr.To[int32](0640),
 								},
 							},
 						},
@@ -476,6 +462,38 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Value: *cache.Proxy.HTTPSProxy,
 			})
 		}
+	}
+
+	var tlsSecret *corev1.Secret
+	if helper.TLSEnabled(cache) {
+		tlsSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name + "-tls",
+				Namespace: metav1.NamespaceSystem,
+				Labels:    registryutils.GetLabels(name, upstreamLabel),
+			},
+			Type: corev1.SecretTypeOpaque,
+			Data: generatedTLSSecret.Data,
+		}
+		utilruntime.Must(kubernetesutils.MakeUnique(tlsSecret))
+
+		statefulSet.Spec.Template.Annotations = map[string]string{
+			fmt.Sprintf(checksumAnnotation, name): utils.ComputeChecksum(tlsSecret.Data),
+		}
+
+		statefulSet.Spec.Template.Spec.Volumes = append(statefulSet.Spec.Template.Spec.Volumes, corev1.Volume{
+			Name: registryCertsVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName:  tlsSecret.Name,
+					DefaultMode: ptr.To[int32](0640),
+				},
+			},
+		})
+		statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts = append(statefulSet.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      registryCertsVolumeName,
+			MountPath: "/etc/distribution/certs",
+		})
 	}
 
 	var vpa *vpaautoscalingv1.VerticalPodAutoscaler

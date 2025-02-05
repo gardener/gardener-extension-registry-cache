@@ -97,7 +97,8 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		return fmt.Errorf("failed to fetch registry cache Services: %w", err)
 	}
 
-	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, secrets.ConfigsFor([]corev1.Service{}))
+	secretConfigs := secrets.ConfigsFor([]corev1.Service{})
+	secretsManager, err := extensionssecretsmanager.SecretsManagerForCluster(ctx, logger.WithName("secretsmanager"), clock.RealClock{}, a.client, cluster, secrets.ManagerIdentity, secretConfigs)
 	if err != nil {
 		return err
 	}
@@ -249,12 +250,12 @@ func (a *actuator) fetchRegistryCacheServices(ctx context.Context, namespace str
 	return serviceList.Items, nil
 }
 
-func computeProviderStatus(services []corev1.Service, caSecretName string) *v1alpha3.RegistryStatus {
+func computeProviderStatus(services []corev1.Service, caSecretName *string) *v1alpha3.RegistryStatus {
 	caches := make([]v1alpha3.RegistryCacheStatus, 0, len(services))
 	for _, service := range services {
 		caches = append(caches, v1alpha3.RegistryCacheStatus{
 			Upstream:  service.Annotations[constants.UpstreamAnnotation],
-			Endpoint:  fmt.Sprintf("https://%s:%d", service.Spec.ClusterIP, constants.RegistryCachePort),
+			Endpoint:  fmt.Sprintf("%s://%s:%d", service.Annotations[constants.SchemeAnnotation], service.Spec.ClusterIP, constants.RegistryCachePort),
 			RemoteURL: service.Annotations[constants.RemoteURLAnnotation],
 		})
 	}

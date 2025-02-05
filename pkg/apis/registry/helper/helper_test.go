@@ -105,4 +105,13 @@ var _ = Describe("Helpers", func() {
 		Entry("volume is nil", &registry.RegistryCache{Volume: nil}, nil),
 		Entry("volume.storageClassname is not nil", &registry.RegistryCache{Volume: &registry.Volume{StorageClassName: ptr.To("foo")}}, ptr.To("foo")),
 	)
+
+	DescribeTable("#TLSEnabled",
+		func(cache *registry.RegistryCache, expected bool) {
+			Expect(helper.TLSEnabled(cache)).To(Equal(expected))
+		},
+		Entry("http is nil", &registry.RegistryCache{HTTP: nil}, true),
+		Entry("http.tls is false", &registry.RegistryCache{HTTP: &registry.HTTP{TLS: false}}, false),
+		Entry("http.tls is true", &registry.RegistryCache{HTTP: &registry.HTTP{TLS: true}}, true),
+	)
 })
