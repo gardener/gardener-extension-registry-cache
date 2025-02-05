@@ -10,9 +10,11 @@ import (
 	"time"
 
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
+	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
@@ -48,7 +50,8 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 				Name:                        name,
 				CommonName:                  name,
 				CertType:                    secretutils.ServerCert,
-				IPAddresses:                 []net.IP{net.ParseIP(service.Spec.ClusterIP).To4()},
+				DNSNames:                    kubernetesutils.DNSNamesForService(service.Name, metav1.NamespaceSystem),
+				IPAddresses:                 []net.IP{net.ParseIP(service.Spec.ClusterIP)},
 				Validity:                    ptr.To(90 * 24 * time.Hour),
 				SkipPublishingCACertificate: true,
 			},
