@@ -17,7 +17,7 @@ updates:
     interval: daily
   ignore:
   - dependency-name: "golang"
-    versions: ["*rc*"]
+    versions: ["*.*rc*"]
   labels:
   - kind/enhancement
 - package-ecosystem: docker
@@ -26,6 +26,6 @@ updates:
     interval: daily
   ignore:
   - dependency-name: "golang"
-    versions: ["*rc*"]
+    versions: ["*.*rc*"]
   labels:
   - kind/enhancement
