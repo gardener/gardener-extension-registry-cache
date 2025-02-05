@@ -38,8 +38,9 @@ var _ = Describe("Ensurer", func() {
 	const namespace = "shoot--foo--bar"
 
 	var (
-		logger = logr.Discard()
-		ctx    = context.Background()
+		logger  = logr.Discard()
+		ctx     = context.Background()
+		caCerts = []string{"/etc/containerd/certs.d/ca-bundle.pem"}
 
 		decoder    runtime.Decoder
 		fakeClient client.Client
@@ -89,7 +90,7 @@ var _ = Describe("Ensurer", func() {
 									},
 									{
 										Upstream:  "europe-docker.pkg.dev",
-										Endpoint:  "https://10.0.0.2:5000",
+										Endpoint:  "http://10.0.0.2:5000",
 										RemoteURL: "https://europe-docker.pkg.dev",
 									},
 									{
@@ -207,9 +208,9 @@ var _ = Describe("Ensurer", func() {
 			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
 
 			expectedRegistries := []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000"),
-				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "https://10.0.0.2:5000"),
-				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000"),
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000", caCerts),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000", nil),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000", caCerts),
 			}
 
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
@@ -225,9 +226,9 @@ var _ = Describe("Ensurer", func() {
 
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000"),
-				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "https://10.0.0.2:5000"),
-				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000"),
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000", caCerts),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000", nil),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000", caCerts),
 			}...)
 
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
@@ -243,15 +244,15 @@ var _ = Describe("Ensurer", func() {
 
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000"),
-				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "https://10.0.0.2:5000"),
-				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000"),
+				createRegistryConfig("docker.io", "https://registry-1.docker.io", "https://10.0.0.1:5000", caCerts),
+				createRegistryConfig("europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http://10.0.0.2:5000", nil),
+				createRegistryConfig("my-registry.io:5000", "http://my-registry.io:5000", "https://10.0.0.3:5000", caCerts),
 			}...)
 
 			criConfig.Containerd.Registries = append(criConfig.Containerd.Registries, []extensionsv1alpha1.RegistryConfig{
-				createRegistryConfig("docker.io", "foo", "bar"),
-				createRegistryConfig("europe-docker.pkg.dev", "foo", "bar"),
-				createRegistryConfig("my-registry.io:5000", "foo", "bar"),
+				createRegistryConfig("docker.io", "foo", "bar", caCerts),
+				createRegistryConfig("europe-docker.pkg.dev", "foo", "bar", nil),
+				createRegistryConfig("my-registry.io:5000", "foo", "bar", caCerts),
 			}...)
 
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
@@ -289,7 +290,7 @@ var _ = Describe("Ensurer", func() {
 									APIVersion: v1alpha3.SchemeGroupVersion.String(),
 									Kind:       "RegistryStatus",
 								},
-								CASecretName: caSecretName,
+								CASecretName: ptr.To(caSecretName),
 							},
 						},
 					},
@@ -395,6 +396,28 @@ var _ = Describe("Ensurer", func() {
 			Expect(err).To(MatchError(ContainSubstring("failed to decode providerStatus of extension '%s/registry-cache'", namespace)))
 		})
 
+		It("should do nothing if .status.providerStatus.caSecretName is nil", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Status.DefaultStatus.ProviderStatus = &runtime.RawExtension{
+				Object: &v1alpha3.RegistryStatus{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: v1alpha3.SchemeGroupVersion.String(),
+						Kind:       "RegistryStatus",
+					},
+					CASecretName: nil,
+				},
+			}
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := cache.NewEnsurer(fakeClient, decoder, logger)
+			expectedNewFiles := make([]extensionsv1alpha1.File, len(newFiles))
+			copy(expectedNewFiles, newFiles)
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)).To(Succeed())
+			Expect(newFiles).To(Equal(expectedNewFiles))
+		})
+
 		It("should return err when the CA bundle secret does not exist", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -488,7 +511,7 @@ var _ = Describe("Ensurer", func() {
 	})
 })
 
-func createRegistryConfig(upstream, server, host string) extensionsv1alpha1.RegistryConfig {
+func createRegistryConfig(upstream, server, host string, caCerts []string) extensionsv1alpha1.RegistryConfig {
 	return extensionsv1alpha1.RegistryConfig{
 		Upstream: upstream,
 		Server:   ptr.To(server),
@@ -496,7 +519,7 @@ func createRegistryConfig(upstream, server, host string) extensionsv1alpha1.Regi
 			{
 				URL:          host,
 				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
-				CACerts:      []string{"/etc/containerd/certs.d/ca-bundle.pem"},
+				CACerts:      caCerts,
 			},
 		},
 		ReadinessProbe: ptr.To(true),

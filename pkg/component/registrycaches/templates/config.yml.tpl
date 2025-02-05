@@ -22,9 +22,11 @@ http:
       enabled: true
       path: /metrics
   draintimeout: 25s
+  {{- if .http_tls }}
   tls:
     certificate: /etc/distribution/certs/tls.crt
     key: /etc/distribution/certs/tls.key
+  {{- end }}
   headers:
     X-Content-Type-Options: [nosniff]
 health:

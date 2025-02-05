@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
@@ -117,6 +118,7 @@ func computeResourcesDataForService(cache *api.RegistryCache) *corev1.Service {
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
+		scheme        = computeScheme(cache)
 	)
 
 	service := &corev1.Service{
@@ -127,6 +129,7 @@ func computeResourcesDataForService(cache *api.RegistryCache) *corev1.Service {
 			Annotations: map[string]string{
 				constants.UpstreamAnnotation:  cache.Upstream,
 				constants.RemoteURLAnnotation: remoteURL,
+				constants.SchemeAnnotation:    scheme,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -142,4 +145,13 @@ func computeResourcesDataForService(cache *api.RegistryCache) *corev1.Service {
 	}
 
 	return service
+}
+
+func computeScheme(cache *api.RegistryCache) string {
+	scheme := "http"
+	if helper.TLSEnabled(cache) {
+		scheme = "https"
+	}
+
+	return scheme
 }

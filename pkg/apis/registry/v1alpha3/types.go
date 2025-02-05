@@ -46,6 +46,9 @@ type RegistryCache struct {
 	// Proxy contains settings for a proxy used in the registry cache.
 	// +optional
 	Proxy *Proxy `json:"proxy,omitempty"`
+	// HTTP contains settings for the HTTP server that hosts the registry cache.
+	// +optional
+	HTTP *HTTP `json:"http,omitempty"`
 }
 
 // Volume contains settings for the registry cache volume.
@@ -79,6 +82,13 @@ type Proxy struct {
 	HTTPSProxy *string `json:"httpsProxy,omitempty"`
 }
 
+// HTTP contains settings for the HTTP server that hosts the registry cache.
+type HTTP struct {
+	// TLS indicates whether TLS is enabled for the HTTP server of the registry cache.
+	// Defaults to true.
+	TLS bool `json:"tls"`
+}
+
 var (
 	// DefaultTTL is the default time to live of a blob in the cache.
 	DefaultTTL = metav1.Duration{Duration: 7 * 24 * time.Hour}
@@ -91,7 +101,9 @@ type RegistryStatus struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// CASecretName is the name of the CA bundle secret.
-	CASecretName string `json:"caSecretName"`
+	// The field is nil when there is no registry cache that enables TLS for the HTTP server.
+	// +optional
+	CASecretName *string `json:"caSecretName,omitempty"`
 	// Caches is a slice of deployed registry caches.
 	Caches []RegistryCacheStatus `json:"caches"`
 }
@@ -101,7 +113,7 @@ type RegistryCacheStatus struct {
 	// Upstream is the remote registry host (and optionally port).
 	Upstream string `json:"upstream"`
 	// Endpoint is the registry cache endpoint.
-	// Example: "https://10.4.246.205:5000"
+	// Examples: "https://10.4.246.205:5000", "http://10.4.26.127:5000"
 	Endpoint string `json:"endpoint"`
 	// RemoteURL is the remote registry URL.
 	RemoteURL string `json:"remoteURL"`

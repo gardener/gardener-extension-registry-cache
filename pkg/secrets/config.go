@@ -40,6 +40,11 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 	}
 
 	for _, service := range services {
+		scheme := service.Annotations[constants.SchemeAnnotation]
+		if scheme == "http" {
+			continue
+		}
+
 		upstream := service.Annotations[constants.UpstreamAnnotation]
 		name := TLSSecretNameForUpstream(upstream)
 

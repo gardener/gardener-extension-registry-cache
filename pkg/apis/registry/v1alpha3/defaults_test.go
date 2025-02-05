@@ -40,6 +40,9 @@ var _ = Describe("Defaults", func() {
 						GarbageCollection: &v1alpha3.GarbageCollection{
 							TTL: metav1.Duration{Duration: 7 * 24 * time.Hour},
 						},
+						HTTP: &v1alpha3.HTTP{
+							TLS: true,
+						},
 					},
 				},
 			}
@@ -56,6 +59,9 @@ var _ = Describe("Defaults", func() {
 						},
 						GarbageCollection: &v1alpha3.GarbageCollection{
 							TTL: metav1.Duration{Duration: 0},
+						},
+						HTTP: &v1alpha3.HTTP{
+							TLS: false,
 						},
 					},
 				},

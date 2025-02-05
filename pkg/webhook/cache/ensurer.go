@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"slices"
+	"strings"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
@@ -71,10 +72,14 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 			Hosts: []extensionsv1alpha1.RegistryHost{{
 				URL:          cache.Endpoint,
 				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
-				CACerts:      []string{caBundlePath},
 			}},
 			ReadinessProbe: ptr.To(true),
 		}
+
+		if strings.HasPrefix(cache.Endpoint, "https://") {
+			cfg.Hosts[0].CACerts = []string{caBundlePath}
+		}
+
 		i := slices.IndexFunc(newCRIConfig.Containerd.Registries, func(registryConfig extensionsv1alpha1.RegistryConfig) bool {
 			return registryConfig.Upstream == cfg.Upstream
 		})
@@ -104,9 +109,14 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.Garde
 		return err
 	}
 
+	if registryStatus.CASecretName == nil {
+		e.logger.Info("Registry status does not contain caSecretName, skipping the OperatingSystemConfig mutation", "shoot", client.ObjectKeyFromObject(cluster.Shoot))
+		return nil
+	}
+
 	caSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      registryStatus.CASecretName,
+			Name:      *registryStatus.CASecretName,
 			Namespace: cluster.ObjectMeta.Name,
 		},
 	}
