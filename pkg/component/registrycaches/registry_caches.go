@@ -9,7 +9,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"strings"
 	"text/template"
 	"time"
 
@@ -245,7 +244,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 
 	var (
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
-		name          = "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
+		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		configValues  = map[string]interface{}{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCachePort),
