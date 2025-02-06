@@ -121,7 +121,7 @@ var _ = Describe("RegistryCacheServices", func() {
 	})
 
 	JustBeforeEach(func() {
-		registryCacheServices = New(c, namespace, values)
+		registryCacheServices = New(c, c, namespace, values)
 	})
 
 	Describe("#Deploy", func() {

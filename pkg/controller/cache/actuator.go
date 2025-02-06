@@ -38,18 +38,20 @@ import (
 )
 
 // NewActuator returns an actuator responsible for registry-cache Extension resources.
-func NewActuator(client client.Client, decoder runtime.Decoder, config config.Configuration) extension.Actuator {
+func NewActuator(client client.Client, apiReader client.Reader, decoder runtime.Decoder, config config.Configuration) extension.Actuator {
 	return &actuator{
-		client:  client,
-		decoder: decoder,
-		config:  config,
+		client:    client,
+		apiReader: apiReader,
+		decoder:   decoder,
+		config:    config,
 	}
 }
 
 type actuator struct {
-	client  client.Client
-	decoder runtime.Decoder
-	config  config.Configuration
+	client    client.Client
+	apiReader client.Reader
+	decoder   runtime.Decoder
+	config    config.Configuration
 }
 
 // Reconcile the Extension resource.
@@ -80,7 +82,7 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		}
 	}
 
-	registryCacheServices := registrycacheservices.New(a.client, namespace, registrycacheservices.Values{
+	registryCacheServices := registrycacheservices.New(a.client, a.apiReader, namespace, registrycacheservices.Values{
 		Caches: registryConfig.Caches,
 	})
 
@@ -157,7 +159,7 @@ func (a *actuator) Delete(ctx context.Context, logger logr.Logger, ex *extension
 		return err
 	}
 
-	registryCacheServices := registrycacheservices.New(a.client, namespace, registrycacheservices.Values{})
+	registryCacheServices := registrycacheservices.New(a.client, a.apiReader, namespace, registrycacheservices.Values{})
 	if err := component.OpDestroyAndWait(registryCacheServices).Destroy(ctx); err != nil {
 		return fmt.Errorf("failed to destroy the registry cache services component: %w", err)
 	}
@@ -179,7 +181,7 @@ func (a *actuator) Restore(ctx context.Context, logger logr.Logger, ex *extensio
 func (a *actuator) Migrate(ctx context.Context, _ logr.Logger, ex *extensionsv1alpha1.Extension) error {
 	namespace := ex.GetNamespace()
 
-	registryCacheServices := registrycacheservices.New(a.client, namespace, registrycacheservices.Values{
+	registryCacheServices := registrycacheservices.New(a.client, a.apiReader, namespace, registrycacheservices.Values{
 		KeepObjectsOnDestroy: true,
 	})
 	if err := component.OpDestroyAndWait(registryCacheServices).Destroy(ctx); err != nil {
@@ -212,7 +214,7 @@ func (a *actuator) ForceDelete(ctx context.Context, logger logr.Logger, ex *exte
 		return err
 	}
 
-	registryCacheServices := registrycacheservices.New(a.client, namespace, registrycacheservices.Values{})
+	registryCacheServices := registrycacheservices.New(a.client, a.apiReader, namespace, registrycacheservices.Values{})
 	if err := registryCacheServices.Destroy(ctx); err != nil {
 		return fmt.Errorf("failed to destroy the registry cache services component: %w", err)
 	}
