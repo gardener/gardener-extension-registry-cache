@@ -48,6 +48,7 @@ build:
             - pkg/utils/registry
             - pkg/webhook/cache
             - pkg/webhook/mirror
+            - third_party/gardener/gardener/pkg/utils/managedresources
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'

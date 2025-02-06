@@ -13,3 +13,4 @@
 !go.sum
 !Makefile
 !VERSION
+!third_party
