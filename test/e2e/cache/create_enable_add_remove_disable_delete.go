@@ -44,7 +44,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("[ghcr.io] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3189Image, common.SleepInfinity)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3189Image, common.AlpinePodMutateFn)
 
 		By("Add the registry.gitlab.com upstream to the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -60,7 +60,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("[registry.gitlab.com] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GitlabRegistryJitesoftAlpine31710Image, common.SleepInfinity)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GitlabRegistryJitesoftAlpine31710Image, common.AlpinePodMutateFn)
 
 		By("Remove the registry.gitlab.com upstream from the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)

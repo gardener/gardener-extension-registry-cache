@@ -52,7 +52,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		// "should enable and disable the registry-cache extension" and "should enable extension, hibernate Shoot, reconcile Shoot, wake up Shoot, disable extension"
 		// tests and may be present in the Node.
 		// So the current test will use ghcr.io/jitesoft/alpine:3.15.11, ghcr.io/jitesoft/alpine:3.16.9 and ghcr.io/jitesoft/alpine:3.17.9.
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine31511Image, common.SleepInfinity)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine31511Image, common.AlpinePodMutateFn)
 
 		By("Start CA rotation")
 		ctx, cancel = context.WithTimeout(parentCtx, 25*time.Minute)
@@ -62,7 +62,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		Expect(v1beta1helper.GetShootCARotationPhase(f.Shoot.Status.Credentials)).To(Equal(gardencorev1beta1.RotationPrepared))
 
 		By("Verify registry-cache works when CA rotation phase is Prepared")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3169Image, common.SleepInfinity)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3169Image, common.AlpinePodMutateFn)
 
 		By("Complete CA rotation")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -79,7 +79,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		f.ShootClient = shootClient
 
 		By("Verify registry-cache works when CA rotation phase is Completed")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3179Image, common.SleepInfinity)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3179Image, common.AlpinePodMutateFn)
 
 		By("Disable the registry-cache extension")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
