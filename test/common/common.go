@@ -43,8 +43,8 @@ const (
 	GithubRegistryJitesoftAlpine3169Image = "ghcr.io/jitesoft/alpine:3.16.9"
 	// GithubRegistryJitesoftAlpine3179Image is the ghcr.io/jitesoft/alpine:3.17.9 image.
 	GithubRegistryJitesoftAlpine3179Image = "ghcr.io/jitesoft/alpine:3.17.9"
-	// GithubRegistryJitesoftAlpine3189Image is the ghcr.io/jitesoft/alpine:3.18.9 image.
-	GithubRegistryJitesoftAlpine3189Image = "ghcr.io/jitesoft/alpine:3.18.9"
+	// GithubRegistryJitesoftAlpine3188Image is the ghcr.io/jitesoft/alpine:3.18.8 image.
+	GithubRegistryJitesoftAlpine3188Image = "ghcr.io/jitesoft/alpine:3.18.8"
 	// GithubRegistryJitesoftAlpine3194Image is the ghcr.io/jitesoft/alpine:3.19.4 image.
 	GithubRegistryJitesoftAlpine3194Image = "ghcr.io/jitesoft/alpine:3.19.4"
 	// GithubRegistryJitesoftAlpine3203Image is the ghcr.io/jitesoft/alpine:3.20.3 image.

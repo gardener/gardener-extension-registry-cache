@@ -48,7 +48,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3189Image, common.AlpinePodMutateFn)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3188Image, common.AlpinePodMutateFn)
 
 		By("Enable TLS")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -62,8 +62,8 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		// We are using ghcr.io/jitesoft/alpine:3.19.4 as ghcr.io/jitesoft/alpine:3.18.9 is already used in the test.
-		// Hence, ghcr.io/jitesoft/alpine:3.18.9 will be present in the Node.
+		// We are using ghcr.io/jitesoft/alpine:3.19.4 as ghcr.io/jitesoft/alpine:3.18.8 is already used in the test.
+		// Hence, ghcr.io/jitesoft/alpine:3.18.8 will be present in the Node.
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3194Image, common.AlpinePodMutateFn)
 
 		By("Delete Shoot")
