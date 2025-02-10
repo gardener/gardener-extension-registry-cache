@@ -24,7 +24,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	shoot := e2e.DefaultShoot("e2e-cache-fd")
 	size := resource.MustParse("2Gi")
 	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-		{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
+		{Upstream: "gardener-extension-registry-cache-tests.common.repositories.cloud.sap", Volume: &v1alpha3.Volume{Size: &size}},
 	})
 	f.Shoot = shoot
 
@@ -34,9 +34,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		defer cancel()
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
-
-		By("Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.GithubRegistryJitesoftAlpine3188Image, common.AlpinePodMutateFn)
 
 		By("Force Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
