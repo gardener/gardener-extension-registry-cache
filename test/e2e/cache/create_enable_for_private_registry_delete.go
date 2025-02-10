@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	alpine3189          = "alpine:3.18.9"
+	alpine3188          = "alpine:3.18.8"
 	registry300rc2Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-rc.2"
 	upstreamConfigYAML  = `version: 0.1
 log:
@@ -133,7 +133,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("[" + upstreamHostPort + "] Verify registry-cache works")
-		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, alpine3189), common.AlpinePodMutateFn)
+		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, fmt.Sprintf("%s/%s", upstreamHostPort, alpine3188), common.AlpinePodMutateFn)
 
 		By("Delete Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
@@ -308,22 +308,22 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 	return
 }
 
-// pushImageToUpstreamRegistry pushes the alpine:3.18.9 image to the upstream registry.
+// pushImageToUpstreamRegistry pushes the alpine:3.18.8 image to the upstream registry.
 func pushImageToUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFramework, upstreamHostPort, password string) {
 	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
 
 	rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
-	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --all-platforms %s > /dev/null", common.GithubRegistryJitesoftAlpine3189Image))
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images pull --all-platforms %s > /dev/null", common.GithubRegistryJitesoftAlpine3188Image))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", common.GithubRegistryJitesoftAlpine3189Image, upstreamHostPort, alpine3189))
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images tag %s %s/%s > /dev/null", common.GithubRegistryJitesoftAlpine3188Image, upstreamHostPort, alpine3188))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, alpine3189))
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images push --plain-http -u admin:%s %s/%s > /dev/null", password, upstreamHostPort, alpine3188))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, alpine3189))
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s/%s > /dev/null", upstreamHostPort, alpine3188))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", common.GithubRegistryJitesoftAlpine3189Image))
+	_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf("ctr images rm %s > /dev/null", common.GithubRegistryJitesoftAlpine3188Image))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	ExpectWithOffset(1, rootPodExecutor.Clean(ctx)).To(Succeed())

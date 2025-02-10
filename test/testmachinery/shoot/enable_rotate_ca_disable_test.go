@@ -48,7 +48,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		// Images ghcr.io/jitesoft/alpine:3.18.9, ghcr.io/jitesoft/alpine:3.19.4 and ghcr.io/jitesoft/alpine:3.20.3 are already used by the
+		// Images ghcr.io/jitesoft/alpine:3.18.8, ghcr.io/jitesoft/alpine:3.19.4 and ghcr.io/jitesoft/alpine:3.20.3 are already used by the
 		// "should enable and disable the registry-cache extension" and "should enable extension, hibernate Shoot, reconcile Shoot, wake up Shoot, disable extension"
 		// tests and may be present in the Node.
 		// So the current test will use ghcr.io/jitesoft/alpine:3.15.11, ghcr.io/jitesoft/alpine:3.16.9 and ghcr.io/jitesoft/alpine:3.17.9.

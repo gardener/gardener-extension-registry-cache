@@ -47,8 +47,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 		})).To(Succeed())
 
 		By("Verify registry-cache works")
-		// We are using ghcr.io/jitesoft/alpine:3.19.4 as ghcr.io/jitesoft/alpine:3.18.9 is already used by the "should enable and disable the registry-cache extension" test.
-		// Hence, ghcr.io/jitesoft/alpine:3.18.9 will be present in the Node.
+		// We are using ghcr.io/jitesoft/alpine:3.19.4 as ghcr.io/jitesoft/alpine:3.18.8 is already used by the "should enable and disable the registry-cache extension" test.
+		// Hence, ghcr.io/jitesoft/alpine:3.18.8 will be present in the Node.
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3194Image, common.AlpinePodMutateFn)
 
 		By("Hibernate Shoot")
