@@ -15,17 +15,11 @@ updates:
   directory: /
   schedule:
     interval: daily
-  ignore:
-  - dependency-name: "golang"
-    versions: ["*.*rc*"]
   labels:
   - kind/enhancement
 - package-ecosystem: docker
   directory: /.test-defs
   schedule:
     interval: daily
-  ignore:
-  - dependency-name: "golang"
-    versions: ["*.*rc*"]
   labels:
   - kind/enhancement
