@@ -149,9 +149,9 @@ func VerifyHostsTOMLFilesCreatedForAllNodes(ctx context.Context, log logr.Logger
 
 		for upstream, hostsTOML := range upstreamToHostsTOML {
 			EventuallyWithOffset(1, ctx, func() string {
-				command := fmt.Sprintf("cat /etc/containerd/certs.d/%s/hosts.toml", upstream)
+				command := []string{"cat", fmt.Sprintf("/etc/containerd/certs.d/%s/hosts.toml", upstream)}
 				// err is ignored intentionally to reduce flakes from transient network errors in prow.
-				response, _ := rootPodExecutor.Execute(ctx, command)
+				response, _ := rootPodExecutor.Execute(ctx, command...)
 
 				return string(response)
 			}).WithPolling(10 * time.Second).Should(Equal(hostsTOML))
@@ -171,9 +171,9 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 
 		for _, upstream := range upstreams {
 			EventuallyWithOffset(2, ctx, func() string {
-				command := fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)
+				command := []string{"sh", "-c", fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)}
 				// err is ignored intentionally to reduce flakes from transient network errors in prow.
-				response, _ := rootPodExecutor.Execute(ctx, command)
+				response, _ := rootPodExecutor.Execute(ctx, command...)
 
 				return string(response)
 			}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", node.Name, upstream))
@@ -257,7 +257,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 
 		containerID := strings.TrimPrefix(registryPod.Status.ContainerStatuses[0].ContainerID, "containerd://")
 		log.Info("Registry container ID", "containerID", containerID)
-		output, err := rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractRegistryLocation, containerID))
+		output, err := rootPodExecutor.Execute(ctx, []string{"sh", "-c", fmt.Sprintf(jqExtractRegistryLocation, containerID)}...)
 		if err != nil {
 			log.Error(err, "Failed to extract the source location of the '/var/lib/registry' mount from the container's config.json file", "output", string(output))
 			return fmt.Errorf("failed to extract the source location of the '/var/lib/registry' mount from the container's config.json file: command failed with err %w", err)
@@ -265,7 +265,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		registryRootPath := string(output)
 		log.Info("Registry root path on node", "registryRootPath", registryRootPath)
 
-		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(`cat %s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link`, registryRootPath, path, tag))
+		output, err = rootPodExecutor.Execute(ctx, []string{"cat", fmt.Sprintf(`%s/docker/registry/v2/repositories/%s/_manifests/tags/%s/current/link`, registryRootPath, path, tag)}...)
 		if err != nil {
 			log.Error(err, "Failed to get the image index digest", "image", image, "output", string(output))
 			return fmt.Errorf("failed to get the %s image index digest: %w", image, err)
@@ -273,7 +273,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		imageIndexPath := sha256Path(string(output))
 		log.Info("Image index path under <repo-root>/docker/registry/v2/blobs/", "imageIndexPath", imageIndexPath)
 
-		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractManifestDigest, arch, registryRootPath, imageIndexPath))
+		output, err = rootPodExecutor.Execute(ctx, []string{"sh", "-c", fmt.Sprintf(jqExtractManifestDigest, arch, registryRootPath, imageIndexPath)}...)
 		if err != nil {
 			log.Error(err, "Failed to get the image manifests digest", "image", image, "output", string(output))
 			return fmt.Errorf("failed to get the %s image manifests digest: %w", image, err)
@@ -281,7 +281,7 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 		manifestPath := sha256Path(string(output))
 		log.Info("Image manifest path under <repo-root>/docker/registry/v2/blobs/", "image", image, "manifestPath", manifestPath)
 
-		output, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(jqExtractLayersDigests, registryRootPath, manifestPath))
+		output, err = rootPodExecutor.Execute(ctx, []string{"sh", "-c", fmt.Sprintf(jqExtractLayersDigests, registryRootPath, manifestPath)}...)
 		if err != nil {
 			log.Error(err, "Failed to get the image layers digests", "image", image, "output", string(output))
 			return fmt.Errorf("failed to get the %s image layers digests: %w", image, err)
@@ -291,11 +291,13 @@ func VerifyRegistryCache(parentCtx context.Context, log logr.Logger, shootClient
 
 		var errs []error
 		for _, layerDigest := range layerDigests {
-			_, err = rootPodExecutor.Execute(ctx, fmt.Sprintf(`[ -f %s/docker/registry/v2/blobs/%s/data ]`, registryRootPath, sha256Path(layerDigest)))
+			_, err = rootPodExecutor.Execute(ctx, []string{"ls", fmt.Sprintf(`%s/docker/registry/v2/blobs/%s/data`, registryRootPath, sha256Path(layerDigest))}...)
 			if err != nil {
 				log.Error(err, "Failed to find image layer", "image", image, "digest", layerDigest)
 				errs = append(errs, fmt.Errorf("failed to find image %s layer with digest %s", image, layerDigest))
+				continue
 			}
+
 			log.Info("Image layer exists", "image", image, "digest", layerDigest)
 		}
 
