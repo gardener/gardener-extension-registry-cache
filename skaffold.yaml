@@ -53,11 +53,16 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache
-      hooks:
-        after:
-          - command: 
-            - bash 
-            - hack/generate-kustomize-patch-controllerdeployment-registry-cache.sh
+    - image: local-skaffold/gardener-extension-registry-cache/charts/extension
+      custom:
+        buildCommand: |
+          bash $GARDENER_HACK_DIR_PUSH_HELM ./charts/gardener-extension-registry-cache .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-registry-cache
+      requires:
+      - image: local-skaffold/gardener-extension-registry-cache
+        alias: IMG
 manifests:
   kustomize:
     paths:
@@ -73,6 +78,15 @@ deploy:
       apply:
         - --server-side
         - --force-conflicts
+resourceSelector:
+  # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
+  allow:
+  - groupKind: ControllerDeployment.core.gardener.cloud
+    image:
+    - .helm.ociRepository.ref
+  - groupKind: CloudProfile.core.gardener.cloud
+    image:
+    - .*
 ---
 apiVersion: skaffold/v4beta7
 kind: Config
