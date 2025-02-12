@@ -33,8 +33,6 @@ func DefaultShootCreationFramework() *framework.ShootCreationFramework {
 
 // DefaultShoot returns a Shoot object with default values for the e2e tests.
 func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
-	purpose := gardencorev1beta1.ShootPurposeTesting
-
 	return &gardencorev1beta1.Shoot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: generateName,
@@ -43,10 +41,12 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			},
 		},
 		Spec: gardencorev1beta1.ShootSpec{
-			CloudProfile:      &gardencorev1beta1.CloudProfileReference{Name: "local"},
+			CloudProfile: &gardencorev1beta1.CloudProfileReference{
+				Name: "local",
+			},
 			SecretBindingName: ptr.To("local"),
 			Region:            "local",
-			Purpose:           &purpose,
+			Purpose:           ptr.To(gardencorev1beta1.ShootPurposeTesting),
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.31.1",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
@@ -54,7 +54,9 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 					RegistryPullQPS:     ptr.To[int32](10),
 					RegistryBurst:       ptr.To[int32](20),
 				},
-				KubeAPIServer: &gardencorev1beta1.KubeAPIServerConfig{},
+				VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
+					Enabled: false,
+				},
 			},
 			Networking: &gardencorev1beta1.Networking{
 				Type:  ptr.To("calico"),
