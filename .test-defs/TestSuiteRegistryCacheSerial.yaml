@@ -7,7 +7,6 @@ spec:
   description: registry-cache extension test suite that includes all serial tests
 
   activeDeadlineSeconds: 13200
-  labels: ["shoot"]
   behavior:
   - serial
 
