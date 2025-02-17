@@ -113,20 +113,19 @@ deploy:
         wait: true
         chartPath: charts/admission/charts/application
         setValueTemplates:
-          gardener.virtualCluster.serviceAccount.name: gardener-extension-registry-cache-admission
-          gardener.virtualCluster.serviceAccount.namespace: garden
+          gardener.virtualCluster.enabled: false
       - name: gardener-extension-registry-cache-admission-runtime
         namespace: garden
         wait: true
         chartPath: charts/admission/charts/runtime
         setValueTemplates:
-          gardener.runtimeCluster.priorityClassName: gardener-system-400
+          gardener.virtualCluster.enabled: false
           image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
           image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
 profiles:
 - name: remote-extensions
   patches:
   - op: add
-    path: /deploy/helm/releases/0/setValues
+    path: /deploy/helm/releases/1/setValues
     value:
-      global.vpa.enabled: false
+      vpa.enabled: false
