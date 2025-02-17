@@ -126,7 +126,7 @@ ci-e2e-kind:
 export SKAFFOLD_BUILD_CONCURRENCY = 0
 extension-up extension-dev: export SKAFFOLD_DEFAULT_REPO = garden.local.gardener.cloud:5001
 extension-up extension-dev: export SKAFFOLD_PUSH = true
-extension-up extension-dev: export EXTENSION_VERSION = $(VERSION)
+extension-up extension-dev remote-extension-up: export EXTENSION_VERSION = $(VERSION)
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 extension-up extension-dev extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
