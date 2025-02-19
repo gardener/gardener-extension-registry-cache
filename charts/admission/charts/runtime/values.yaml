@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company and Gardener contributors
-#
-# SPDX-License-Identifier: Apache-2.0
-
 image:
   repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache-admission
   tag: latest
@@ -34,8 +30,5 @@ service:
 gardener:
   virtualCluster:
     enabled: true
-    serviceAccount: {}
-#     name: gardener-extension-registry-cache-admission
-#     namespace: kube-system
   runtimeCluster: {}
 #   priorityClassName: gardener-garden-system-400
