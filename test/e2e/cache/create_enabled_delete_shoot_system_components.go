@@ -8,7 +8,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/test/framework"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -40,24 +42,10 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		Expect(f.CreateShootAndWaitForCreation(ctx, false)).To(Succeed())
 		f.Verify()
 
-		By("Make sure there is no I/O timeout during containerd image pulls")
+		By("Make sure there are no I/O timeout logs in containerd for image pulls")
 		ctx, cancel = context.WithTimeout(parentCtx, 3*time.Minute)
 		defer cancel()
-
-		nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
-
-		rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
-		defer func(ctx context.Context, rootPodExecutor framework.RootPodExecutor) {
-			_ = rootPodExecutor.Clean(ctx)
-		}(ctx, rootPodExecutor)
-		// Make sure we don't have a Node bootstrap issue, i.e. there is no I/O timeout during image pull in the containerd logs.
-		// https://github.com/gardener/gardener-extension-registry-cache/pull/68 fixes the Node bootstrap issue
-		// and this tests verifies that the scenario does not regress.
-		output, err := rootPodExecutor.Execute(ctx, []string{"sh", "-c", `journalctl -u containerd | grep -E "msg=\"trying next host\" error=\"failed to do request: Head .+ i/o timeout\"" || test $? = 1`}...)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(output)).To(BeEmpty())
+		verifyNoTimeoutLogsInContainerd(ctx, f.Logger, f.ShootFramework.ShootClient)
 
 		By("[europe-docker.pkg.dev] Verify registry-cache works")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootFramework.ShootClient, common.ArtifactRegistryNginx1176Image)
@@ -71,3 +59,20 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		Expect(f.DeleteShootAndWaitForDeletion(ctx, f.Shoot)).To(Succeed())
 	})
 })
+
+func verifyNoTimeoutLogsInContainerd(ctx context.Context, logger logr.Logger, shootClient kubernetes.Interface) {
+	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, shootClient, ptr.To("local"))
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
+
+	rootPodExecutor := framework.NewRootPodExecutor(logger, shootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
+	defer func(ctx context.Context, rootPodExecutor framework.RootPodExecutor) {
+		_ = rootPodExecutor.Clean(ctx)
+	}(ctx, rootPodExecutor)
+	// Make sure we don't have a Node bootstrap issue, i.e. there is no I/O timeout during image pull in the containerd logs.
+	// https://github.com/gardener/gardener-extension-registry-cache/pull/68 fixes the Node bootstrap issue
+	// and this test verifies that the scenario does not regress.
+	output, err := rootPodExecutor.Execute(ctx, []string{"sh", "-c", `journalctl -u containerd | grep -E "msg=\"trying next host\" error=\"failed to do request: Head .+ i/o timeout\"" || test $? = 1`}...)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	Expect(string(output)).To(BeEmpty())
+}
