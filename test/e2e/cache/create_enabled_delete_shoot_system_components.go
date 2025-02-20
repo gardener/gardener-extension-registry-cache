@@ -74,5 +74,5 @@ func verifyNoTimeoutLogsInContainerd(ctx context.Context, logger logr.Logger, sh
 	// and this test verifies that the scenario does not regress.
 	output, err := rootPodExecutor.Execute(ctx, []string{"sh", "-c", `journalctl -u containerd | grep -E "msg=\"trying next host\" error=\"failed to do request: Head .+ i/o timeout\"" || test $? = 1`}...)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	Expect(string(output)).To(BeEmpty())
+	ExpectWithOffset(1, string(output)).To(BeEmpty())
 }
