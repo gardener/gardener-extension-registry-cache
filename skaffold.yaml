@@ -1,22 +1,8 @@
----
-apiVersion: skaffold/v4beta7
+apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: extension
 build:
-  insecureRegistries:
-    - garden.local.gardener.cloud:5001
-  tagPolicy:
-    customTemplate:
-      template: "{{.version}}-{{.sha}}"
-      components:
-        - name: version
-          envTemplate:
-            template: "{{.EXTENSION_VERSION}}"
-        # inputDigest is used to inject a digest of the artifact source into the built image tag
-        # and therefore into the SKAFFOLD_IMAGE environment variable which is used when generating the corresponding ControllerDeployment
-        - name: sha
-          inputDigest: {}
   artifacts:
     - image: local-skaffold/gardener-extension-registry-cache
       ko:
@@ -53,10 +39,23 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
+  tagPolicy:
+    customTemplate:
+      template: '{{.version}}-{{.sha}}'
+      components:
+        - name: version
+          envTemplate:
+            template: '{{.EXTENSION_VERSION}}'
+        # inputDigest is used to inject a digest of the artifact source into the built image tag
+        # and therefore into the SKAFFOLD_IMAGE environment variable which is used when generating the corresponding ControllerDeployment
+        - name: sha
+          inputDigest: {}
 manifests:
   kustomize:
     paths:
-    - local-setup
+      - local-setup
 deploy:
   # --server-side apply is a workaround for https://github.com/gardener/gardener/issues/10267.
   # kubectl apply attempts a strategic merge patch which fails for a ControllerDeployment.
@@ -71,17 +70,15 @@ deploy:
 resourceSelector:
   # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
   allow:
-  - groupKind: ControllerDeployment.core.gardener.cloud
-    image:
-    - .helm.values.image.ref
+    - groupKind: ControllerDeployment.core.gardener.cloud
+      image:
+        - .helm.values.image.ref
 ---
-apiVersion: skaffold/v4beta7
+apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
   name: admission
 build:
-  insecureRegistries:
-    - garden.local.gardener.cloud:5001
   artifacts:
     - image: local-skaffold/gardener-extension-registry-cache-admission
       ko:
@@ -107,27 +104,29 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache-admission
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
 deploy:
   helm:
     releases:
       - name: gardener-extension-registry-cache-admission-appl # gardener-extension-registry-cache-admission-application would be too long as release name
-        namespace: garden
-        wait: true
         chartPath: charts/admission/charts/application
-        setValueTemplates:
-          gardener.virtualCluster.enabled: false
-      - name: gardener-extension-registry-cache-admission-runtime
         namespace: garden
-        wait: true
-        chartPath: charts/admission/charts/runtime
         setValueTemplates:
-          gardener.virtualCluster.enabled: false
+          gardener.virtualCluster.enabled: "false"
+        wait: true
+      - name: gardener-extension-registry-cache-admission-runtime
+        chartPath: charts/admission/charts/runtime
+        namespace: garden
+        setValueTemplates:
+          gardener.virtualCluster.enabled: "false"
           image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
           image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
+        wait: true
 profiles:
-- name: remote-extensions
-  patches:
-  - op: add
-    path: /deploy/helm/releases/1/setValues
-    value:
-      vpa.enabled: false
+  - name: remote-extensions
+    patches:
+      - op: add
+        path: /deploy/helm/releases/1/setValues
+        value:
+          vpa.enabled: false
