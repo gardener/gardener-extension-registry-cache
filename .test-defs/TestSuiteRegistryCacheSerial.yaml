@@ -1,13 +1,12 @@
 apiVersion: testmachinery.sapcloud.io
 kind: TestDefinition
 metadata:
-  name: registry-cache-beta-serial-test-suite
+  name: registry-cache-serial-test-suite
 spec:
   owner: gardener-oq@listserv.sap.com
-  description: registry-cache extension test suite that includes all serial beta tests
+  description: registry-cache extension test suite that includes all serial tests
 
   activeDeadlineSeconds: 13200
-  labels: ["shoot", "beta"]
   behavior:
   - serial
 
@@ -19,7 +18,7 @@ spec:
       -kubecfg=$TM_KUBECONFIG_PATH/gardener.config
       -project-namespace=$PROJECT_NAMESPACE
       -shoot-name=$SHOOT_NAME
-      -ginkgo.focus="\[BETA\].*\[SERIAL\]"
+      -ginkgo.focus="\[SERIAL\]"
       -ginkgo.skip="\[DISRUPTIVE\]"
       -ginkgo.timeout=9000s
 

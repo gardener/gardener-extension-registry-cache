@@ -29,7 +29,7 @@ const (
 var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	f := framework.NewShootFramework(nil)
 
-	f.Serial().Beta().CIt("should enable extension, rotate CA, disable extension", func(parentCtx context.Context) {
+	f.Serial().CIt("should enable extension, rotate CA, disable extension", func(parentCtx context.Context) {
 		By("Enable the registry-cache extension")
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
