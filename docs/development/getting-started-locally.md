@@ -44,3 +44,28 @@ make extension-down
 ```
 
 The make target will delete the ControllerDeployment and ControllerRegistration of the extension, and the registry-cache admission helm deployment.
+
+## Alternatively you can deploy registry cache using gardener operator
+
+To do this, make sure you are have a running local setup based on [gardener-operator](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator). The `KUBECONFIG` environment variable should target the operator local KinD cluster (i.e. <gardener/gardener project root>/example/gardener-local/kind/operator/kubeconfig).
+
+- Create registry cache `Extension.operator.gardener.cloud` resource:
+  ```bash
+  make extension-operator-up
+  ```
+  The `extension-operator-up` make target will build the registry cache admission and extension images, helm chart OCI artefacts for admission runtime, admission application and extension. Then the images and artefacts are upload into default skaffold registry (i.e. garden.local.gardener.cloud:5001) and **extension-registry-cache** `Extension.operator.gardener.cloud` resource is deployed into the KinD cluster. Based on this resource gardener-operator will deploy registry cache admission component, as well as registry cache ControllerDeployment and ControllerRegistration resources.
+
+- Create Shoot cluster.
+
+  To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. <gardener/gardener project root>/example/operator/virtual-garden/kubeconfig) and run:
+  ```bash
+  kubectl create -f example/shoot-registry-cache.yaml
+  ```
+
+-  Tearing Down the registry cache `Extension.operator.gardener.cloud` resource.
+
+  Make sure the environment variable `KUBECONFIG` points to the operator's local KinD cluster and then run:
+  ```bash
+  make extension-operator-down
+  ```
+  The gardener-operator will delete registry cache admission component and registry cache ControllerDeployment and ControllerRegistration resources. Finally, it will delete the **extension-registry-cache** `Extension.operator.gardener.cloud` resource.

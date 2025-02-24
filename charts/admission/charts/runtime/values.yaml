@@ -1,4 +1,5 @@
 image:
+  # ref: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache-admission:latest
   repository: europe-docker.pkg.dev/gardener-project/public/gardener/extensions/registry-cache-admission
   tag: latest
   pullPolicy: IfNotPresent

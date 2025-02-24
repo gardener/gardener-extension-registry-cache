@@ -124,11 +124,11 @@ ci-e2e-kind:
 
 # speed-up skaffold deployments by building all images concurrently
 export SKAFFOLD_BUILD_CONCURRENCY = 0
-extension-up extension-dev: export SKAFFOLD_DEFAULT_REPO = garden.local.gardener.cloud:5001
-extension-up extension-dev: export SKAFFOLD_PUSH = true
-extension-up extension-dev remote-extension-up: export EXTENSION_VERSION = $(VERSION)
+extension-up extension-dev extension-operator-up: export SKAFFOLD_DEFAULT_REPO = garden.local.gardener.cloud:5001
+extension-up extension-dev extension-operator-up: export SKAFFOLD_PUSH = true
+extension-up extension-dev remote-extension-up extension-operator-up: export EXTENSION_VERSION = $(VERSION)
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-extension-up extension-dev extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
+extension-up extension-dev extension-down extension-operator-up extension-operator-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
 extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
@@ -150,3 +150,11 @@ remote-extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) delete
 	@# The validating webhook is not part of the chart but it is created on admission Pod startup. Hence, we have to delete it explicitly.
 	$(KUBECTL) delete validatingwebhookconfiguration gardener-extension-registry-cache-admission --ignore-not-found
+
+extension-operator-up extension-operator-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
+extension-operator-up: export GARDENER_HACK_DIR_PUSH_HELM = $(GARDENER_HACK_DIR)/push-helm.sh
+extension-operator-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
+
+extension-operator-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	$(SKAFFOLD) delete
