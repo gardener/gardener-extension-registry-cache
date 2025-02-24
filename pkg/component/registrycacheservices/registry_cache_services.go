@@ -23,7 +23,6 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
-	forkedmanagedresources "github.com/gardener/gardener-extension-registry-cache/third_party/gardener/gardener/pkg/utils/managedresources"
 )
 
 const (
@@ -93,8 +92,7 @@ func (r *registryCacheServices) Wait(ctx context.Context) error {
 	timeoutCtx, cancel := context.WithTimeout(ctx, TimeoutWaitForManagedResource)
 	defer cancel()
 
-	// TODO(ialidzhikov): Switch back to managedresources.WaitUntilHealthy when we vendor gardener/gardener version that contains https://github.com/gardener/gardener/pull/11321.
-	return forkedmanagedresources.WaitUntilHealthy(timeoutCtx, r.apiReader, r.namespace, managedResourceName)
+	return managedresources.WaitUntilHealthy(timeoutCtx, r.apiReader, r.namespace, managedResourceName)
 }
 
 func (r *registryCacheServices) WaitCleanup(ctx context.Context) error {
