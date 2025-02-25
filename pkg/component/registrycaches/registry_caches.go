@@ -20,6 +20,7 @@ import (
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
+	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
 	"github.com/gardener/gardener/pkg/utils"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/managedresources"
@@ -223,7 +224,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 
 	const (
-		checksumAnnotation       = "checksum/secret-%s-tls"
 		registryCacheVolumeName  = "cache-volume"
 		registryConfigVolumeName = "config-volume"
 		registryCertsVolumeName  = "certs-volume"
@@ -314,9 +314,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 						v1beta1constants.LabelNetworkPolicyToDNS:            v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
-					Annotations: map[string]string{
-						fmt.Sprintf(checksumAnnotation, name): utils.ComputeChecksum(tlsSecret.Data),
-					},
 				},
 				Spec: corev1.PodSpec{
 					AutomountServiceAccountToken: ptr.To(false),
@@ -474,6 +471,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 			})
 		}
 	}
+
+	utilruntime.Must(references.InjectAnnotations(statefulSet))
 
 	var vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	if r.values.VPAEnabled {
