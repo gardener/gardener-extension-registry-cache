@@ -65,14 +65,14 @@ build:
     - image: local-skaffold/gardener-extension-registry-cache-admission/charts/application
       custom:
         buildCommand: |
-          bash "$GARDENER_HACK_DIRECTORY/push-helm.sh" ./charts/admission/charts/application .image.ref
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/admission/charts/application .image.ref
         dependencies:
           paths:
             - charts/admission/charts/application
     - image: local-skaffold/gardener-extension-registry-cache-admission/charts/runtime
       custom:
         buildCommand: |
-          bash "$GARDENER_HACK_DIRECTORY/push-helm.sh" ./charts/admission/charts/runtime .image.ref
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/admission/charts/runtime .image.ref
         dependencies:
           paths:
             - charts/admission/charts/runtime
@@ -82,7 +82,7 @@ build:
     - image: local-skaffold/gardener-extension-registry-cache/charts/extension
       custom:
         buildCommand: |
-          bash "$GARDENER_HACK_DIRECTORY/push-helm.sh" ./charts/gardener-extension-registry-cache .image.ref
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/gardener-extension-registry-cache .image.ref
         dependencies:
           paths:
             - charts/gardener-extension-registry-cache
