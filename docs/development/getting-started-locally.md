@@ -44,3 +44,31 @@ make extension-down
 ```
 
 The make target will delete the ControllerDeployment and ControllerRegistration of the extension, and the registry-cache admission helm deployment.
+
+## Alternative Setup Using the `gardener-operator` Local Setup
+
+Alternatively, you can deploy the registry-cache extension in the `gardener-operator` local setup. To do this, make sure you are have a running local setup based on [Alternative Way to Set Up Garden and Seed Leveraging `gardener-operator`](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator). The `KUBECONFIG` environment variable should target the operator local KinD cluster (i.e. `<path_to_gardener_project>/example/gardener-local/kind/operator/kubeconfig`).
+
+#### Creating the registry-cache `Extension.operator.gardener.cloud` resource:
+
+```bash
+make extension-operator-up
+```
+
+The corresponding make target will build the registry-cache admission and extension container images, OCI artifacts for the admission runtime and application charts, and the extension chart. Then, the container images and the OCI artifacts are pushed into the default skaffold registry (i.e. `garden.local.gardener.cloud:5001`). Next, the registry-cache `Extension.operator.gardener.cloud` resource is deployed into the KinD cluster. Based on this resource the gardener-operator will deploy the registry-cache admission component, as well as the registry-cache ControllerDeployment and ControllerRegistration resources.
+
+#### Creating a Shoot Cluster
+
+To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. `<path_to_gardener_project>/example/operator/virtual-garden/kubeconfig`) and then execute:
+```bash
+kubectl create -f example/shoot-registry-cache.yaml
+```
+
+#### Delete the registry-cache `Extension.operator.gardener.cloud` resource
+
+Make sure the environment variable `KUBECONFIG` points to the operator's local KinD cluster and then run:
+```bash
+make extension-operator-down
+```
+
+The corresponding make target will delete the `Extension.operator.gardener.cloud` resource. Consequently, the gardener-operator will delete the registry-cache admission component and registry-cache ControllerDeployment and ControllerRegistration resources.

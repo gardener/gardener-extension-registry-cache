@@ -18,8 +18,10 @@ function run() {
   fi
 }
 
-run "skaffold.yaml" "gardener-extension-registry-cache"           "extension"
-run "skaffold.yaml" "gardener-extension-registry-cache-admission" "admission"
+run "skaffold.yaml"          "gardener-extension-registry-cache"           "extension"
+run "skaffold.yaml"          "gardener-extension-registry-cache-admission" "admission"
+run "skaffold-operator.yaml" "gardener-extension-registry-cache"           "operator"
+run "skaffold-operator.yaml" "gardener-extension-registry-cache-admission" "operator"
 
 if ! $success ; then
   exit 1

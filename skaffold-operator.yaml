@@ -1,0 +1,114 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+metadata:
+  name: operator
+build:
+  artifacts:
+    - image: local-skaffold/gardener-extension-registry-cache
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-registry-cache
+            - cmd/gardener-extension-registry-cache/app
+            - imagevector
+            - imagevector/images.yaml
+            - pkg/apis/config
+            - pkg/apis/config/v1alpha1
+            - pkg/apis/config/validation
+            - pkg/apis/mirror
+            - pkg/apis/mirror/install
+            - pkg/apis/mirror/v1alpha1
+            - pkg/apis/registry
+            - pkg/apis/registry/helper
+            - pkg/apis/registry/install
+            - pkg/apis/registry/v1alpha3
+            - pkg/cmd
+            - pkg/component/registrycaches
+            - pkg/component/registrycaches/monitoring/dashboard.json
+            - pkg/component/registrycaches/templates/config.yml.tpl
+            - pkg/component/registrycacheservices
+            - pkg/constants
+            - pkg/controller/cache
+            - pkg/controller/mirror
+            - pkg/secrets
+            - pkg/utils/registry
+            - pkg/webhook/cache
+            - pkg/webhook/mirror
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-registry-cache
+    - image: local-skaffold/gardener-extension-registry-cache-admission
+      ko:
+        dependencies:
+          paths:
+            - cmd/gardener-extension-registry-cache-admission
+            - cmd/gardener-extension-registry-cache-admission/app
+            - pkg/admission/cmd
+            - pkg/admission/validator/cache
+            - pkg/admission/validator/helper
+            - pkg/admission/validator/mirror
+            - pkg/apis/mirror
+            - pkg/apis/mirror/install
+            - pkg/apis/mirror/v1alpha1
+            - pkg/apis/mirror/validation
+            - pkg/apis/registry
+            - pkg/apis/registry/helper
+            - pkg/apis/registry/install
+            - pkg/apis/registry/v1alpha3
+            - pkg/apis/registry/validation
+            - pkg/constants
+            - VERSION
+        ldflags:
+          - '{{.LD_FLAGS}}'
+        main: ./cmd/gardener-extension-registry-cache-admission
+    - image: local-skaffold/gardener-extension-registry-cache-admission/charts/application
+      custom:
+        buildCommand: |
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/admission/charts/application .image.ref
+        dependencies:
+          paths:
+            - charts/admission/charts/application
+    - image: local-skaffold/gardener-extension-registry-cache-admission/charts/runtime
+      custom:
+        buildCommand: |
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/admission/charts/runtime .image.ref
+        dependencies:
+          paths:
+            - charts/admission/charts/runtime
+      requires:
+        - image: local-skaffold/gardener-extension-registry-cache-admission
+          alias: IMG
+    - image: local-skaffold/gardener-extension-registry-cache/charts/extension
+      custom:
+        buildCommand: |
+          bash "$GARDENER_HACK_DIR/push-helm.sh" ./charts/gardener-extension-registry-cache .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-registry-cache
+      requires:
+        - image: local-skaffold/gardener-extension-registry-cache
+          alias: IMG
+  insecureRegistries:
+    - garden.local.gardener.cloud:5001
+  tagPolicy:
+    customTemplate:
+      template: '{{.version}}-{{.sha}}'
+      components:
+        - name: version
+          envTemplate:
+            template: '{{.EXTENSION_VERSION}}'
+        - name: sha
+          inputDigest: {}
+manifests:
+  rawYaml:
+    - local-setup/operator-extension-resource.yaml
+deploy:
+  kubectl: {}
+resourceSelector:
+  allow:
+    - groupKind: Extension.operator.gardener.cloud
+      image:
+        - .spec.deployment.extension.helm.ociRepository.ref
+        - .spec.deployment.admission.runtimeCluster.helm.ociRepository.ref
+        - .spec.deployment.admission.virtualCluster.helm.ociRepository.ref
