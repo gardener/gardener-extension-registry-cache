@@ -152,7 +152,7 @@ remote-extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(KUBECTL) delete validatingwebhookconfiguration gardener-extension-registry-cache-admission --ignore-not-found
 
 extension-operator-up extension-operator-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
-extension-operator-up: export GARDENER_HACK_DIR_PUSH_HELM = $(GARDENER_HACK_DIR)/push-helm.sh
+extension-operator-up: export GARDENER_HACK_DIRECTORY = $(GARDENER_HACK_DIR)
 extension-operator-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
 

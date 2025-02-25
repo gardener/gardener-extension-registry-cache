@@ -34,7 +34,6 @@ build:
             - pkg/utils/registry
             - pkg/webhook/cache
             - pkg/webhook/mirror
-            - third_party/gardener/gardener/pkg/utils/managedresources
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'
@@ -66,14 +65,14 @@ build:
     - image: local-skaffold/gardener-extension-registry-cache-admission/charts/application
       custom:
         buildCommand: |
-          bash $GARDENER_HACK_DIR_PUSH_HELM ./charts/admission/charts/application .image.ref
+          bash "$GARDENER_HACK_DIRECTORY/push-helm.sh" ./charts/admission/charts/application .image.ref
         dependencies:
           paths:
             - charts/admission/charts/application
     - image: local-skaffold/gardener-extension-registry-cache-admission/charts/runtime
       custom:
         buildCommand: |
-          bash $GARDENER_HACK_DIR_PUSH_HELM ./charts/admission/charts/runtime .image.ref
+          bash "$GARDENER_HACK_DIRECTORY/push-helm.sh" ./charts/admission/charts/runtime .image.ref
         dependencies:
           paths:
             - charts/admission/charts/runtime
@@ -83,7 +82,7 @@ build:
     - image: local-skaffold/gardener-extension-registry-cache/charts/extension
       custom:
         buildCommand: |
-          bash $GARDENER_HACK_DIR_PUSH_HELM ./charts/gardener-extension-registry-cache .image.ref
+          bash "$GARDENER_HACK_DIRECTORY/push-helm.sh" ./charts/gardener-extension-registry-cache .image.ref
         dependencies:
           paths:
             - charts/gardener-extension-registry-cache
