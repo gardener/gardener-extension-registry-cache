@@ -13,7 +13,6 @@ import (
 	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
-	"github.com/gardener/gardener/pkg/utils"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
 	"github.com/gardener/gardener/pkg/utils/retry"
 	retryfake "github.com/gardener/gardener/pkg/utils/retry/fake"
@@ -238,7 +237,7 @@ proxy:
 				return config
 			}
 
-			statefulSetFor = func(name, upstream, size, configSecretName, tlsSecretName, tlsSecretChecksum string, storageClassName *string, additionalEnvs []corev1.EnvVar) *appsv1.StatefulSet {
+			statefulSetFor = func(name, upstream, size, configSecretName, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar) *appsv1.StatefulSet {
 				env := []corev1.EnvVar{
 					{
 						Name:  "OTEL_TRACES_EXPORTER",
@@ -247,7 +246,7 @@ proxy:
 				}
 				env = append(env, additionalEnvs...)
 
-				return &appsv1.StatefulSet{
+				statefulSet := &appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
 						Namespace: "kube-system",
@@ -267,9 +266,6 @@ proxy:
 						Replicas: ptr.To[int32](1),
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
-								Annotations: map[string]string{
-									"checksum/secret-" + name + "-tls": tlsSecretChecksum,
-								},
 								Labels: map[string]string{
 									"app":                              name,
 									"upstream-host":                    upstream,
@@ -411,6 +407,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 						},
 					},
 				}
+
+				utilruntime.Must(references.InjectAnnotations(statefulSet))
+
+				return statefulSet
 			}
 
 			vpaFor = func(name string) *vpaautoscalingv1.VerticalPodAutoscaler {
@@ -514,11 +514,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResource).To(consistOf(
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, nil),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, nil, nil),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
 					arTLSSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), nil),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, ptr.To("premium"), nil),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -547,10 +547,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResource).To(consistOf(
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, nil),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, nil, nil),
 					arConfigSecret,
 					arTLSSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), nil),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, ptr.To("premium"), nil),
 				))
 			})
 		})
@@ -596,11 +596,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResource).To(consistOf(
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, additionalEnvs),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, nil, additionalEnvs),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
 					arTLSSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), additionalEnvs),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, ptr.To("premium"), additionalEnvs),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -668,11 +668,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResource).To(consistOf(
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, utils.ComputeChecksum(dockerTLSSecret.Data), nil, nil),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, dockerTLSSecret.Name, nil, nil),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
 					arTLSSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, utils.ComputeChecksum(arTLSSecret.Data), ptr.To("premium"), nil),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, arTLSSecret.Name, ptr.To("premium"), nil),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
