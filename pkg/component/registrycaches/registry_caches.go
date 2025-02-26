@@ -235,7 +235,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 	}
 
 	const (
-		checksumAnnotation       = "checksum/secret-%s-tls"
 		registryCacheVolumeName  = "cache-volume"
 		registryConfigVolumeName = "config-volume"
 		registryCertsVolumeName  = "certs-volume"
