@@ -23,12 +23,9 @@ Files:
   go.sum
   hack/api-reference/*.json
   local-setup
-  pkg/component/registrycaches/alerting-rules/registry-cache.rules.yaml
   pkg/component/registrycaches/monitoring/dashboard.json
   pkg/component/registrycaches/templates/config.yml.tpl
-  pkg/webhook/cache/scripts/configure-containerd-registries.sh
-  pkg/webhook/mirror/templates/hosts.toml.tpl
-  **/testdata/**
+  skaffold-operator.yaml
   skaffold.yaml
 Copyright: 2024 SAP SE or an SAP affiliate company and Gardener contributors
 License: Apache-2.0
