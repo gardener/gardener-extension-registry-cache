@@ -91,15 +91,6 @@ build:
           alias: IMG
   insecureRegistries:
     - garden.local.gardener.cloud:5001
-  tagPolicy:
-    customTemplate:
-      template: '{{.version}}-{{.sha}}'
-      components:
-        - name: version
-          envTemplate:
-            template: '{{.EXTENSION_VERSION}}'
-        - name: sha
-          inputDigest: {}
 manifests:
   rawYaml:
     - local-setup/operator-extension-resource.yaml
