@@ -40,17 +40,6 @@ build:
         main: ./cmd/gardener-extension-registry-cache
   insecureRegistries:
     - garden.local.gardener.cloud:5001
-  tagPolicy:
-    customTemplate:
-      template: '{{.version}}-{{.sha}}'
-      components:
-        - name: version
-          envTemplate:
-            template: '{{.EXTENSION_VERSION}}'
-        # inputDigest is used to inject a digest of the artifact source into the built image tag
-        # and therefore into the SKAFFOLD_IMAGE environment variable which is used when generating the corresponding ControllerDeployment
-        - name: sha
-          inputDigest: {}
 manifests:
   kustomize:
     paths:
