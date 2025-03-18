@@ -246,36 +246,6 @@ proxy:
 				return config
 			}
 
-			_ = func(name, upstream, remoteURL string) *corev1.Service {
-				return &corev1.Service{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      name,
-						Namespace: "kube-system",
-						Labels: map[string]string{
-							"app":           name,
-							"upstream-host": upstream,
-						},
-						Annotations: map[string]string{
-							"upstream":   upstream,
-							"remote-url": remoteURL,
-						},
-					},
-					Spec: corev1.ServiceSpec{
-						Selector: map[string]string{
-							"app":           name,
-							"upstream-host": upstream,
-						},
-						Ports: []corev1.ServicePort{{
-							Name:       "registry-cache",
-							Port:       5000,
-							Protocol:   corev1.ProtocolTCP,
-							TargetPort: intstr.FromString("registry-cache"),
-						}},
-						Type: corev1.ServiceTypeClusterIP,
-					},
-				}
-			}
-
 			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar, ha bool) *appsv1.StatefulSet {
 				env := []corev1.EnvVar{
 					{
