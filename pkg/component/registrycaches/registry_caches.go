@@ -141,8 +141,8 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 
 		secretName, secret = managedresources.NewSecret(r.client, r.namespace, managedResourceName, data, false)
 		managedResource    = managedresources.NewForShoot(r.client, r.namespace, managedResourceName, constants.Origin, keepObjects).
-			WithSecretRef(secretName).
-			DeletePersistentVolumeClaims(true)
+					WithSecretRef(secretName).
+					DeletePersistentVolumeClaims(true)
 	)
 
 	if err := secret.Reconcile(ctx); err != nil {
