@@ -72,7 +72,7 @@ func verifyNoTimeoutLogsInContainerd(ctx context.Context, logger logr.Logger, sh
 	// Make sure we don't have a Node bootstrap issue, i.e. there is no I/O timeout during image pull in the containerd logs.
 	// https://github.com/gardener/gardener-extension-registry-cache/pull/68 fixes the Node bootstrap issue
 	// and this test verifies that the scenario does not regress.
-	output, err := rootPodExecutor.Execute(ctx, []string{"sh", "-c", `journalctl -u containerd | grep -E "msg=\"trying next host\" error=\"failed to do request: Head .+ i/o timeout\"" || test $? = 1`}...)
+	output, err := rootPodExecutor.Execute(ctx, "sh", "-c", `journalctl -u containerd | grep -E "msg=\"trying next host\" error=\"failed to do request: Head .+ i/o timeout\"" || test $? = 1`)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, string(output)).To(BeEmpty())
 }
