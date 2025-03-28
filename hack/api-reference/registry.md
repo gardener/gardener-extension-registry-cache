@@ -75,6 +75,36 @@ Defaults to true.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="registry.extensions.gardener.cloud/v1alpha3.HighAvailability">HighAvailability
+</h3>
+<p>
+(<em>Appears on:</em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.RegistryCache">RegistryCache</a>)
+</p>
+<p>
+<p>HighAvailability contains settings for high availability of the registry cache.</p>
+</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<code>enabled</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>Enabled defines if the registry cache is scaled with the <a href="https://gardener.cloud/docs/gardener/high-availability/#system-components">High Availability</a> feature.</p>
+</td>
+</tr>
+</tbody>
+</table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.Proxy">Proxy
 </h3>
 <p>
@@ -229,6 +259,20 @@ HTTP
 <td>
 <em>(Optional)</em>
 <p>HTTP contains settings for the HTTP server that hosts the registry cache.</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>highAvailability</code></br>
+<em>
+<a href="#registry.extensions.gardener.cloud/v1alpha3.HighAvailability">
+HighAvailability
+</a>
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>HighAvailability contains settings for high availability of the registry cache.</p>
 </td>
 </tr>
 </tbody>

@@ -42,6 +42,8 @@ type RegistryCache struct {
 	Proxy *Proxy
 	// HTTP contains settings for the HTTP server that hosts the registry cache.
 	HTTP *HTTP
+	//HighAvailability contains settings for high availability of the registry cache.
+	HighAvailability *HighAvailability
 }
 
 // Volume contains settings for the registry cache volume.
@@ -75,6 +77,12 @@ type HTTP struct {
 	// TLS indicates whether TLS is enabled for the HTTP server of the registry cache.
 	// Defaults to true.
 	TLS bool
+}
+
+// HighAvailability contains settings for high availability of the registry cache.
+type HighAvailability struct {
+	// Enabled defines if the registry cache is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	Enabled bool
 }
 
 var (
