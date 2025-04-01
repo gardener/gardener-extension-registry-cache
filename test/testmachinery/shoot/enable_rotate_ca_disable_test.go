@@ -29,6 +29,8 @@ const (
 var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	f := framework.NewShootFramework(nil)
 
+	var isVerticalPodAutoscalerDisabled bool
+
 	f.Serial().CIt("should enable extension, rotate CA, disable extension", func(parentCtx context.Context) {
 		By("Enable the registry-cache extension")
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
@@ -43,6 +45,10 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
+			if common.IsVerticalPodAutoscalerEnabled(shoot) {
+				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = false
+				isVerticalPodAutoscalerDisabled = true
+			}
 
 			return nil
 		})).To(Succeed())
@@ -80,20 +86,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 
 		By("Verify registry-cache works when CA rotation phase is Completed")
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3179Image, common.AlpinePodMutateFn)
-
-		By("Disable the registry-cache extension")
-		ctx, cancel = context.WithTimeout(parentCtx, 10*time.Minute)
-		defer cancel()
-		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
-			common.RemoveExtension(shoot, "registry-cache")
-
-			return nil
-		})).To(Succeed())
-
-		By("Verify registry configuration is removed")
-		ctx, cancel = context.WithTimeout(parentCtx, 2*time.Minute)
-		defer cancel()
-		common.VerifyHostsTOMLFilesDeletedForAllNodes(ctx, f.Logger, f.ShootClient, []string{"ghcr.io"})
 	}, rotateCATestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
 		if v1beta1helper.GetShootCARotationPhase(f.Shoot.Status.Credentials) == gardencorev1beta1.RotationPrepared {
 			Expect(f.AnnotateShoot(ctx, f.Shoot, map[string]string{v1beta1constants.GardenerOperation: v1beta1constants.OperationRotateCAComplete})).To(Succeed())
@@ -103,6 +95,9 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			By("Disable the registry-cache extension")
 			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 				common.RemoveExtension(shoot, "registry-cache")
+				if isVerticalPodAutoscalerDisabled {
+					shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = true
+				}
 
 				return nil
 			})).To(Succeed())

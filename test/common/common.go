@@ -138,6 +138,11 @@ func RemoveExtension(shoot *gardencorev1beta1.Shoot, extensionType string) {
 	})
 }
 
+// IsVerticalPodAutoscalerEnabled returns true if the VPA is enabled
+func IsVerticalPodAutoscalerEnabled(shoot *gardencorev1beta1.Shoot) bool {
+	return shoot.Spec.Kubernetes.VerticalPodAutoscaler != nil && shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled
+}
+
 // VerifyHostsTOMLFilesCreatedForAllNodes verifies that hosts.toml files for the given upstreams are created for all Nodes
 // with the given hosts.toml file content.
 func VerifyHostsTOMLFilesCreatedForAllNodes(ctx context.Context, log logr.Logger, shootClient kubernetes.Interface, upstreamToHostsTOML map[string]string) {
