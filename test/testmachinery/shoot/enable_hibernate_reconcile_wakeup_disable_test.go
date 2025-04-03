@@ -44,7 +44,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
-			if common.IsVerticalPodAutoscalerEnabled(shoot) {
+			if v1beta1helper.ShootWantsVerticalPodAutoscaler(f.Shoot) {
 				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = false
 				isVerticalPodAutoscalerDisabled = true
 			}

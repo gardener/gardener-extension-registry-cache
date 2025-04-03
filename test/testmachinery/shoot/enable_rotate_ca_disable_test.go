@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package shoot
+package shoot_test
 
 import (
 	"context"
@@ -45,7 +45,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
-			if common.IsVerticalPodAutoscalerEnabled(shoot) {
+			if v1beta1helper.ShootWantsVerticalPodAutoscaler(f.Shoot) {
 				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = false
 				isVerticalPodAutoscalerDisabled = true
 			}

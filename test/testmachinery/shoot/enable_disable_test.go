@@ -9,6 +9,7 @@ import (
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -42,7 +43,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
-			if common.IsVerticalPodAutoscalerEnabled(shoot) {
+			if v1beta1helper.ShootWantsVerticalPodAutoscaler(f.Shoot) {
 				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = false
 				isVerticalPodAutoscalerDisabled = true
 			}
