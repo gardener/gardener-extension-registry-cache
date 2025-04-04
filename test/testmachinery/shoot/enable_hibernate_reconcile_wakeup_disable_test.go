@@ -26,7 +26,11 @@ const (
 )
 
 var _ = Describe("Shoot registry cache testing", func() {
-	f := framework.NewShootFramework(nil)
+	var (
+		f = framework.NewShootFramework(nil)
+
+		isVerticalPodAutoscalerDisabled bool
+	)
 
 	f.Serial().CIt("should enable extension, hibernate Shoot, reconcile Shoot, wake up Shoot, disable extension", func(parentCtx context.Context) {
 		By("Enable the registry-cache extension")
@@ -42,6 +46,11 @@ var _ = Describe("Shoot registry cache testing", func() {
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
+
+			if v1beta1helper.ShootWantsVerticalPodAutoscaler(f.Shoot) {
+				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = false
+				isVerticalPodAutoscalerDisabled = true
+			}
 
 			return nil
 		})).To(Succeed())
@@ -84,6 +93,10 @@ var _ = Describe("Shoot registry cache testing", func() {
 			By("Disable the registry-cache extension")
 			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 				common.RemoveExtension(shoot, "registry-cache")
+
+				if isVerticalPodAutoscalerDisabled {
+					shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = true
+				}
 
 				return nil
 			})).To(Succeed())

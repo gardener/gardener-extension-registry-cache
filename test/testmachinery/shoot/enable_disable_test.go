@@ -9,6 +9,7 @@ import (
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
+	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,7 +25,11 @@ const (
 )
 
 var _ = Describe("Shoot registry cache testing", func() {
-	f := framework.NewShootFramework(nil)
+	var (
+		f = framework.NewShootFramework(nil)
+
+		isVerticalPodAutoscalerDisabled bool
+	)
 
 	f.Serial().CIt("should enable and disable the registry-cache extension", func(parentCtx context.Context) {
 		By("Enable the registry-cache extension")
@@ -41,6 +46,11 @@ var _ = Describe("Shoot registry cache testing", func() {
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
 
+			if v1beta1helper.ShootWantsVerticalPodAutoscaler(f.Shoot) {
+				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = false
+				isVerticalPodAutoscalerDisabled = true
+			}
+
 			return nil
 		})).To(Succeed())
 
@@ -52,6 +62,10 @@ var _ = Describe("Shoot registry cache testing", func() {
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 			common.RemoveExtension(shoot, "registry-cache")
+
+			if isVerticalPodAutoscalerDisabled {
+				shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = true
+			}
 
 			return nil
 		})).To(Succeed())
@@ -65,6 +79,10 @@ var _ = Describe("Shoot registry cache testing", func() {
 			By("Disable the registry-cache extension")
 			Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
 				common.RemoveExtension(shoot, "registry-cache")
+
+				if isVerticalPodAutoscalerDisabled {
+					shoot.Spec.Kubernetes.VerticalPodAutoscaler.Enabled = true
+				}
 
 				return nil
 			})).To(Succeed())
