@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	alpine3188          = "alpine:3.18.8"
-	registry300rc4Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0-rc.4"
-	upstreamConfigYAML  = `version: 0.1
+	alpine3188         = "alpine:3.18.8"
+	registry300Image   = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0"
+	upstreamConfigYAML = `version: 0.1
 log:
   fields:
     service: registry
@@ -237,7 +237,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 					Containers: []corev1.Container{
 						{
 							Name:            "registry",
-							Image:           registry300rc4Image,
+							Image:           registry300Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Ports: []corev1.ContainerPort{
 								{
