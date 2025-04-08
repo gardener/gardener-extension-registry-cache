@@ -464,10 +464,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 		}
 	}
 
-	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
-		metav1.SetMetaDataLabel(&statefulSet.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeServer)
-	}
-
 	var tlsSecret *corev1.Secret
 	if helper.TLSEnabled(cache) {
 		tlsSecret = &corev1.Secret{
@@ -494,6 +490,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 			Name:      registryCertsVolumeName,
 			MountPath: "/etc/distribution/certs",
 		})
+	}
+
+	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
+		metav1.SetMetaDataLabel(&statefulSet.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeServer)
 	}
 
 	utilruntime.Must(references.InjectAnnotations(statefulSet))

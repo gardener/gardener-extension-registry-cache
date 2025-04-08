@@ -100,7 +100,8 @@ bool
 </em>
 </td>
 <td>
-<p>Enabled defines if the registry cache is scaled with the <a href="https://gardener.cloud/docs/gardener/high-availability/#system-components">High Availability</a> feature.</p>
+<p>Enabled defines if the registry cache is scaled with the high availability feature.
+For more details, see <a href="https://github.com/gardener/gardener/blob/master/docs/development/high-availability-of-components.md#system-components">https://github.com/gardener/gardener/blob/master/docs/development/high-availability-of-components.md#system-components</a>.</p>
 </td>
 </tr>
 </tbody>

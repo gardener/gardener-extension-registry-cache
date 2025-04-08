@@ -102,7 +102,7 @@ The `providerConfig.caches[].proxy.httpsProxy` field represents the proxy server
 
 The `providerConfig.caches[].http.tls` field indicates whether TLS is enabled for the HTTP server of the registry cache. Defaults to `true`.
 
-The `providerConfig.caches[].highAvailability.enabled` defines if the registry cache is scaled to 2 replicas. See [High Availability](#high-availability) for more information.
+The `providerConfig.caches[].highAvailability.enabled` defines if the registry cache is scaled with the [high availability feature](https://github.com/gardener/gardener/blob/master/docs/development/high-availability-of-components.md#system-components). See the [High Availability section](#high-availability) for more details.
 
 ## Garbage Collection
 
@@ -149,9 +149,10 @@ There is always the option to remove the cache from the Shoot spec and to readd 
 
 ## High Availability
 
-Per default the registry cache runs with a single replica. This fact may lead to concerns for the high availability such as "What happens when the registry cache is down? Does containerd fail to pull the image?". As outlined in the [How does it work? section](#how-does-it-work), containerd is configured to fall back to the upstream registry if it fails to pull the image from the registry cache. Hence, when the registry cache is unavailable, the containerd's image pull operations are not affected because containerd falls back to image pull from the upstream registry.
+By default the registry cache runs with a single replica. This fact may lead to concerns for the high availability such as "What happens when the registry cache is down? Does containerd fail to pull the image?". As outlined in the [How does it work? section](#how-does-it-work), containerd is configured to fall back to the upstream registry if it fails to pull the image from the registry cache. Hence, when the registry cache is unavailable, the containerd's image pull operations are not affected because containerd falls back to image pull from the upstream registry.
 
-In special cases where this is not enough (for example when using an upstream which is only accessible with a proxy) it is possible to set `providerConfig.caches[].highAvailability.enabled` to `true`. This will add the label `high-availability-config.resources.gardener.cloud/type=server` to the StatefulSet and it will be scaled to 2 replicas. Appropriate [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/) will be added to the registry cache Pods according to the Shoot cluster configuration. See also [High Availability of Deployed Components](https://github.com/gardener/gardener/blob/master/docs/development/high-availability-of-components.md#system-components). Each registry cache replica uses an own volume, so each registry cache needs to pull the image from the upstream.
+In special cases where this is not enough it is possible to set `providerConfig.caches[].highAvailability.enabled` to `true`. This will add the label `high-availability-config.resources.gardener.cloud/type=server` to the StatefulSet and it will be scaled to 2 replicas. Appropriate [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/) will be added to the registry cache Pods according to the Shoot cluster configuration. See also [High Availability of Deployed Components](https://github.com/gardener/gardener/blob/master/docs/development/high-availability-of-components.md#system-components). Pay attention that each registry cache replica uses its own volume, so each registry cache pulls the image from the upstream and stores it in its volume.
+
 ## Possible Pitfalls
 
 - The used registry implementation (the [Distribution project](https://github.com/distribution/distribution)) supports mirroring of only one upstream registry. The extension deploys a pull-through cache for each configured upstream.
