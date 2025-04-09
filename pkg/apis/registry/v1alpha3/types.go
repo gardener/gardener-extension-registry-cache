@@ -94,7 +94,8 @@ type HTTP struct {
 
 // HighAvailability contains settings for high availability of the registry cache.
 type HighAvailability struct {
-	// Enabled defines if the registry cache is scaled with the [High Availability](https://gardener.cloud/docs/gardener/high-availability/#system-components) feature.
+	// Enabled defines if the registry cache is scaled with the high availability feature.
+	// For more details, see https://github.com/gardener/gardener/blob/master/docs/development/high-availability-of-components.md#system-components.
 	Enabled bool `json:"enabled,omitempty"`
 }
 

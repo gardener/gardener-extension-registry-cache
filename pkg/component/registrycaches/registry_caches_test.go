@@ -246,7 +246,7 @@ proxy:
 				return config
 			}
 
-			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar, ha bool) *appsv1.StatefulSet {
+			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
 				env := []corev1.EnvVar{
 					{
 						Name:  "OTEL_TRACES_EXPORTER",
@@ -255,19 +255,14 @@ proxy:
 				}
 				env = append(env, additionalEnvs...)
 
-				stsLabels := map[string]string{
-					"app":           name,
-					"upstream-host": upstream,
-				}
-				if ha {
-					stsLabels[resourcesv1alpha1.HighAvailabilityConfigType] = resourcesv1alpha1.HighAvailabilityConfigTypeServer
-				}
-
 				statefulSet := &appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
 						Namespace: "kube-system",
-						Labels:    stsLabels,
+						Labels: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+						},
 					},
 					Spec: appsv1.StatefulSetSpec{
 						ServiceName: name,
@@ -426,6 +421,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 						Name:      "certs-volume",
 						MountPath: "/etc/distribution/certs",
 					})
+				}
+
+				if haEnabled {
+					metav1.SetMetaDataLabel(&statefulSet.ObjectMeta, "high-availability-config.resources.gardener.cloud/type", "server")
 				}
 
 				utilruntime.Must(references.InjectAnnotations(statefulSet))
