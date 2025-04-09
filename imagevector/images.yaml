@@ -8,7 +8,7 @@ images:
 - name: registry
   sourceRepository: github.com/distribution/distribution
   repository: europe-docker.pkg.dev/gardener-project/releases/3rd/registry
-  tag: 3.0.0-rc.4
+  tag: 3.0.0
   labels:
   - name: gardener.cloud/cve-categorisation
     value:
