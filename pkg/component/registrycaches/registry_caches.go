@@ -17,6 +17,7 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
+	resourcesv1alpha1 "github.com/gardener/gardener/pkg/apis/resources/v1alpha1"
 	"github.com/gardener/gardener/pkg/client/kubernetes"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/gardener/gardener/pkg/resourcemanager/controller/garbagecollector/references"
@@ -461,6 +462,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Value: *cache.Proxy.HTTPSProxy,
 			})
 		}
+	}
+
+	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
+		metav1.SetMetaDataLabel(&statefulSet.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeServer)
 	}
 
 	var tlsSecret *corev1.Secret
