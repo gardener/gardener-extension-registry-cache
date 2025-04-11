@@ -129,7 +129,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should do nothing if the shoot has a deletion timestamp set", func() {
 			deletionTimestamp := metav1.Now()
-			cluster.Shoot.ObjectMeta.DeletionTimestamp = &deletionTimestamp
+			cluster.Shoot.DeletionTimestamp = &deletionTimestamp
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -152,7 +152,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should return err when extension .spec.providerConfig is nil", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Spec.DefaultSpec.ProviderConfig = nil
+			extension.Spec.ProviderConfig = nil
 
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
@@ -165,7 +165,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should return err when extension .spec.providerConfig cannot be decoded", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Spec.DefaultSpec.ProviderConfig = &runtime.RawExtension{Object: &corev1.Pod{}}
+			extension.Spec.ProviderConfig = &runtime.RawExtension{Object: &corev1.Pod{}}
 
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
