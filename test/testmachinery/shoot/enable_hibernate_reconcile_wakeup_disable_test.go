@@ -13,7 +13,6 @@ import (
 	"github.com/gardener/gardener/test/framework"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
@@ -37,12 +36,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
 		Expect(f.UpdateShoot(ctx, func(shoot *gardencorev1beta1.Shoot) error {
-			size := resource.MustParse("2Gi")
-			if shoot.Spec.Provider.Type == "alicloud" {
-				// On AliCloud the minimum size for SSD volumes is 20Gi.
-				size = resource.MustParse("20Gi")
-			}
-
+			size := GetValidVolumeSize(shoot.Spec.Provider.Type, "2Gi")
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{Upstream: "ghcr.io", Volume: &v1alpha3.Volume{Size: &size}},
 			})
