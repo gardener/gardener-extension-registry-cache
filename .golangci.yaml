@@ -9,6 +9,9 @@ linters:
   exclusions:
     generated: lax
     rules:
+      - linters:
+          - staticcheck
+        text: 'ST1001:' # should not use dot imports
       # revive:
       - path: (.+)\.go$
         text: var-naming # ((var|const|struct field|func) .* should be .*
