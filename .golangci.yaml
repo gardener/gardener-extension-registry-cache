@@ -1,26 +1,41 @@
+version: "2"
 run:
   concurrency: 4
-  deadline: 10m
-
 linters:
-  disable:
-  - unused
   enable:
-  - revive
-
-issues:
-  exclude-use-default: false
-  exclude:
-  # revive:
-  - var-naming # ((var|const|struct field|func) .* should be .*
-  - dot-imports # should not use dot imports
-  - package-comments # package comment should be of the form
-  - unexported-return # exported func .* returns unexported type .*, which can be annoying to use
-  - indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
-  - "exported: (type|func) name will be used as .* by other packages, and that stutters;"
-  # typecheck:
-  - "undeclared name: `.*`"
-  - "\".*\" imported but not used"
-
-  exclude-files:
-  - "zz_generated\\..*\\.go$"
+    - revive
+  disable:
+    - unused
+  exclusions:
+    generated: lax
+    rules:
+      # revive:
+      - path: (.+)\.go$
+        text: var-naming # ((var|const|struct field|func) .* should be .*
+      - path: (.+)\.go$
+        text: dot-imports # should not use dot imports
+      - path: (.+)\.go$
+        text: package-comments # package comment should be of the form
+      - path: (.+)\.go$
+        text: unexported-return # exported func .* returns unexported type .*, which can be annoying to use
+      - path: (.+)\.go$
+        text: indent-error-flow # if block ends with a return statement, so drop this else and outdent its block
+      - path: (.+)\.go$
+        text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
+      # typecheck:
+      - path: (.+)\.go$
+        text: 'undeclared name: `.*`'
+      - path: (.+)\.go$
+        text: '".*" imported but not used'
+    paths:
+      - zz_generated\..*\.go$
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
