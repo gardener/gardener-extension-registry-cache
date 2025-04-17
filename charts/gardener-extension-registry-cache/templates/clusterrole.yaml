@@ -73,13 +73,6 @@ rules:
   - update
   - patch
   - delete
-# TODO(dimitar-kostadinov): Remove the below rule for managedresources/status after May 2025.
-- apiGroups:
-  - resources.gardener.cloud
-  resources:
-  - managedresources/status
-  verbs:
-  - patch
 - apiGroups:
   - ""
   resources:
