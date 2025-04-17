@@ -20,7 +20,6 @@ rules:
   - extensions.gardener.cloud
   resources:
   - extensions
-  - extensions/status
   verbs:
   - list
   - watch
@@ -31,6 +30,7 @@ rules:
   - extensions/status
   resourceNames:
   - registry-cache
+  - registry-mirror
   verbs:
   - get
   - patch
