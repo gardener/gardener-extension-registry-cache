@@ -40,10 +40,10 @@ rules:
   resources:
   - mutatingwebhookconfigurations
   verbs:
+  - create
   - get
   - list
   - watch
-  - create 
 - apiGroups:
   - admissionregistration.k8s.io
   resources:
@@ -58,10 +58,10 @@ rules:
   resources:
   - managedresources
   verbs:
+  - create
   - get
   - list
   - watch
-  - create
 - apiGroups:
   - resources.gardener.cloud
   resources:
@@ -85,10 +85,10 @@ rules:
   resources:
   - secrets
   verbs:
+  - create
   - get
   - list
   - watch
-  - create
   - update
   - patch
   - delete
@@ -130,10 +130,10 @@ rules:
   - scrapeconfigs
   - prometheusrules
   verbs:
+  - create
   - get
   - list
   - watch
-  - create
 - apiGroups:
   - monitoring.coreos.com
   resources:

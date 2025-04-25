@@ -22,6 +22,7 @@ rules:
   - leases
   verbs:
   - create
+  - get
   - list
   - watch
 - apiGroups:
@@ -31,8 +32,8 @@ rules:
   resourceNames:
   - {{ include "leaderelectionid" . }}
   verbs:
+  - patch
   - update
-  - get
 - apiGroups:
   - ""
   - events.k8s.io
