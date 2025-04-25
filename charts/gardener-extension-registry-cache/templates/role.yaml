@@ -11,6 +11,7 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  - events.k8s.io
   resources:
   - events
   verbs:
@@ -23,6 +24,7 @@ rules:
   - leases
   verbs:
   - create
+  - get
   - list
   - watch
 - apiGroups:
@@ -34,4 +36,4 @@ rules:
   - gardener-extension-heartbeat
   verbs:
   - update
-  - get
+  - patch

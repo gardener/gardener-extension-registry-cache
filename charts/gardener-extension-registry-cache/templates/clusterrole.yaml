@@ -20,11 +20,19 @@ rules:
   - extensions.gardener.cloud
   resources:
   - extensions
-  - extensions/status
   verbs:
   - get
   - list
   - watch
+- apiGroups:
+  - extensions.gardener.cloud
+  resources:
+  - extensions
+  - extensions/status
+  resourceNames:
+  - registry-cache
+  - registry-mirror
+  verbs:
   - patch
   - update
 - apiGroups:
@@ -32,21 +40,36 @@ rules:
   resources:
   - mutatingwebhookconfigurations
   verbs:
+  - create
   - get
   - list
   - watch
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  resourceNames:
+  - {{ include "name" . }}
+  verbs:
   - update
-  - create
   - patch
 - apiGroups:
   - resources.gardener.cloud
   resources:
   - managedresources
   verbs:
+  - create
   - get
   - list
   - watch
-  - create
+- apiGroups:
+  - resources.gardener.cloud
+  resources:
+  - managedresources
+  resourceNames:
+  - extension-registry-cache
+  - extension-registry-cache-services
+  verbs:
   - update
   - patch
   - delete
@@ -62,10 +85,10 @@ rules:
   resources:
   - secrets
   verbs:
+  - create
   - get
   - list
   - watch
-  - create
   - update
   - patch
   - delete
@@ -79,13 +102,13 @@ rules:
   - ""
   resources:
   - configmaps
+  resourceNames:
+  - registry-cache-dashboards
   verbs:
   - get
   - update
   - patch
   - delete
-  resourceNames:
-  - registry-cache-dashboards
 - apiGroups:
   - ""
   resources:
@@ -107,10 +130,18 @@ rules:
   - scrapeconfigs
   - prometheusrules
   verbs:
+  - create
   - get
   - list
   - watch
-  - create
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - scrapeconfigs
+  - prometheusrules
+  resourceNames:
+  - shoot-registry-cache
+  verbs:
   - update
   - patch
   - delete
