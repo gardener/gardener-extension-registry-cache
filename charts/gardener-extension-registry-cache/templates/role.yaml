@@ -24,6 +24,7 @@ rules:
   - leases
   verbs:
   - create
+  - get
   - list
   - watch
 - apiGroups:
@@ -35,4 +36,4 @@ rules:
   - gardener-extension-heartbeat
   verbs:
   - update
-  - get
+  - patch

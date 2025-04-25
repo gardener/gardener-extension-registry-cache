@@ -21,6 +21,7 @@ rules:
   resources:
   - extensions
   verbs:
+  - get
   - list
   - watch
 - apiGroups:
@@ -32,7 +33,6 @@ rules:
   - registry-cache
   - registry-mirror
   verbs:
-  - get
   - patch
   - update
 - apiGroups:
@@ -40,6 +40,7 @@ rules:
   resources:
   - mutatingwebhookconfigurations
   verbs:
+  - get
   - list
   - watch
   - create 
@@ -50,7 +51,6 @@ rules:
   resourceNames:
   - {{ include "name" . }}
   verbs:
-  - get
   - update
   - patch
 - apiGroups:
@@ -58,6 +58,7 @@ rules:
   resources:
   - managedresources
   verbs:
+  - get
   - list
   - watch
   - create
@@ -69,7 +70,6 @@ rules:
   - extension-registry-cache
   - extension-registry-cache-services
   verbs:
-  - get
   - update
   - patch
   - delete
@@ -130,6 +130,7 @@ rules:
   - scrapeconfigs
   - prometheusrules
   verbs:
+  - get
   - list
   - watch
   - create
@@ -141,7 +142,6 @@ rules:
   resourceNames:
   - shoot-registry-cache
   verbs:
-  - get
   - update
   - patch
   - delete

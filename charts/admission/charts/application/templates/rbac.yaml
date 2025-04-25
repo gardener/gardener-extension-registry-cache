@@ -26,6 +26,7 @@ rules:
   - validatingwebhookconfigurations
   verbs:
   - create
+  - get
   - list
   - watch
 - apiGroups:
@@ -35,7 +36,6 @@ rules:
   resourceNames:
   - {{ include "name" . }}
   verbs:
-  - get
   - patch
   - update
 ---
