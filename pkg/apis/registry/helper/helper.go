@@ -64,3 +64,8 @@ func TLSEnabled(cache *registry.RegistryCache) bool {
 
 	return cache.HTTP.TLS
 }
+
+// HighAvailabilityEnabled returns whether high availability for the registry cache is enabled.
+func HighAvailabilityEnabled(cache *registry.RegistryCache) bool {
+	return cache.HighAvailability != nil && cache.HighAvailability.Enabled
+}

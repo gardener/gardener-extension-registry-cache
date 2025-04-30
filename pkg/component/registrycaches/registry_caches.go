@@ -28,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -492,11 +493,27 @@ source /entrypoint.sh /etc/distribution/config.yml
 		})
 	}
 
-	if cache.HighAvailability != nil && cache.HighAvailability.Enabled {
+	if helper.HighAvailabilityEnabled(cache) {
 		metav1.SetMetaDataLabel(&statefulSet.ObjectMeta, resourcesv1alpha1.HighAvailabilityConfigType, resourcesv1alpha1.HighAvailabilityConfigTypeServer)
 	}
 
 	utilruntime.Must(references.InjectAnnotations(statefulSet))
+
+	var podDisruptionBudget *policyv1.PodDisruptionBudget
+	if helper.HighAvailabilityEnabled(cache) {
+		podDisruptionBudget = &policyv1.PodDisruptionBudget{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: metav1.NamespaceSystem,
+				Labels:    registryutils.GetLabels(name, upstreamLabel),
+			},
+			Spec: policyv1.PodDisruptionBudgetSpec{
+				MaxUnavailable:             ptr.To(intstr.FromInt32(1)),
+				Selector:                   statefulSet.Spec.Selector,
+				UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+			},
+		}
+	}
 
 	var vpa *vpaautoscalingv1.VerticalPodAutoscaler
 	if r.values.VPAEnabled {
@@ -533,6 +550,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 		configSecret,
 		tlsSecret,
 		statefulSet,
+		podDisruptionBudget,
 		vpa,
 	}, nil
 }

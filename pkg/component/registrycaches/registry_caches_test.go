@@ -27,6 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -432,6 +433,29 @@ source /entrypoint.sh /etc/distribution/config.yml
 				return statefulSet
 			}
 
+			podDisruptionBudget = func(name, upstream string) *policyv1.PodDisruptionBudget {
+				return &policyv1.PodDisruptionBudget{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: "kube-system",
+						Labels: map[string]string{
+							"app":           name,
+							"upstream-host": upstream,
+						},
+					},
+					Spec: policyv1.PodDisruptionBudgetSpec{
+						MaxUnavailable: ptr.To(intstr.FromInt32(1)),
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app":           name,
+								"upstream-host": upstream,
+							},
+						},
+						UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+					},
+				}
+			}
+
 			vpaFor = func(name string) *vpaautoscalingv1.VerticalPodAutoscaler {
 				return &vpaautoscalingv1.VerticalPodAutoscaler{
 					ObjectMeta: metav1.ObjectMeta{
@@ -631,9 +655,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 					dockerConfigSecret,
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, true),
+					podDisruptionBudget("registry-docker-io", "docker.io"),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
 					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, true),
+					podDisruptionBudget("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev"),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
