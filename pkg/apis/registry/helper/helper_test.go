@@ -114,4 +114,13 @@ var _ = Describe("Helpers", func() {
 		Entry("http.tls is false", &registry.RegistryCache{HTTP: &registry.HTTP{TLS: false}}, false),
 		Entry("http.tls is true", &registry.RegistryCache{HTTP: &registry.HTTP{TLS: true}}, true),
 	)
+
+	DescribeTable("#HighAvailabilityEnabled",
+		func(cache *registry.RegistryCache, expected bool) {
+			Expect(helper.HighAvailabilityEnabled(cache)).To(Equal(expected))
+		},
+		Entry("highAvailability is nil", &registry.RegistryCache{HighAvailability: nil}, false),
+		Entry("highAvailability.enabled is false", &registry.RegistryCache{HighAvailability: &registry.HighAvailability{Enabled: false}}, false),
+		Entry("highAvailability.enabled is true", &registry.RegistryCache{HighAvailability: &registry.HighAvailability{Enabled: true}}, true),
+	)
 })
