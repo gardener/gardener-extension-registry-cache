@@ -33,6 +33,8 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	)
 
 	f.Serial().CIt("should enable extension, rotate CA, disable extension", func(parentCtx context.Context) {
+		Expect(f.ShootClient).NotTo(BeNil(), "Shoot client should not be nil. If it is the Shoot might be hibernated")
+
 		By("Enable the registry-cache extension")
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()

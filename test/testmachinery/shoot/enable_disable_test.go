@@ -31,6 +31,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 	)
 
 	f.Serial().CIt("should enable and disable the registry-cache extension", func(parentCtx context.Context) {
+		Expect(f.ShootClient).NotTo(BeNil(), "Shoot client should not be nil. If it is the Shoot might be hibernated")
+
 		By("Enable the registry-cache extension")
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()

@@ -29,9 +29,12 @@ var _ = Describe("Shoot registry cache testing", func() {
 		f = framework.NewShootFramework(nil)
 
 		isVerticalPodAutoscalerDisabled bool
+		isShootHibernated               bool
 	)
 
 	f.Serial().CIt("should enable extension, hibernate Shoot, reconcile Shoot, wake up Shoot, disable extension", func(parentCtx context.Context) {
+		Expect(f.ShootClient).NotTo(BeNil(), "Shoot client should not be nil. If it is the Shoot might be hibernated")
+
 		By("Enable the registry-cache extension")
 		ctx, cancel := context.WithTimeout(parentCtx, 10*time.Minute)
 		defer cancel()
@@ -58,6 +61,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
 		Expect(f.HibernateShoot(ctx)).To(Succeed())
+		isShootHibernated = true
 
 		By("Reconcile Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
@@ -78,7 +82,7 @@ var _ = Describe("Shoot registry cache testing", func() {
 		// We are using ghcr.io/jitesoft/alpine:3.20.3 as ghcr.io/jitesoft/alpine:3.19.4 is already used above and already present in the Node and in the registry cache.
 		common.VerifyRegistryCache(parentCtx, f.Logger, f.ShootClient, common.GithubRegistryJitesoftAlpine3203Image, common.AlpinePodMutateFn)
 	}, hibernationTestTimeout, framework.WithCAfterTest(func(ctx context.Context) {
-		if v1beta1helper.HibernationIsEnabled(f.Shoot) {
+		if isShootHibernated && v1beta1helper.HibernationIsEnabled(f.Shoot) {
 			By("Wake up Shoot")
 			Expect(f.WakeUpShoot(ctx)).To(Succeed())
 		}
