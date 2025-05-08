@@ -60,8 +60,8 @@ var _ = Describe("Shoot registry cache testing", func() {
 		By("Hibernate Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
-		Expect(f.HibernateShoot(ctx)).To(Succeed())
 		isShootHibernated = true
+		Expect(f.HibernateShoot(ctx)).To(Succeed())
 
 		By("Reconcile Shoot")
 		ctx, cancel = context.WithTimeout(parentCtx, 5*time.Minute)
