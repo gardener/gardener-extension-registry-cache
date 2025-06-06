@@ -76,7 +76,7 @@ gardener-extension-registry-cache:
     release:
       steps:
         verify:
-          image: 'golang:1.24.3'
+          image: 'golang:1.24.4'
       traits:
         version:
           preprocess: 'finalize'
