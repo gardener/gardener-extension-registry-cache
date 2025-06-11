@@ -40,12 +40,12 @@ webhookConfig:
 
 disableControllers: []
 
-imageVectorOverwrite: {}
-  # images:
-  #   - name: registry
-  #     sourceRepository: github.com/distribution/distribution
-  #     repository: europe-docker.pkg.dev/gardener-project/releases/3rd/registry
-  #     tag: "3.0.0"
+# imageVectorOverwrite: |
+#   images:
+#   - name: registry
+#     sourceRepository: github.com/distribution/distribution
+#     repository: europe-docker.pkg.dev/gardener-project/releases/3rd/registry
+#     tag: "3.0.0"
 
 gardener:
   version: ""

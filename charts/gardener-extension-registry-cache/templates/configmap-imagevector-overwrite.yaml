@@ -9,5 +9,5 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 data:
   images_overwrite.yaml: |
-{{ toYaml .Values.imageVectorOverwrite | indent 4 }}
+{{ .Values.imageVectorOverwrite | indent 4 }}
 {{- end }}
