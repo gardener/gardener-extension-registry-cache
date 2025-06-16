@@ -19,7 +19,7 @@ func main() {
 	cmd := app.NewAdmissionCommand(signals.SetupSignalHandler())
 
 	if err := cmd.Execute(); err != nil {
-		runtimelog.Log.Error(err, "error executing the main controller command")
+		runtimelog.Log.Error(err, "Error executing the main controller command")
 		os.Exit(1)
 	}
 }

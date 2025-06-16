@@ -140,7 +140,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should do nothing if the shoot has a deletion timestamp set", func() {
 			deletionTimestamp := metav1.Now()
-			cluster.Shoot.ObjectMeta.DeletionTimestamp = &deletionTimestamp
+			cluster.Shoot.DeletionTimestamp = &deletionTimestamp
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -175,7 +175,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should return err when extension .status.providerStatus is nil", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Status.DefaultStatus.ProviderStatus = nil
+			extension.Status.ProviderStatus = nil
 
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
@@ -188,7 +188,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should return err when extension .status.providerStatus cannot be decoded", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Status.DefaultStatus.ProviderStatus = &runtime.RawExtension{Object: &corev1.Pod{}}
+			extension.Status.ProviderStatus = &runtime.RawExtension{Object: &corev1.Pod{}}
 
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
@@ -335,7 +335,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should do nothing if the shoot has a deletion timestamp set", func() {
 			deletionTimestamp := metav1.Now()
-			cluster.Shoot.ObjectMeta.DeletionTimestamp = &deletionTimestamp
+			cluster.Shoot.DeletionTimestamp = &deletionTimestamp
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -372,7 +372,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should return err when extension .status.providerStatus is nil", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Status.DefaultStatus.ProviderStatus = nil
+			extension.Status.ProviderStatus = nil
 
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
@@ -385,7 +385,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should return err when extension .status.providerStatus cannot be decoded", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Status.DefaultStatus.ProviderStatus = &runtime.RawExtension{Object: &corev1.Pod{}}
+			extension.Status.ProviderStatus = &runtime.RawExtension{Object: &corev1.Pod{}}
 
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
@@ -398,7 +398,7 @@ var _ = Describe("Ensurer", func() {
 
 		It("should do nothing if .status.providerStatus.caSecretName is nil", func() {
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
-			extension.Status.DefaultStatus.ProviderStatus = &runtime.RawExtension{
+			extension.Status.ProviderStatus = &runtime.RawExtension{
 				Object: &v1alpha3.RegistryStatus{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: v1alpha3.SchemeGroupVersion.String(),
