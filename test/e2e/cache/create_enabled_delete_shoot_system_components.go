@@ -36,9 +36,6 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	f.Shoot = shoot
 
 	It("should create Shoot with registry-cache extension enabled with caches for Shoot system components, delete Shoot", func() {
-		// TODO(ialidzhikov, dimitar-kostadinov): Unskip the test when vendoring Gardener v1.120 (contains https://github.com/gardener/gardener/pull/11864).
-		Skip("The test fails after vendoring Gardener v1.116. For more details, see https://github.com/gardener/gardener-extension-registry-cache/pull/391#issuecomment-2796941779.")
-
 		By("Create Shoot")
 		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 		defer cancel()
