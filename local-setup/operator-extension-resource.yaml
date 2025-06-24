@@ -8,10 +8,8 @@ spec:
   resources:
   - kind: Extension
     type: registry-cache
-    globallyEnabled: false
   - kind: Extension
     type: registry-mirror
-    globallyEnabled: false
   deployment:
     extension:
       helm:
