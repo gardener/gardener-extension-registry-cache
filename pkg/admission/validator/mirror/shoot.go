@@ -18,7 +18,7 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/helper"
 	mirrorapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/validation"
-	cacheapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
 type shoot struct {
@@ -70,19 +70,18 @@ func (s *shoot) Validate(_ context.Context, newObj, _ client.Object) error {
 			return fmt.Errorf("providerConfig is not available for registry-cache extension")
 		}
 
-		cacheRegistryConfig := &cacheapi.RegistryConfig{}
+		cacheRegistryConfig := &registryapi.RegistryConfig{}
 		if err := runtime.DecodeInto(s.decoder, cacheExt.ProviderConfig.Raw, cacheRegistryConfig); err != nil {
 			return fmt.Errorf("failed to decode providerConfig: %w", err)
 		}
 
 		allErrs = append(allErrs, validateMirrorConfigAgainstRegistryCache(mirrorConfig, cacheRegistryConfig, providerConfigPath)...)
-
 	}
 
 	return allErrs.ToAggregate()
 }
 
-func validateMirrorConfigAgainstRegistryCache(mirrorConfig *mirrorapi.MirrorConfig, cacheRegistryConfig *cacheapi.RegistryConfig, fldPath *field.Path) field.ErrorList {
+func validateMirrorConfigAgainstRegistryCache(mirrorConfig *mirrorapi.MirrorConfig, cacheRegistryConfig *registryapi.RegistryConfig, fldPath *field.Path) field.ErrorList {
 	upstreams := sets.New[string]()
 	for _, cache := range cacheRegistryConfig.Caches {
 		upstreams.Insert(cache.Upstream)

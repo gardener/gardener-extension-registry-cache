@@ -27,7 +27,7 @@ import (
 
 	"github.com/gardener/gardener-extension-registry-cache/imagevector"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/config"
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycacheservices"
@@ -68,7 +68,7 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 		return fmt.Errorf("providerConfig is required for the registry-cache extension")
 	}
 
-	registryConfig := &api.RegistryConfig{}
+	registryConfig := &registryapi.RegistryConfig{}
 	if err := runtime.DecodeInto(a.decoder, ex.Spec.ProviderConfig.Raw, registryConfig); err != nil {
 		return fmt.Errorf("failed to decode provider config: %w", err)
 	}
@@ -207,7 +207,7 @@ func (a *actuator) ForceDelete(ctx context.Context, logger logr.Logger, ex *exte
 	return secretsManager.Cleanup(ctx)
 }
 
-func (a *actuator) fetchRegistryCacheServices(ctx context.Context, namespace string, registryConfig *api.RegistryConfig) ([]corev1.Service, error) {
+func (a *actuator) fetchRegistryCacheServices(ctx context.Context, namespace string, registryConfig *registryapi.RegistryConfig) ([]corev1.Service, error) {
 	_, shootClient, err := util.NewClientForShoot(ctx, a.client, namespace, client.Options{}, extensionsconfigv1alpha1.RESTOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create shoot client: %w", err)
