@@ -10,7 +10,7 @@ import (
 
 	"github.com/gardener/gardener/extensions/pkg/controller/cmd"
 	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
-	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+	extensionscmdwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -99,10 +99,10 @@ func ControllerSwitches() *cmd.SwitchOptions {
 	)
 }
 
-// WebhookSwitchOptions are the webhookcmd.SwitchOptions for the registry-cache webhook.
-func WebhookSwitchOptions() *webhookcmd.SwitchOptions {
-	return webhookcmd.NewSwitchOptions(
-		webhookcmd.Switch(cachewebhook.Name, cachewebhook.New),
-		webhookcmd.Switch(mirrorwebhook.Name, mirrorwebhook.New),
+// WebhookSwitchOptions are the extensionscmdwebhook.SwitchOptions for the registry-cache webhook.
+func WebhookSwitchOptions() *extensionscmdwebhook.SwitchOptions {
+	return extensionscmdwebhook.NewSwitchOptions(
+		extensionscmdwebhook.Switch(cachewebhook.Name, cachewebhook.New),
+		extensionscmdwebhook.Switch(mirrorwebhook.Name, mirrorwebhook.New),
 	)
 }

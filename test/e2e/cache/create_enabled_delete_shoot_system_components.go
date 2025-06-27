@@ -63,7 +63,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 func verifyNoTimeoutLogsInContainerd(ctx context.Context, logger logr.Logger, shootClient kubernetes.Interface) {
 	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, shootClient, ptr.To("local"))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
+	ExpectWithOffset(1, nodeList.Items).ToNot(BeEmpty(), "Expected to find at least one Node in the cluster")
 
 	rootPodExecutor := framework.NewRootPodExecutor(logger, shootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
 	defer func(ctx context.Context, rootPodExecutor framework.RootPodExecutor) {
