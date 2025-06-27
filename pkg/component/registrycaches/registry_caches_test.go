@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycaches"
 )
 
@@ -102,26 +102,26 @@ var _ = Describe("RegistryCaches", func() {
 					},
 				},
 			},
-			Caches: []api.RegistryCache{
+			Caches: []registryapi.RegistryCache{
 				{
 					Upstream: "docker.io",
-					Volume: &api.Volume{
+					Volume: &registryapi.Volume{
 						Size: &dockerSize,
 					},
-					GarbageCollection: &api.GarbageCollection{
+					GarbageCollection: &registryapi.GarbageCollection{
 						TTL: metav1.Duration{Duration: 14 * 24 * time.Hour},
 					},
 				},
 				{
 					Upstream: "europe-docker.pkg.dev",
-					Volume: &api.Volume{
+					Volume: &registryapi.Volume{
 						Size:             &arSize,
 						StorageClassName: ptr.To("premium"),
 					},
-					GarbageCollection: &api.GarbageCollection{
+					GarbageCollection: &registryapi.GarbageCollection{
 						TTL: metav1.Duration{Duration: 0},
 					},
-					HTTP: &api.HTTP{
+					HTTP: &registryapi.HTTP{
 						TLS: false,
 					},
 				},
@@ -504,7 +504,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 		Context("when cache volume size is nil", func() {
 			BeforeEach(func() {
-				values.Caches = []api.RegistryCache{
+				values.Caches = []registryapi.RegistryCache{
 					{
 						Upstream: "docker.io",
 					}}
@@ -593,11 +593,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 		Context("when a proxy is set", func() {
 			BeforeEach(func() {
-				values.Caches[0].Proxy = &api.Proxy{
+				values.Caches[0].Proxy = &registryapi.Proxy{
 					HTTPProxy:  ptr.To("http://127.0.0.1"),
 					HTTPSProxy: ptr.To("http://127.0.0.1"),
 				}
-				values.Caches[1].Proxy = &api.Proxy{
+				values.Caches[1].Proxy = &registryapi.Proxy{
 					HTTPProxy:  ptr.To("http://127.0.0.1"),
 					HTTPSProxy: ptr.To("http://127.0.0.1"),
 				}
@@ -640,8 +640,8 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 		Context("when HA is enabled", func() {
 			BeforeEach(func() {
-				values.Caches[0].HighAvailability = &api.HighAvailability{Enabled: true}
-				values.Caches[1].HighAvailability = &api.HighAvailability{Enabled: true}
+				values.Caches[0].HighAvailability = &registryapi.HighAvailability{Enabled: true}
+				values.Caches[1].HighAvailability = &registryapi.HighAvailability{Enabled: true}
 			})
 
 			It("should successfully deploy the resources", func() {
@@ -675,10 +675,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 				values.Services[0].Annotations["scheme"] = "http"
 				values.Services[1].Annotations["scheme"] = "http"
 
-				values.Caches[0].HTTP = &api.HTTP{
+				values.Caches[0].HTTP = &registryapi.HTTP{
 					TLS: false,
 				}
-				values.Caches[1].HTTP = &api.HTTP{
+				values.Caches[1].HTTP = &registryapi.HTTP{
 					TLS: false,
 				}
 			})

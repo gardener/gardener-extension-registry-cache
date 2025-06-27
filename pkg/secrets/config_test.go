@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	secretsutils "github.com/gardener/gardener/pkg/utils/secrets"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -37,7 +37,7 @@ var _ = Describe("Secrets", func() {
 					"Config": PointTo(MatchFields(IgnoreExtras, Fields{
 						"Name":       Equal("ca-extension-registry-cache"),
 						"CommonName": Equal("ca-extension-registry-cache"),
-						"CertType":   Equal(secretutils.CACert),
+						"CertType":   Equal(secretsutils.CACert),
 						"Validity":   PointTo(Equal(730 * 24 * time.Hour)),
 					})),
 				}),
@@ -91,7 +91,7 @@ var _ = Describe("Secrets", func() {
 					"Config": PointTo(MatchFields(IgnoreExtras, Fields{
 						"Name":       Equal("ca-extension-registry-cache"),
 						"CommonName": Equal("ca-extension-registry-cache"),
-						"CertType":   Equal(secretutils.CACert),
+						"CertType":   Equal(secretsutils.CACert),
 						"Validity":   PointTo(Equal(730 * 24 * time.Hour)),
 					})),
 				}),
@@ -99,7 +99,7 @@ var _ = Describe("Secrets", func() {
 					"Config": PointTo(MatchFields(IgnoreExtras, Fields{
 						"Name":                        Equal("registry-docker-io-tls"),
 						"CommonName":                  Equal("registry-docker-io-tls"),
-						"CertType":                    Equal(secretutils.ServerCert),
+						"CertType":                    Equal(secretsutils.ServerCert),
 						"DNSNames":                    ConsistOf("registry-docker-io", "registry-docker-io.kube-system", "registry-docker-io.kube-system.svc", "registry-docker-io.kube-system.svc.cluster.local"),
 						"IPAddresses":                 ConsistOf([]net.IP{net.IPv4(10, 4, 0, 10)}),
 						"Validity":                    PointTo(Equal(90 * 24 * time.Hour)),
@@ -110,7 +110,7 @@ var _ = Describe("Secrets", func() {
 					"Config": PointTo(MatchFields(IgnoreExtras, Fields{
 						"Name":       Equal("registry-my-very-long-registry-very-long-subdo-2fae3-tls"),
 						"CommonName": Equal("registry-my-very-long-registry-very-long-subdo-2fae3-tls"),
-						"CertType":   Equal(secretutils.ServerCert),
+						"CertType":   Equal(secretsutils.ServerCert),
 						"DNSNames": ConsistOf(
 							"registry-my-very-long-registry-very-long-subdo-2fae3",
 							"registry-my-very-long-registry-very-long-subdo-2fae3.kube-system",

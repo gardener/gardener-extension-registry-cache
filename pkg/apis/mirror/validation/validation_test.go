@@ -10,26 +10,26 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
+	mirrorapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/validation"
 )
 
 var _ = Describe("Validation", func() {
 	var (
 		fldPath      *field.Path
-		mirrorConfig *api.MirrorConfig
+		mirrorConfig *mirrorapi.MirrorConfig
 	)
 
 	BeforeEach(func() {
 		fldPath = field.NewPath("providerConfig")
-		mirrorConfig = &api.MirrorConfig{
-			Mirrors: []api.MirrorConfiguration{
+		mirrorConfig = &mirrorapi.MirrorConfig{
+			Mirrors: []mirrorapi.MirrorConfiguration{
 				{
 					Upstream: "docker.io",
-					Hosts: []api.MirrorHost{
+					Hosts: []mirrorapi.MirrorHost{
 						{
 							Host:         "https://mirror.gcr.io",
-							Capabilities: []api.MirrorHostCapability{api.MirrorHostCapabilityPull, api.MirrorHostCapabilityResolve},
+							Capabilities: []mirrorapi.MirrorHostCapability{mirrorapi.MirrorHostCapabilityPull, mirrorapi.MirrorHostCapabilityResolve},
 						},
 					},
 				},
@@ -43,7 +43,7 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny configuration without a mirror", func() {
-			mirrorConfig = &api.MirrorConfig{Mirrors: nil}
+			mirrorConfig = &mirrorapi.MirrorConfig{Mirrors: nil}
 			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeRequired),
@@ -52,7 +52,7 @@ var _ = Describe("Validation", func() {
 				})),
 			))
 
-			mirrorConfig = &api.MirrorConfig{Mirrors: []api.MirrorConfiguration{}}
+			mirrorConfig = &mirrorapi.MirrorConfig{Mirrors: []mirrorapi.MirrorConfiguration{}}
 			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeRequired),
@@ -66,21 +66,21 @@ var _ = Describe("Validation", func() {
 			mirrorConfig.Mirrors[0].Upstream = ""
 
 			mirrorConfig.Mirrors = append(mirrorConfig.Mirrors,
-				api.MirrorConfiguration{
+				mirrorapi.MirrorConfiguration{
 					Upstream: "docker.io.",
-					Hosts:    []api.MirrorHost{{Host: "https://mirror.gcr.io"}},
+					Hosts:    []mirrorapi.MirrorHost{{Host: "https://mirror.gcr.io"}},
 				},
-				api.MirrorConfiguration{
+				mirrorapi.MirrorConfiguration{
 					Upstream: ".docker.io",
-					Hosts:    []api.MirrorHost{{Host: "https://mirror.gcr.io"}},
+					Hosts:    []mirrorapi.MirrorHost{{Host: "https://mirror.gcr.io"}},
 				},
-				api.MirrorConfiguration{
+				mirrorapi.MirrorConfiguration{
 					Upstream: "https://docker.io",
-					Hosts:    []api.MirrorHost{{Host: "https://mirror.gcr.io"}},
+					Hosts:    []mirrorapi.MirrorHost{{Host: "https://mirror.gcr.io"}},
 				},
-				api.MirrorConfiguration{
+				mirrorapi.MirrorConfiguration{
 					Upstream: "docker.io:0443",
-					Hosts:    []api.MirrorHost{{Host: "https://mirror.gcr.io"}},
+					Hosts:    []mirrorapi.MirrorHost{{Host: "https://mirror.gcr.io"}},
 				},
 			)
 
@@ -126,11 +126,11 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny mirror host without a scheme", func() {
-			mirrorConfig = &api.MirrorConfig{
-				Mirrors: []api.MirrorConfiguration{
+			mirrorConfig = &mirrorapi.MirrorConfig{
+				Mirrors: []mirrorapi.MirrorConfiguration{
 					{
 						Upstream: "docker.io",
-						Hosts: []api.MirrorHost{
+						Hosts: []mirrorapi.MirrorHost{
 							{Host: "public-mirror.example.com"},
 							{Host: "docker-mirror.internal"},
 						},
@@ -155,11 +155,11 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny duplicate mirror hosts", func() {
-			mirrorConfig = &api.MirrorConfig{
-				Mirrors: []api.MirrorConfiguration{
+			mirrorConfig = &mirrorapi.MirrorConfig{
+				Mirrors: []mirrorapi.MirrorConfiguration{
 					{
 						Upstream: "docker.io",
-						Hosts: []api.MirrorHost{
+						Hosts: []mirrorapi.MirrorHost{
 							{Host: "https://mirror.gcr.io"},
 							{Host: "https://mirror.gcr.io"},
 						},
@@ -176,14 +176,14 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny invalid mirror host capability", func() {
-			mirrorConfig = &api.MirrorConfig{
-				Mirrors: []api.MirrorConfiguration{
+			mirrorConfig = &mirrorapi.MirrorConfig{
+				Mirrors: []mirrorapi.MirrorConfiguration{
 					{
 						Upstream: "docker.io",
-						Hosts: []api.MirrorHost{
+						Hosts: []mirrorapi.MirrorHost{
 							{
 								Host:         "https://mirror.gcr.io",
-								Capabilities: []api.MirrorHostCapability{"foo"},
+								Capabilities: []mirrorapi.MirrorHostCapability{"foo"},
 							},
 						},
 					},
@@ -201,14 +201,14 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny duplicate mirror host capability", func() {
-			mirrorConfig = &api.MirrorConfig{
-				Mirrors: []api.MirrorConfiguration{
+			mirrorConfig = &mirrorapi.MirrorConfig{
+				Mirrors: []mirrorapi.MirrorConfiguration{
 					{
 						Upstream: "docker.io",
-						Hosts: []api.MirrorHost{
+						Hosts: []mirrorapi.MirrorHost{
 							{
 								Host:         "https://mirror.gcr.io",
-								Capabilities: []api.MirrorHostCapability{"pull", "resolve", "pull"},
+								Capabilities: []mirrorapi.MirrorHostCapability{"pull", "resolve", "pull"},
 							},
 						},
 					},

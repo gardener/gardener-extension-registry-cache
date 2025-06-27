@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"slices"
 
-	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
+	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/go-logr/logr"
@@ -18,7 +18,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
+	mirrorapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
@@ -39,7 +39,7 @@ type ensurer struct {
 }
 
 // EnsureCRIConfig ensures the CRI config.
-func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, newCRIConfig, _ *extensionsv1alpha1.CRIConfig) error {
+func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextwebhook.GardenContext, newCRIConfig, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -63,7 +63,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 		return fmt.Errorf("extension '%s' does not have a .spec.providerConfig specified", client.ObjectKeyFromObject(extension))
 	}
 
-	mirrorConfig := &api.MirrorConfig{}
+	mirrorConfig := &mirrorapi.MirrorConfig{}
 	if err := runtime.DecodeInto(e.decoder, extension.Spec.ProviderConfig.Raw, mirrorConfig); err != nil {
 		return fmt.Errorf("failed to decode providerConfig of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}
@@ -83,9 +83,9 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 			}
 			for _, c := range host.Capabilities {
 				switch c {
-				case api.MirrorHostCapabilityPull:
+				case mirrorapi.MirrorHostCapabilityPull:
 					registryHost.Capabilities = append(registryHost.Capabilities, extensionsv1alpha1.PullCapability)
-				case api.MirrorHostCapabilityResolve:
+				case mirrorapi.MirrorHostCapabilityResolve:
 					registryHost.Capabilities = append(registryHost.Capabilities, extensionsv1alpha1.ResolveCapability)
 				}
 			}

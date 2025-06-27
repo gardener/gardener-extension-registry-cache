@@ -327,7 +327,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 func pushImageToUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFramework, upstreamHostPort, password string) {
 	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	ExpectWithOffset(1, len(nodeList.Items)).To(BeNumerically(">=", 1), "Expected to find at least one Node in the cluster")
+	ExpectWithOffset(1, nodeList.Items).ToNot(BeEmpty(), "Expected to find at least one Node in the cluster")
 
 	rootPodExecutor := framework.NewRootPodExecutor(f.Logger, f.ShootFramework.ShootClient, &nodeList.Items[0].Name, metav1.NamespaceSystem)
 	_, err = rootPodExecutor.Execute(ctx, "sh", "-c", fmt.Sprintf("ctr images pull --all-platforms %s > /dev/null", common.GithubRegistryJitesoftAlpine3188Image))
