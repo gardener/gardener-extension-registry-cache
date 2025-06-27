@@ -17,24 +17,24 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
 )
 
 var _ = Describe("Validation", func() {
 	var (
 		fldPath        *field.Path
-		registryConfig *api.RegistryConfig
+		registryConfig *registryapi.RegistryConfig
 	)
 
 	BeforeEach(func() {
 		fldPath = field.NewPath("providerConfig")
 		size := resource.MustParse("5Gi")
-		registryConfig = &api.RegistryConfig{
-			Caches: []api.RegistryCache{
+		registryConfig = &registryapi.RegistryConfig{
+			Caches: []registryapi.RegistryCache{
 				{
 					Upstream: "docker.io",
-					Volume: &api.Volume{
+					Volume: &registryapi.Volume{
 						Size: &size,
 					},
 				},
@@ -50,19 +50,19 @@ var _ = Describe("Validation", func() {
 		It("should allow valid remoteURLs", func() {
 			registryConfig.Caches[0].RemoteURL = ptr.To("https://registry-1.docker.io")
 			registryConfig.Caches = append(registryConfig.Caches,
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream:  "my-registry.io",
 					RemoteURL: ptr.To("https://my-registry.io"),
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream:  "my-registry.io:5000",
 					RemoteURL: ptr.To("http://my-registry.io:5000"),
-					Proxy: &api.Proxy{
+					Proxy: &registryapi.Proxy{
 						HTTPProxy:  ptr.To("http://127.0.0.1"),
 						HTTPSProxy: ptr.To("https://127.0.0.1:1234"),
 					},
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream:  "quay.io",
 					RemoteURL: ptr.To("https://mirror-host.io:8443"),
 				},
@@ -71,7 +71,7 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny configuration without a cache", func() {
-			registryConfig = &api.RegistryConfig{Caches: nil}
+			registryConfig = &registryapi.RegistryConfig{Caches: nil}
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeRequired),
@@ -80,7 +80,7 @@ var _ = Describe("Validation", func() {
 				})),
 			))
 
-			registryConfig = &api.RegistryConfig{Caches: []api.RegistryCache{}}
+			registryConfig = &registryapi.RegistryConfig{Caches: []registryapi.RegistryCache{}}
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeRequired),
@@ -94,16 +94,16 @@ var _ = Describe("Validation", func() {
 			registryConfig.Caches[0].Upstream = ""
 
 			registryConfig.Caches = append(registryConfig.Caches,
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream: "docker.io.",
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream: ".docker.io",
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream: "https://docker.io",
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream: "docker.io:0443",
 				},
 			)
@@ -139,9 +139,9 @@ var _ = Describe("Validation", func() {
 
 		It("should deny non-positive cache size", func() {
 			negativeSize := resource.MustParse("-1Gi")
-			cache := api.RegistryCache{
+			cache := registryapi.RegistryCache{
 				Upstream: "myproj-releases.common.repositories.cloud.com",
-				Volume: &api.Volume{
+				Volume: &registryapi.Volume{
 					Size: &negativeSize,
 				},
 			}
@@ -165,9 +165,9 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny invalid storage class names", func() {
-			cache := api.RegistryCache{
+			cache := registryapi.RegistryCache{
 				Upstream: "myproj-releases.common.repositories.cloud.com",
-				Volume: &api.Volume{
+				Volume: &registryapi.Volume{
 					StorageClassName: ptr.To("invalid/name"),
 				},
 			}
@@ -193,7 +193,7 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny negative garbage collection ttl duration", func() {
-			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+			registryConfig.Caches[0].GarbageCollection = &registryapi.GarbageCollection{
 				TTL: metav1.Duration{Duration: -1 * time.Hour},
 			}
 
@@ -220,15 +220,15 @@ var _ = Describe("Validation", func() {
 		It("should deny invalid remoteURLs", func() {
 			registryConfig.Caches[0].RemoteURL = ptr.To("ftp://docker.io")
 			registryConfig.Caches = append(registryConfig.Caches,
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream:  "my-registry.io:5000",
 					RemoteURL: ptr.To("http://my-registry.io:5000/repository"),
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream:  "my-registry.io:8443",
 					RemoteURL: ptr.To("https://my-registry.io:8443/repository"),
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream:  "quay.io",
 					RemoteURL: ptr.To("mirror-host.io:8443"),
 				},
@@ -258,21 +258,21 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny invalid proxy config", func() {
-			registryConfig.Caches[0].Proxy = &api.Proxy{
+			registryConfig.Caches[0].Proxy = &registryapi.Proxy{
 				HTTPProxy:  ptr.To("10.10.10.10"),
 				HTTPSProxy: nil,
 			}
 			registryConfig.Caches = append(registryConfig.Caches,
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream: "my-registry.io",
-					Proxy: &api.Proxy{
+					Proxy: &registryapi.Proxy{
 						HTTPProxy:  nil,
 						HTTPSProxy: ptr.To("http://foo!bar"),
 					},
 				},
-				api.RegistryCache{
+				registryapi.RegistryCache{
 					Upstream: "my-registry2.io",
-					Proxy: &api.Proxy{
+					Proxy: &registryapi.Proxy{
 						HTTPProxy:  nil,
 						HTTPSProxy: nil,
 					},
@@ -294,20 +294,20 @@ var _ = Describe("Validation", func() {
 	})
 
 	Describe("#ValidateRegistryConfigUpdate", func() {
-		var oldRegistryConfig *api.RegistryConfig
+		var oldRegistryConfig *registryapi.RegistryConfig
 
 		BeforeEach(func() {
 			oldRegistryConfig = registryConfig.DeepCopy()
 		})
 
 		It("should allow valid configuration update", func() {
-			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+			registryConfig.Caches[0].GarbageCollection = &registryapi.GarbageCollection{
 				TTL: metav1.Duration{Duration: 14 * 24 * time.Hour},
 			}
 			size := resource.MustParse("5Gi")
-			newCache := api.RegistryCache{
+			newCache := registryapi.RegistryCache{
 				Upstream: "quay.io",
-				Volume: &api.Volume{
+				Volume: &registryapi.Volume{
 					Size: &size,
 				},
 			}
@@ -344,10 +344,10 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny garbage collection enablement (ttl > 0) once it is disabled (ttl = 0)", func() {
-			oldRegistryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+			oldRegistryConfig.Caches[0].GarbageCollection = &registryapi.GarbageCollection{
 				TTL: metav1.Duration{Duration: 0},
 			}
-			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
+			registryConfig.Caches[0].GarbageCollection = &registryapi.GarbageCollection{
 				TTL: metav1.Duration{Duration: 7 * 24 * time.Hour},
 			}
 

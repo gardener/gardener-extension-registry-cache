@@ -38,7 +38,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/secrets"
@@ -80,7 +80,7 @@ type Values struct {
 	// Services are the registry cache services used for certificate generation.
 	Services []corev1.Service
 	// Caches are the registry caches to deploy.
-	Caches []api.RegistryCache
+	Caches []registryapi.RegistryCache
 	// ResourceReferences are the resource references from the Shoot spec (the .spec.resources field).
 	ResourceReferences []gardencorev1beta1.NamedResourceReference
 	// KeepObjectsOnDestroy marks whether the ManagedResource's .spec.keepObjects will be set to true
@@ -232,7 +232,7 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecr
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *api.RegistryCache, generatedTLSSecret *corev1.Secret) ([]client.Object, error) {
+func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *registryapi.RegistryCache, generatedTLSSecret *corev1.Secret) ([]client.Object, error) {
 	if cache.Volume == nil || cache.Volume.Size == nil {
 		return nil, fmt.Errorf("registry cache volume size is required")
 	}
