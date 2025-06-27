@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"os"
 
-	controllercmd "github.com/gardener/gardener/extensions/pkg/controller/cmd"
-	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
-	coreinstall "github.com/gardener/gardener/pkg/apis/core/install"
+	extensionscmdcontroller "github.com/gardener/gardener/extensions/pkg/controller/cmd"
+	extensionscmdwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+	gardencoreinstall "github.com/gardener/gardener/pkg/apis/core/install"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/spf13/cobra"
@@ -40,10 +40,10 @@ var log = logf.Log.WithName("gardener-extension-registry-cache-admission")
 // NewAdmissionCommand creates a new command for running an registry cache validator.
 func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 	var (
-		restOpts = &controllercmd.RESTOptions{}
-		mgrOpts  = &controllercmd.ManagerOptions{
+		restOpts = &extensionscmdcontroller.RESTOptions{}
+		mgrOpts  = &extensionscmdcontroller.ManagerOptions{
 			LeaderElection:     true,
-			LeaderElectionID:   controllercmd.LeaderElectionNameID(admissionName),
+			LeaderElectionID:   extensionscmdcontroller.LeaderElectionNameID(admissionName),
 			WebhookServerPort:  443,
 			MetricsBindAddress: ":8080",
 			HealthBindAddress:  ":8081",
@@ -51,11 +51,11 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 		}
 
 		// options for the webhook server
-		webhookServerOptions = &webhookcmd.ServerOptions{
+		webhookServerOptions = &extensionscmdwebhook.ServerOptions{
 			Namespace: os.Getenv("WEBHOOK_CONFIG_NAMESPACE"),
 		}
 		webhookSwitches = admissioncmd.GardenWebhookSwitchOptions()
-		webhookOptions  = webhookcmd.NewAddToManagerOptions(
+		webhookOptions  = extensionscmdwebhook.NewAddToManagerOptions(
 			admissionName,
 			"",
 			nil,
@@ -63,7 +63,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 			webhookSwitches,
 		)
 
-		aggOption = controllercmd.NewOptionAggregator(
+		aggOption = extensionscmdcontroller.NewOptionAggregator(
 			restOpts,
 			mgrOpts,
 			webhookOptions,
@@ -118,7 +118,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 				return fmt.Errorf("could not instantiate manager: %w", err)
 			}
 
-			coreinstall.Install(mgr.GetScheme())
+			gardencoreinstall.Install(mgr.GetScheme())
 			registryinstall.Install(mgr.GetScheme())
 			mirrorinstall.Install(mgr.GetScheme())
 

@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 )
 
@@ -53,7 +53,7 @@ var _ = Describe("Shoot validator", func() {
 
 		BeforeEach(func() {
 			scheme := runtime.NewScheme()
-			Expect(api.AddToScheme(scheme)).To(Succeed())
+			Expect(registryapi.AddToScheme(scheme)).To(Succeed())
 			Expect(v1alpha3.AddToScheme(scheme)).To(Succeed())
 
 			decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
