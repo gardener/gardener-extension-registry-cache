@@ -8,7 +8,6 @@ import (
 	"context"
 
 	"github.com/gardener/gardener/extensions/pkg/controller/extension"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -43,8 +42,6 @@ func AddToManager(ctx context.Context, mgr manager.Manager) error {
 // AddToManagerWithOptions adds a controller with the given Options to the given manager.
 // The opts.Reconciler is being set with a newly instantiated actuator.
 func AddToManagerWithOptions(ctx context.Context, mgr manager.Manager, opts AddOptions) error {
-	_ = serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
-
 	return extension.Add(mgr, extension.AddArgs{
 		Actuator:          NewActuator(),
 		ControllerOptions: opts.ControllerOptions,
