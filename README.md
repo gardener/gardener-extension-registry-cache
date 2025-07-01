@@ -1,7 +1,7 @@
 # [Gardener Extension for Registry Cache](https://gardener.cloud)
 
 [![REUSE status](https://api.reuse.software/badge/github.com/gardener/gardener-extension-registry-cache)](https://api.reuse.software/info/github.com/gardener/gardener-extension-registry-cache)
-[![CI Build status](https://concourse.ci.gardener.cloud/api/v1/teams/gardener/pipelines/gardener-extension-registry-cache-main/jobs/main-head-update-job/badge)](https://concourse.ci.gardener.cloud/teams/gardener/pipelines/gardener-extension-registry-cache-main/jobs/main-head-update-job)
+[![CI Build status](https://github.com/gardener/gardener-extension-registry-cache/actions/workflows/non-release.yaml/badge.svg)](https://github.com/gardener/gardener-extension-registry-cache/actions/workflows/non-release.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gardener/gardener-extension-registry-cache)](https://goreportcard.com/report/github.com/gardener/gardener-extension-registry-cache)
 
 Gardener extension controller which deploys pull-through caches for container registries.
