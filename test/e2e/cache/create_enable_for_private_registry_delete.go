@@ -18,8 +18,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -301,6 +303,22 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 	}
 	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, testRegistry)).To(Succeed())
 	ExpectWithOffset(1, f.WaitUntilStatefulSetIsRunning(ctx, "test-registry", metav1.NamespaceSystem, f.ShootFramework.ShootClient)).To(Succeed())
+
+	// Alow traffic to test registry
+	testNetworkPolicy := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "allow-test-registry",
+			Namespace: metav1.NamespaceSystem,
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{"app": "test-registry"}},
+			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{{
+				Ports: []networkingv1.NetworkPolicyPort{{Protocol: ptr.To(corev1.ProtocolTCP), Port: ptr.To(intstr.FromInt32(5000))}},
+			}},
+		},
+	}
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, testNetworkPolicy)).To(Succeed())
 
 	return
 }
