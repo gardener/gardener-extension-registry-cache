@@ -1,0 +1,110 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+        default: snapshot
+        description: |
+          the mode to use. either `snapshot` or `release`. Will affect effective version, as well
+          as target-oci-registry.
+
+jobs:
+  prepare:
+    uses: gardener/cc-utils/.github/workflows/prepare.yaml@master
+    with:
+      mode: ${{ inputs.mode }}
+      version-commit-callback-action-path: .github/actions/prepare-release
+    permissions:
+      contents: read
+
+  sast-lint:
+    uses: gardener/cc-utils/.github/workflows/sastlint-ocm.yaml@master
+    permissions:
+      contents: read
+    with:
+      linter: gosec
+      run: |
+        set -euo pipefail
+        if [ '${{ inputs.mode }}' == 'release' ]; then
+          make verify-extended
+          # verify calls `make sast-report`, which generates `gosec-report.sarif
+        else
+          # tests are run using prow for non-release-runs, so early-exit
+          echo "dummy" > gosec-report.sarif
+        fi
+      go-version: '1.24.5'
+
+  oci-images:
+    name: Build OCI-Images
+    needs:
+      - prepare
+      - sast-lint
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    secrets: inherit
+    uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@master
+    strategy:
+      matrix:
+        args:
+          - name: gardener-extension-registry-cache
+            oci-repository: gardener/extensions/registry-cache
+            target: registry-cache
+          - name: gardener-extension-registry-cache-admission
+            oci-repository: gardener/extensions/registry-cache-admission
+            target: registry-cache-admission
+    with:
+      name: ${{ matrix.args.name }}
+      version: ${{ needs.prepare.outputs.version }}
+      target: ${{ matrix.args.target }}
+      oci-registry: ${{ needs.prepare.outputs.oci-registry }}
+      oci-repository: ${{ matrix.args.oci-repository }}
+      oci-platforms: linux/amd64,linux/arm64
+
+  helmcharts:
+    name: Build Helmcharts
+    needs:
+      - prepare
+      - oci-images
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: gardener/cc-utils/.github/workflows/helmchart-ocm.yaml@master
+    strategy:
+      matrix:
+        args:
+          - name: registry-cache
+            dir: charts/gardener-extension-registry-cache
+            oci-repository: charts/gardener/extensions
+            ocm-mappings:
+              - ref: ocm-resource:gardener-extension-registry-cache.repository
+                attribute: image.repository
+              - ref: ocm-resource:gardener-extension-registry-cache.tag
+                attribute: image.tag
+          - name: registry-cache-admission-application
+            dir: charts/admission/charts/application
+            oci-repository: charts/gardener/extensions
+            ocm-mappings:
+              - ref: ocm-resource:gardener-extension-registry-cache-admission.repository
+                attribute: image.repository
+              - ref: ocm-resource:gardener-extension-registry-cache-admission.tag
+                attribute: image.tag
+          - name: admission-registry-cache-runtime
+            dir: charts/admission/charts/runtime
+            oci-repository: charts/gardener/extensions
+            ocm-mappings:
+              - ref: ocm-resource:gardener-extension-registry-cache-admission.repository
+                attribute: image.repository
+              - ref: ocm-resource:gardener-extension-registry-cache-admission.tag
+                attribute: image.tag
+    with:
+      name: ${{ matrix.args.name }}
+      dir: ${{ matrix.args.dir }}
+      oci-registry: ${{ needs.prepare.outputs.oci-registry }}
+      oci-repository: ${{ matrix.args.oci-repository }}
+      ocm-mappings: ${{ toJSON(matrix.args.ocm-mappings) }}
