@@ -31,7 +31,7 @@ Resource Types:
 <td>
 <code>ttl</code></br>
 <em>
-<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.32/#duration-v1-meta">
+<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#duration-v1-meta">
 Kubernetes meta/v1.Duration
 </a>
 </em>
