@@ -209,7 +209,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 	upstreamHostPort = service.Spec.ClusterIP + ":5000"
 
 	// Create upstream registry StatefulSet
-	testRegistry := &appsv1.StatefulSet{
+	registry := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-registry",
 			Namespace: metav1.NamespaceSystem,
@@ -301,11 +301,11 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 			},
 		},
 	}
-	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, testRegistry)).To(Succeed())
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, registry)).To(Succeed())
 	ExpectWithOffset(1, f.WaitUntilStatefulSetIsRunning(ctx, "test-registry", metav1.NamespaceSystem, f.ShootFramework.ShootClient)).To(Succeed())
 
 	// Alow traffic to test registry
-	testNetworkPolicy := &networkingv1.NetworkPolicy{
+	networkPolicy := &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "allow-test-registry",
 			Namespace: metav1.NamespaceSystem,
@@ -318,7 +318,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 			}},
 		},
 	}
-	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, testNetworkPolicy)).To(Succeed())
+	ExpectWithOffset(1, f.ShootFramework.ShootClient.Client().Create(ctx, networkPolicy)).To(Succeed())
 
 	return
 }
