@@ -9,6 +9,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"strings"
 	"text/template"
 	"time"
 
@@ -279,7 +280,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		}
 
 		configValues["proxy_username"] = string(refSecret.Data["username"])
-		configValues["proxy_password"] = string(refSecret.Data["password"])
+		configValues["proxy_password"] = strings.ReplaceAll(string(refSecret.Data["password"]), "'", "''") // escape single quoted as per https://yaml.org/spec/1.2.2/#single-quoted-style
 	}
 
 	var configYAML bytes.Buffer
