@@ -5,9 +5,12 @@
 package validation
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -79,6 +82,11 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 	if cache.Volume != nil {
 		if cache.Volume.Size != nil {
 			allErrs = append(allErrs, validatePositiveQuantity(*cache.Volume.Size, fldPath.Child("volume", "size"))...)
+		}
+		if cache.Volume.StorageClassName != nil {
+			for _, msg := range apivalidation.NameIsDNSSubdomain(*cache.Volume.StorageClassName, false) {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("volume", "storageClassName"), *cache.Volume.StorageClassName, msg))
+			}
 		}
 	}
 	if cache.GarbageCollection != nil {
@@ -153,11 +161,29 @@ func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, 
 	if len(secret.Data) != 2 {
 		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("referenced secret %q should have only two data entries", secretRef)))
 	}
-	if _, ok := secret.Data[username]; !ok {
+	if user, ok := secret.Data[username]; ok {
+		if len(bytes.TrimSpace(user)) == 0 {
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("data entry %q in referenced secret %q is empty", username, secretRef)))
+		}
+		if bytes.ContainsFunc(user, unicode.IsSpace) {
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("data entry %q in referenced secret %q contains white spaces", username, secretRef)))
+		}
+	} else {
 		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("missing %q data entry in referenced secret %q", username, secretRef)))
 	}
-	if _, ok := secret.Data[password]; !ok {
+	if pass, ok := secret.Data[password]; ok {
+		if len(bytes.TrimSpace(pass)) == 0 {
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("data entry %q in referenced secret %q is empty", password, secretRef)))
+		}
+	} else {
 		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("missing %q data entry in referenced secret %q", password, secretRef)))
+	}
+
+	// validate ServiceAccount json
+	if user, ok := secret.Data[username]; ok && string(user) == "_json_key" {
+		if pwd, ok := secret.Data[password]; ok {
+			allErrors = append(allErrors, validateServiceAccountJson(pwd, fldPath, secretReference, secretRef)...)
+		}
 	}
 
 	return allErrors
@@ -182,4 +208,35 @@ func ValidateURL(fldPath *field.Path, url string) field.ErrorList {
 	}
 
 	return allErrs
+}
+
+var serviceAccountAllowedFields = map[string]struct{}{
+	"type":                        {},
+	"project_id":                  {},
+	"client_email":                {},
+	"universe_domain":             {},
+	"auth_uri":                    {},
+	"auth_provider_x509_cert_url": {},
+	"client_x509_cert_url":        {},
+	"client_id":                   {},
+	"private_key_id":              {},
+	"private_key":                 {},
+	"token_uri":                   {},
+}
+
+func validateServiceAccountJson(serviceAccountJSON []byte, fldPath *field.Path, secretReference, secretRef string) field.ErrorList {
+	var allErrors field.ErrorList
+
+	serviceAccountMap := map[string]string{}
+	if err := json.Unmarshal(serviceAccountJSON, &serviceAccountMap); err != nil {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("failed to unmarshal ServiceAccount json from password data entry in referenced secret %q: %v", secretRef, err)))
+	}
+
+	for fld := range serviceAccountMap {
+		if _, ok := serviceAccountAllowedFields[fld]; !ok {
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReference, fmt.Sprintf("forbidden ServiceAccount field %q present in password data entry in referenced secret %q", fld, secretRef)))
+		}
+	}
+
+	return allErrors
 }
