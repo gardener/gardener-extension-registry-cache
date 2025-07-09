@@ -33,6 +33,7 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 	}
 
 	upstreams := sets.New[string]()
+	serviceNameSuffixes := sets.New[string]()
 	for i, cache := range config.Caches {
 		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
 
@@ -40,6 +41,13 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 			allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("upstream"), cache.Upstream))
 		} else {
 			upstreams.Insert(cache.Upstream)
+		}
+		if cache.ServiceNameSuffix != nil {
+			if serviceNameSuffixes.Has(*cache.ServiceNameSuffix) {
+				allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix))
+			} else {
+				serviceNameSuffixes.Insert(*cache.ServiceNameSuffix)
+			}
 		}
 	}
 
@@ -102,6 +110,9 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpsProxy"), *cache.Proxy.HTTPSProxy)...)
 		}
 	}
+	if cache.ServiceNameSuffix != nil {
+		allErrs = append(allErrs, ValidateServiceNameSuffix(fldPath.Child("serviceNameSuffix"), *cache.ServiceNameSuffix)...)
+	}
 
 	return allErrs
 }
@@ -111,6 +122,24 @@ func ValidateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	var allErrs field.ErrorList
 	for _, msg := range validateHostPort(upstream) {
 		allErrs = append(allErrs, field.Invalid(fldPath, upstream, msg))
+	}
+
+	return allErrs
+}
+
+// A label value length and a resource name length limits are 63 chars.
+// The cache resources name have prefix 'registry-', thus the label value length is limited to 43.
+const serviceNameSuffixValueLimit = 43
+
+// ValidateServiceNameSuffix validates that serviceNameSuffix is valid DNS subdomain (RFC 1123) and not longer than 43 characters.
+func ValidateServiceNameSuffix(fldPath *field.Path, serviceNameSuffix string) field.ErrorList {
+	var allErrs field.ErrorList
+	for _, msg := range validation.IsDNS1123Label(serviceNameSuffix) {
+		allErrs = append(allErrs, field.Invalid(fldPath, serviceNameSuffix, msg))
+	}
+
+	if len(serviceNameSuffix) > serviceNameSuffixValueLimit {
+		allErrs = append(allErrs, field.Invalid(fldPath, serviceNameSuffix, fmt.Sprintf("cannot be longer than %d characters", serviceNameSuffixValueLimit)))
 	}
 
 	return allErrs
