@@ -52,6 +52,10 @@ type RegistryCache struct {
 	// HighAvailability contains settings for high availability of the registry cache.
 	// +optional
 	HighAvailability *HighAvailability `json:"highAvailability,omitempty"`
+	// ServiceNameSuffix allows to customize the naming of the deployed service.
+	// If not specified, the service suffix will be generated from the upstream.
+	// +optional
+	ServiceNameSuffix *string `json:"serviceNameSuffix,omitempty"`
 }
 
 // Volume contains settings for the registry cache volume.

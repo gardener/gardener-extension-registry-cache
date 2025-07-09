@@ -125,6 +125,11 @@ func (in *RegistryCache) DeepCopyInto(out *RegistryCache) {
 		*out = new(HighAvailability)
 		**out = **in
 	}
+	if in.ServiceNameSuffix != nil {
+		in, out := &in.ServiceNameSuffix, &out.ServiceNameSuffix
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

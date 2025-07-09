@@ -208,6 +208,7 @@ func autoConvert_v1alpha3_RegistryCache_To_registry_RegistryCache(in *RegistryCa
 	out.Proxy = (*registry.Proxy)(unsafe.Pointer(in.Proxy))
 	out.HTTP = (*registry.HTTP)(unsafe.Pointer(in.HTTP))
 	out.HighAvailability = (*registry.HighAvailability)(unsafe.Pointer(in.HighAvailability))
+	out.ServiceNameSuffix = (*string)(unsafe.Pointer(in.ServiceNameSuffix))
 	return nil
 }
 
@@ -225,6 +226,7 @@ func autoConvert_registry_RegistryCache_To_v1alpha3_RegistryCache(in *registry.R
 	out.Proxy = (*Proxy)(unsafe.Pointer(in.Proxy))
 	out.HTTP = (*HTTP)(unsafe.Pointer(in.HTTP))
 	out.HighAvailability = (*HighAvailability)(unsafe.Pointer(in.HighAvailability))
+	out.ServiceNameSuffix = (*string)(unsafe.Pointer(in.ServiceNameSuffix))
 	return nil
 }
 

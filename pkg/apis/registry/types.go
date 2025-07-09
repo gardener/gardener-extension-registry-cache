@@ -44,6 +44,10 @@ type RegistryCache struct {
 	HTTP *HTTP
 	//HighAvailability contains settings for high availability of the registry cache.
 	HighAvailability *HighAvailability
+	// ServiceNameSuffix allows to customize the naming of the deployed service.
+	// If not specified, the service suffix will be generated from the upstream.
+	// +optional
+	ServiceNameSuffix *string
 }
 
 // Volume contains settings for the registry cache volume.
