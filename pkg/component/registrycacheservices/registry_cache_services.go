@@ -19,7 +19,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
@@ -32,7 +32,7 @@ const (
 // Values is a set of configuration values for the registry cache services.
 type Values struct {
 	// Caches are the registry caches to deploy.
-	Caches []api.RegistryCache
+	Caches []registryapi.RegistryCache
 	// KeepObjectsOnDestroy marks whether the ManagedResource's .spec.keepObjects will be set to true
 	// before ManagedResource deletion during the Destroy operation. When set to true, the deployed
 	// resources by ManagedResources won't be deleted, but the ManagedResource itself will be deleted.
@@ -116,7 +116,7 @@ func (r *registryCacheServices) computeResourcesData() (map[string][]byte, error
 	return registry.AddAllAndSerialize(services...)
 }
 
-func computeResourcesDataForService(cache *api.RegistryCache) *corev1.Service {
+func computeResourcesDataForService(cache *registryapi.RegistryCache) *corev1.Service {
 	var (
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
@@ -150,7 +150,7 @@ func computeResourcesDataForService(cache *api.RegistryCache) *corev1.Service {
 	return service
 }
 
-func computeScheme(cache *api.RegistryCache) string {
+func computeScheme(cache *registryapi.RegistryCache) string {
 	scheme := "http"
 	if helper.TLSEnabled(cache) {
 		scheme = "https"

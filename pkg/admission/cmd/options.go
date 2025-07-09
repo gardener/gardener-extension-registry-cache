@@ -5,16 +5,16 @@
 package cmd
 
 import (
-	webhookcmd "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
+	extensionscmdwebhook "github.com/gardener/gardener/extensions/pkg/webhook/cmd"
 
 	cachevalidator "github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
 	mirrorvalidator "github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/mirror"
 )
 
-// GardenWebhookSwitchOptions are the webhookcmd.SwitchOptions for the admission webhooks.
-func GardenWebhookSwitchOptions() *webhookcmd.SwitchOptions {
-	return webhookcmd.NewSwitchOptions(
-		webhookcmd.Switch(cachevalidator.Name, cachevalidator.New),
-		webhookcmd.Switch(mirrorvalidator.Name, mirrorvalidator.New),
+// GardenWebhookSwitchOptions are the extensionscmdwebhook.SwitchOptions for the admission webhooks.
+func GardenWebhookSwitchOptions() *extensionscmdwebhook.SwitchOptions {
+	return extensionscmdwebhook.NewSwitchOptions(
+		extensionscmdwebhook.Switch(cachevalidator.Name, cachevalidator.New),
+		extensionscmdwebhook.Switch(mirrorvalidator.Name, mirrorvalidator.New),
 	)
 }
