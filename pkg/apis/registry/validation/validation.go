@@ -128,10 +128,10 @@ func ValidateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 }
 
 // A label value length and a resource name length limits are 63 chars.
-// The cache resources name have prefix 'registry-', thus the label value length is limited to 43.
-const serviceNameSuffixValueLimit = 43
+// The cache resources name have prefix 'registry-', thus the label value length is limited to 54.
+const serviceNameSuffixValueLimit = 54
 
-// ValidateServiceNameSuffix validates that serviceNameSuffix is valid DNS subdomain (RFC 1123) and not longer than 43 characters.
+// ValidateServiceNameSuffix validates that serviceNameSuffix is valid DNS subdomain (RFC 1123) and not longer than 54 characters.
 func ValidateServiceNameSuffix(fldPath *field.Path, serviceNameSuffix string) field.ErrorList {
 	var allErrs field.ErrorList
 	for _, msg := range validation.IsDNS1123Label(serviceNameSuffix) {

@@ -217,6 +217,100 @@ var _ = Describe("Validation", func() {
 			))
 		})
 
+		It("should allow valid service name suffixes", func() {
+			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("docker-io")
+			registryConfig.Caches = append(registryConfig.Caches,
+				registryapi.RegistryCache{
+					Upstream:          "quay.io",
+					ServiceNameSuffix: ptr.To("quay-io"),
+				},
+				registryapi.RegistryCache{
+					Upstream:          "upstream-1.io",
+					ServiceNameSuffix: ptr.To("cache-1"),
+				},
+				registryapi.RegistryCache{
+					Upstream:          "upstream-2.io",
+					ServiceNameSuffix: ptr.To("cache-2"),
+				},
+			)
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(BeEmpty())
+		})
+
+		It("should deny invalid service name suffixes", func() {
+			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("foo.io")
+			registryConfig.Caches = append(registryConfig.Caches,
+				registryapi.RegistryCache{
+					Upstream:          "quay.io",
+					ServiceNameSuffix: ptr.To(strings.Repeat("n", 55)),
+				},
+			)
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"BadValue": Equal("foo.io"),
+					"Field":    Equal("providerConfig.caches[0].serviceNameSuffix"),
+					"Detail":   Equal("must not contain dots"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"BadValue": Equal(strings.Repeat("n", 55)),
+					"Field":    Equal("providerConfig.caches[1].serviceNameSuffix"),
+					"Detail":   Equal("cannot be longer than 54 characters"),
+				})),
+			))
+		})
+
+		It("should deny duplicate service name suffixes", func() {
+			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("foo")
+			registryConfig.Caches = append(registryConfig.Caches,
+				registryapi.RegistryCache{
+					Upstream:          "quay.io",
+					ServiceNameSuffix: ptr.To("foo"),
+				},
+			)
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeDuplicate),
+					"BadValue": Equal("foo"),
+					"Field":    Equal("providerConfig.caches[1].serviceNameSuffix"),
+				})),
+			))
+		})
+
+		It("should deny service name suffix that collides with upstream", func() {
+			registryConfig.Caches = append(registryConfig.Caches,
+				registryapi.RegistryCache{
+					Upstream:          "quay.io",
+					ServiceNameSuffix: ptr.To("docker-io"),
+				},
+				registryapi.RegistryCache{
+					Upstream:          "ghcr.com",
+					ServiceNameSuffix: ptr.To("myproj-releases-common-repositories-c-3f834"),
+				},
+				registryapi.RegistryCache{
+					Upstream: "myproj-releases.common.repositories.cloud.com",
+				},
+			)
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"BadValue": Equal("docker-io"),
+					"Field":    Equal("providerConfig.caches[1].serviceNameSuffix"),
+					"Detail":   Equal(`cannot collide with "docker.io" upstream`),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"BadValue": Equal("myproj-releases-common-repositories-c-3f834"),
+					"Field":    Equal("providerConfig.caches[2].serviceNameSuffix"),
+					"Detail":   Equal(`cannot collide with "myproj-releases.common.repositories.cloud.com" upstream`),
+				})),
+			))
+		})
+
 		It("should deny invalid remoteURLs", func() {
 			registryConfig.Caches[0].RemoteURL = ptr.To("ftp://docker.io")
 			registryConfig.Caches = append(registryConfig.Caches,
