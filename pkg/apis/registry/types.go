@@ -46,7 +46,6 @@ type RegistryCache struct {
 	HighAvailability *HighAvailability
 	// ServiceNameSuffix allows to customize the naming of the deployed service.
 	// If not specified, the service suffix will be generated from the upstream.
-	// +optional
 	ServiceNameSuffix *string
 }
 
