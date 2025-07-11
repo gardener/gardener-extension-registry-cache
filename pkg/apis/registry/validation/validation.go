@@ -42,11 +42,18 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 		} else {
 			upstreams.Insert(cache.Upstream)
 		}
+	}
+
+	for i, cache := range config.Caches {
 		if cache.ServiceNameSuffix != nil {
 			if serviceNameSuffixes.Has(*cache.ServiceNameSuffix) {
 				allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix))
 			} else {
 				serviceNameSuffixes.Insert(*cache.ServiceNameSuffix)
+			}
+
+			if cache.Upstream != *cache.ServiceNameSuffix && upstreams.Has(*cache.ServiceNameSuffix) {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix, "cannot collide with upstream"))
 			}
 		}
 	}

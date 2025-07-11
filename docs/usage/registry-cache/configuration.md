@@ -60,6 +60,7 @@ spec:
         secretReferenceName: quay-credentials
       - upstream: my-registry.io:5000
         remoteURL: http://my-registry.io:5000
+        serviceNameSuffix: static-name
   # ...
   resources:
   - name: quay-credentials
@@ -92,6 +93,8 @@ This field is immutable. If the field is not specified, then the [default Storag
 The `providerConfig.caches[].garbageCollection.ttl` field is the time to live of a blob in the cache. If the field is set to `0s`, the garbage collection is disabled. Defaults to `168h` (7 days). See the [Garbage Collection section](#garbage-collection) for more details.
 
 The `providerConfig.caches[].secretReferenceName` is the name of the reference for the Secret containing the upstream registry credentials. To cache images from a private registry, credentials to the upstream registry should be supplied. For more details, see [How to provide credentials for upstream registry](upstream-credentials.md#how-to-provide-credentials-for-upstream-registry).
+
+The `providerConfig.caches[].serviceNameSuffix` field allows to customize the naming of the deployed service after the `registry-` prefix. This is useful in scenarios where environment specific registries should be available under the same name across shoots.
 
 > [!NOTE]
 > It is only possible to provide one set of credentials for one private upstream registry.
