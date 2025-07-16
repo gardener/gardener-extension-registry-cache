@@ -6,6 +6,7 @@ package registrycaches_test
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
@@ -34,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -716,7 +718,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 					},
 					Data: map[string][]byte{
 						"username": []byte("docker-user"),
-						"password": []byte("s3cret"),
+						"password": []byte("It's12o'clock"),
 					},
 				}
 				arSecret = &corev1.Secret{
@@ -751,7 +753,13 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "s3cret", true))
+				var registryConfig map[string]interface{}
+				dockerConfigYAML := configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", strings.ReplaceAll("It's12o'clock", "'", "''"), true)
+				Expect(yaml.Unmarshal([]byte(dockerConfigYAML), &registryConfig)).To(Succeed())
+				Expect(registryConfig["proxy"].(map[string]interface{})["password"]).To(Equal("It's12o'clock"))
+				Expect(yaml.Unmarshal([]byte(configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "It's12o'clock", true)), &registryConfig)).ShouldNot(Succeed())
+
+				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", dockerConfigYAML)
 				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`, false))
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")

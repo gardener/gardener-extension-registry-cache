@@ -173,18 +173,21 @@ var _ = Describe("Validation", func() {
 			}
 			registryConfig.Caches = append(registryConfig.Caches, cache)
 
-			registryConfig.Caches[0].Volume.StorageClassName = ptr.To(strings.Repeat("n", 254))
+			tooLongStorageClassName := strings.Repeat("n", 254)
+			registryConfig.Caches[0].Volume.StorageClassName = ptr.To(tooLongStorageClassName)
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].volume.storageClassName"),
-					"Detail": ContainSubstring("must be no more than 253 characters"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].volume.storageClassName"),
+					"BadValue": Equal(tooLongStorageClassName),
+					"Detail":   ContainSubstring("must be no more than 253 characters"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[1].volume.storageClassName"),
-					"Detail": ContainSubstring("must consist of lower case alphanumeric characters, '-' or '.'"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[1].volume.storageClassName"),
+					"BadValue": Equal("invalid/name"),
+					"Detail":   ContainSubstring("must consist of lower case alphanumeric characters, '-' or '.'"),
 				})),
 			))
 		})
@@ -388,7 +391,7 @@ var _ = Describe("Validation", func() {
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("referenced secret \"foo/bar\" should be immutable"),
+						"Detail": ContainSubstring(`referenced secret "foo/bar" should be immutable`),
 					})),
 				))
 			},
@@ -404,7 +407,7 @@ var _ = Describe("Validation", func() {
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("referenced secret \"foo/bar\" should have only two data entries"),
+						"Detail": ContainSubstring(`referenced secret "foo/bar" should have only two data entries`),
 					})),
 				))
 			},
@@ -423,31 +426,31 @@ var _ = Describe("Validation", func() {
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": Equal("missing \"username\" data entry in referenced secret \"foo/bar\""),
+					"Detail": Equal(`missing "username" data entry in referenced secret "foo/bar"`),
 				})),
 			))
 		})
 
 		It("should deny secrets with empty 'username' data entry", func() {
-			secret.Data["username"] = []byte(``)
+			secret.Data["username"] = []byte("")
 
 			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": Equal("data entry \"username\" in referenced secret \"foo/bar\" is empty"),
+					"Detail": Equal(`data entry "username" in referenced secret "foo/bar" is empty`),
 				})),
 			))
 		})
 
 		It("should deny secrets when 'username' data entry contains whitespaces", func() {
-			secret.Data["username"] = []byte(`us	er`)
+			secret.Data["username"] = []byte("us	er")
 
 			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": Equal("data entry \"username\" in referenced secret \"foo/bar\" contains white spaces"),
+					"Detail": Equal(`data entry "username" in referenced secret "foo/bar" contains whitespace`),
 				})),
 			))
 		})
@@ -459,19 +462,20 @@ var _ = Describe("Validation", func() {
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": Equal("missing \"password\" data entry in referenced secret \"foo/bar\""),
+					"Detail": Equal(`missing "password" data entry in referenced secret "foo/bar"`),
 				})),
 			))
 		})
 
 		It("should deny secrets with empty 'password' data entry", func() {
-			secret.Data["password"] = []byte(` 	`)
+			secret.Data["password"] = []byte(" 	")
 
 			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": Equal("data entry \"password\" in referenced secret \"foo/bar\" is empty"),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`data entry "password" in referenced secret "foo/bar" is empty`),
 				})),
 			))
 		})
@@ -519,7 +523,7 @@ var _ = Describe("Validation", func() {
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": Equal("failed to unmarshal ServiceAccount json from password data entry in referenced secret \"foo/bar\": invalid character '\\n' in string literal"),
+						"Detail": Equal(`failed to unmarshal ServiceAccount json from password data entry in referenced secret "foo/bar": invalid character '\n' in string literal`),
 					})),
 				))
 			})
@@ -537,12 +541,12 @@ var _ = Describe("Validation", func() {
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": Equal("forbidden ServiceAccount field \"auths\" present in password data entry in referenced secret \"foo/bar\""),
+						"Detail": Equal(`forbidden ServiceAccount field "auths" present in password data entry in referenced secret "foo/bar"`),
 					})),
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": Equal("forbidden ServiceAccount field \"baz\" present in password data entry in referenced secret \"foo/bar\""),
+						"Detail": Equal(`forbidden ServiceAccount field "baz" present in password data entry in referenced secret "foo/bar"`),
 					})),
 				))
 			})
