@@ -4,13 +4,34 @@ SPDX-PackageSupplier = "The Gardener project <gardener@googlegroups.com>"
 SPDX-PackageDownloadLocation = "https://github.com/gardener/gardener-extension-registry-cache"
 
 [[annotations]]
-path = [".dockerignore", ".github/**", ".gitignore", ".golangci.yaml", ".test-defs/**", "OWNERS", "OWNERS_ALIASES", "VERSION", "charts/**", "example/**", "go.mod", "go.sum", "hack/api-reference/**.json", "local-setup/**", "pkg/component/registrycaches/monitoring/dashboard.json", "pkg/component/registrycaches/templates/config.yml.tpl", "skaffold-operator.yaml", "skaffold.yaml"]
+path = [
+    ".dockerignore",
+    ".github/**",
+    ".gitignore",
+    ".golangci.yaml",
+    ".test-defs/**",
+    "OWNERS",
+    "OWNERS_ALIASES",
+    "VERSION", "charts/**",
+    "example/**",
+    "go.mod",
+    "go.sum",
+    "hack/api-reference/**.json",
+    "local-setup/**",
+    "pkg/component/registrycaches/monitoring/dashboard.json",
+    "pkg/component/registrycaches/templates/config.yml.tpl",
+    "skaffold-operator.yaml",
+    "skaffold.yaml"
+]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "SAP SE or an SAP affiliate company and Gardener contributors"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["docs/**", "**.md"]
+path = [
+    "docs/**",
+    "**.md"
+]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "SAP SE or an SAP affiliate company and Gardener contributors"
 SPDX-License-Identifier = "CC-BY-4.0"
