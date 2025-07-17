@@ -164,6 +164,34 @@ var _ = Describe("Validation", func() {
 			))
 		})
 
+		It("should deny invalid storage class names", func() {
+			cache := api.RegistryCache{
+				Upstream: "myproj-releases.common.repositories.cloud.com",
+				Volume: &api.Volume{
+					StorageClassName: ptr.To("invalid/name"),
+				},
+			}
+			registryConfig.Caches = append(registryConfig.Caches, cache)
+
+			tooLongStorageClassName := strings.Repeat("n", 254)
+			registryConfig.Caches[0].Volume.StorageClassName = ptr.To(tooLongStorageClassName)
+
+			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].volume.storageClassName"),
+					"BadValue": Equal(tooLongStorageClassName),
+					"Detail":   ContainSubstring("must be no more than 253 characters"),
+				})),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[1].volume.storageClassName"),
+					"BadValue": Equal("invalid/name"),
+					"Detail":   ContainSubstring("must consist of lower case alphanumeric characters, '-' or '.'"),
+				})),
+			))
+		})
+
 		It("should deny negative garbage collection ttl duration", func() {
 			registryConfig.Caches[0].GarbageCollection = &api.GarbageCollection{
 				TTL: metav1.Duration{Duration: -1 * time.Hour},
@@ -361,9 +389,10 @@ var _ = Describe("Validation", func() {
 
 				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ConsistOf(
 					PointTo(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(field.ErrorTypeInvalid),
-						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("referenced secret \"foo/bar\" should be immutable"),
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+						"BadValue": Equal("foo-secret-ref"),
+						"Detail":   ContainSubstring(`referenced secret "foo/bar" should be immutable`),
 					})),
 				))
 			},
@@ -377,9 +406,10 @@ var _ = Describe("Validation", func() {
 
 				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
 					PointTo(MatchFields(IgnoreExtras, Fields{
-						"Type":   Equal(field.ErrorTypeInvalid),
-						"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("referenced secret \"foo/bar\" should have only two data entries"),
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+						"BadValue": Equal("foo-secret-ref"),
+						"Detail":   ContainSubstring(`referenced secret "foo/bar" should have only two data entries`),
 					})),
 				))
 			},
@@ -396,9 +426,36 @@ var _ = Describe("Validation", func() {
 
 			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": ContainSubstring("missing \"username\" data entry in referenced secret \"foo/bar\""),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`missing "username" data entry in referenced secret "foo/bar"`),
+				})),
+			))
+		})
+
+		It("should deny secrets with empty 'username' data entry", func() {
+			secret.Data["username"] = []byte("")
+
+			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`data entry "username" in referenced secret "foo/bar" is empty`),
+				})),
+			))
+		})
+
+		It("should deny secrets when 'username' data entry contains whitespaces", func() {
+			secret.Data["username"] = []byte("us	er")
+
+			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`data entry "username" in referenced secret "foo/bar" contains whitespace`),
 				})),
 			))
 		})
@@ -408,11 +465,100 @@ var _ = Describe("Validation", func() {
 
 			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":   Equal(field.ErrorTypeInvalid),
-					"Field":  Equal("providerConfig.caches[0].secretReferenceName"),
-					"Detail": ContainSubstring("missing \"password\" data entry in referenced secret \"foo/bar\""),
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`missing "password" data entry in referenced secret "foo/bar"`),
 				})),
 			))
+		})
+
+		It("should deny secrets with empty 'password' data entry", func() {
+			secret.Data["password"] = []byte(" 	")
+
+			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`data entry "password" in referenced secret "foo/bar" is empty`),
+				})),
+			))
+		})
+
+		When("user is '_json_key' and password is ServiceAccount json", func() {
+			BeforeEach(func() {
+				secret.Data["username"] = []byte("_json_key")
+				secret.Data["password"] = []byte(`{
+    "type": "service_account",
+    "project_id": "foo",
+    "private_key_id": "a1b2c3d4",
+    "private_key": "-----BEGIN PRIVATE KEY-----\n<private-key-content>\n-----END PRIVATE KEY-----\n",
+    "client_email": "foo@bar.com",
+    "client_id": "1234",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/foo%40bar.com",
+    "universe_domain": "googleapis.com"
+}`)
+			})
+
+			It("should allow secrets with valid ServiceAccount json", func() {
+				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(BeEmpty())
+			})
+
+			It("should deny a secret with invalid ServiceAccount json", func() {
+				secret.Data["password"] = []byte(`{
+    "type": "service_account",
+    "project_id": "foo",
+    "private_key_id": "a1b2c3d4",
+    "private_key": "-----BEGIN PRIVATE KEY-----
+<private-key-content>
+-----END PRIVATE KEY-----
+",
+    "client_email": "foo@bar.com",
+    "client_id": "1234",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/foo%40bar.com",
+    "universe_domain": "googleapis.com"
+}`)
+				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+						"BadValue": Equal("foo-secret-ref"),
+						"Detail":   Equal(`failed to unmarshal ServiceAccount json from password data entry in referenced secret "foo/bar": invalid character '\n' in string literal`),
+					})),
+				))
+			})
+
+			It("should deny a secret with forbidden ServiceAccount fields", func() {
+				secret.Data["password"] = []byte(`{
+    "auths": {
+        "europe-docker.pkg.dev": {
+            "auth": "<auth-content>"
+        }
+    },
+    "baz": "qux"
+}`)
+				Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(ContainElements(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+						"BadValue": Equal("foo-secret-ref"),
+						"Detail":   Equal(`forbidden ServiceAccount field "auths" present in password data entry in referenced secret "foo/bar"`),
+					})),
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
+						"BadValue": Equal("foo-secret-ref"),
+						"Detail":   Equal(`forbidden ServiceAccount field "baz" present in password data entry in referenced secret "foo/bar"`),
+					})),
+				))
+			})
 		})
 	})
 
@@ -447,6 +593,8 @@ var _ = Describe("Validation", func() {
 			Entry("when port is 0", "example.com:0"),
 			Entry("when port is out of range", "example.com:65536"),
 			Entry("when host is very long", strings.Repeat("n", 250)+".com"),
+			Entry("when query param is set", "example.com?foo=bar"),
+			Entry("when path is set", "example.com/foo/bar"),
 		)
 	})
 
@@ -476,6 +624,8 @@ var _ = Describe("Validation", func() {
 			Entry("when scheme is not supported", "ftp://example.com"),
 			Entry("when port is invalid", "https://example.com:80443"),
 			Entry("when path is set", "https://example.com/myrepository"),
+			Entry("when query param is set", "https://example.com?foo=bar"),
+			Entry("when user is set", "https://foo:bar@example.com/myrepository"),
 		)
 	})
 })

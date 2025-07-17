@@ -33,7 +33,7 @@ This document describe how to supply credentials for the private upstream regist
    For Artifact Registry, the username is `_json_key` and the password is the service account key in JSON format. To base64 encode the service account key, copy it and run:
 
    ```bash
-   echo -n $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
+   echo -nE $SERVICE_ACCOUNT_KEY_JSON | base64 -w0
    ```
 
 1. Add the newly created Secret as a reference to the Shoot spec, and then to the registry-cache extension configuration.
