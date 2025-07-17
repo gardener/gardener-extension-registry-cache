@@ -182,7 +182,7 @@ func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, 
 	// validate ServiceAccount json
 	if username, ok := secret.Data[usernameKey]; ok && string(username) == "_json_key" {
 		if password, ok := secret.Data[passwordKey]; ok {
-			allErrors = append(allErrors, validateServiceAccountJson(password, fldPath, secretReferenceName, secretKey)...)
+			allErrors = append(allErrors, validateServiceAccountJSON(password, fldPath, secretReferenceName, secretKey)...)
 		}
 	}
 
@@ -224,7 +224,7 @@ var serviceAccountAllowedFields = sets.New(
 	"token_uri",
 )
 
-func validateServiceAccountJson(serviceAccountJSON []byte, fldPath *field.Path, secretReferenceName, secretKey string) field.ErrorList {
+func validateServiceAccountJSON(serviceAccountJSON []byte, fldPath *field.Path, secretReferenceName, secretKey string) field.ErrorList {
 	var allErrors field.ErrorList
 
 	serviceAccountMap := map[string]string{}

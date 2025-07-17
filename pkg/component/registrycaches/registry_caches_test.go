@@ -242,9 +242,12 @@ proxy:
 
 				if username != "" && password != "" {
 					config += `  username: ` + username + `
-  password: '` + password + `'
+  password: '` + strings.ReplaceAll(password, "'", "''") + `'
 `
 				}
+
+				// Verify that the config is a valid YAML
+				Expect(yaml.Unmarshal([]byte(config), &map[string]interface{}{})).To(Succeed())
 
 				return config
 			}
@@ -753,13 +756,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				var registryConfig map[string]interface{}
-				dockerConfigYAML := configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", strings.ReplaceAll("It's12o'clock", "'", "''"), true)
-				Expect(yaml.Unmarshal([]byte(dockerConfigYAML), &registryConfig)).To(Succeed())
-				Expect(registryConfig["proxy"].(map[string]interface{})["password"]).To(Equal("It's12o'clock"))
-				Expect(yaml.Unmarshal([]byte(configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "It's12o'clock", true)), &registryConfig)).ShouldNot(Succeed())
-
-				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", dockerConfigYAML)
+				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "docker-user", "It's12o'clock", true))
 				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "ar-user", `{"foo":"bar"}`, false))
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
