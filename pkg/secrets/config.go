@@ -10,7 +10,7 @@ import (
 
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	kubernetesutils "github.com/gardener/gardener/pkg/utils/kubernetes"
-	secretutils "github.com/gardener/gardener/pkg/utils/secrets"
+	secretsutils "github.com/gardener/gardener/pkg/utils/secrets"
 	secretsmanager "github.com/gardener/gardener/pkg/utils/secrets/manager"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +31,10 @@ const (
 func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConfigWithOptions {
 	configs := []extensionssecretsmanager.SecretConfigWithOptions{
 		{
-			Config: &secretutils.CertificateSecretConfig{
+			Config: &secretsutils.CertificateSecretConfig{
 				Name:       CAName,
 				CommonName: CAName,
-				CertType:   secretutils.CACert,
+				CertType:   secretsutils.CACert,
 				Validity:   ptr.To(730 * 24 * time.Hour),
 			},
 			Options: []secretsmanager.GenerateOption{secretsmanager.Persist()},
@@ -51,10 +51,10 @@ func ConfigsFor(services []corev1.Service) []extensionssecretsmanager.SecretConf
 		name := TLSSecretNameForUpstream(upstream)
 
 		configs = append(configs, extensionssecretsmanager.SecretConfigWithOptions{
-			Config: &secretutils.CertificateSecretConfig{
+			Config: &secretsutils.CertificateSecretConfig{
 				Name:                        name,
 				CommonName:                  name,
-				CertType:                    secretutils.ServerCert,
+				CertType:                    secretsutils.ServerCert,
 				DNSNames:                    kubernetesutils.DNSNamesForService(service.Name, metav1.NamespaceSystem),
 				IPAddresses:                 []net.IP{net.ParseIP(service.Spec.ClusterIP)},
 				Validity:                    ptr.To(90 * 24 * time.Hour),

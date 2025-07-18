@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/helper"
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
@@ -61,7 +61,7 @@ func (s *shoot) Validate(ctx context.Context, newObj, oldObj client.Object) erro
 		return field.Required(providerConfigPath, "providerConfig is required for the registry-cache extension")
 	}
 
-	registryConfig := &api.RegistryConfig{}
+	registryConfig := &registryapi.RegistryConfig{}
 	if err := runtime.DecodeInto(s.decoder, ext.ProviderConfig.Raw, registryConfig); err != nil {
 		return fmt.Errorf("failed to decode providerConfig: %w", err)
 	}
@@ -80,7 +80,7 @@ func (s *shoot) Validate(ctx context.Context, newObj, oldObj client.Object) erro
 				return fmt.Errorf("providerConfig is not available on old Shoot")
 			}
 
-			oldRegistryConfig := &api.RegistryConfig{}
+			oldRegistryConfig := &registryapi.RegistryConfig{}
 			if err := runtime.DecodeInto(s.decoder, oldExt.ProviderConfig.Raw, oldRegistryConfig); err != nil {
 				return fmt.Errorf("failed to decode providerConfig: %w", err)
 			}
@@ -105,7 +105,7 @@ func (s *shoot) Validate(ctx context.Context, newObj, oldObj client.Object) erro
 }
 
 // validateRegistryConfig validates the passed configuration instance.
-func (s *shoot) validateRegistryCredentials(ctx context.Context, config *api.RegistryConfig, fldPath *field.Path, resources []core.NamedResourceReference, namespace string) (field.ErrorList, error) {
+func (s *shoot) validateRegistryCredentials(ctx context.Context, config *registryapi.RegistryConfig, fldPath *field.Path, resources []core.NamedResourceReference, namespace string) (field.ErrorList, error) {
 	allErrs := field.ErrorList{}
 
 	for i, cache := range config.Caches {

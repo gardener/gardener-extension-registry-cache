@@ -8,7 +8,7 @@ path = [
     ".dockerignore",
     ".github/**",
     ".gitignore",
-    ".golangci.yaml",
+    ".golangci.yaml.in",
     ".test-defs/**",
     "OWNERS",
     "OWNERS_ALIASES",
