@@ -43,8 +43,6 @@ linters:
         # Gardener extension package
         - pkg: github.com/gardener/gardener/extensions/.*/(\w+)/mock$
           alias: extensionsmock${1}
-        - pkg: github.com/gardener/gardener/extensions/pkg/apis/config
-          alias: extensionsconfig
         - pkg: github.com/gardener/gardener/extensions/pkg/apis/config/([\w\d]+)
           alias: extensionsconfig$1
         - pkg: github.com/gardener/gardener/extensions/pkg/controller
@@ -103,9 +101,9 @@ linters:
           alias: mirrorapi
         - pkg: github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/([\w\d]+)
           alias: mirror${1}
-        - pkg: github.com/gardener/gardener-extension-registry-cache/pkg/apis/([^c]\w+)/([\w\d]+)
+        - pkg: github.com/gardener/gardener-extension-registry-cache/pkg/apis/(\w+)/([\w\d]+)
           alias: $1$2
-        - pkg: github.com/gardener/gardener-extension-registry-cache/pkg/apis/([^c]\w+)/([\w\d]+)/([\w\d]+)
+        - pkg: github.com/gardener/gardener-extension-registry-cache/pkg/apis/(\w+)/([\w\d]+)/([\w\d]+)
           alias: $1$2$3
         - pkg: github.com/gardener/gardener-extension-registry-cache/pkg/(\w+)/apis/config
           alias: ${1}config
@@ -150,9 +148,6 @@ linters:
     rules:
       - linters:
           - staticcheck
-        text: 'SA1019:' # Excludes messages where deprecated variables are used
-      - linters:
-          - staticcheck
         text: 'ST1001:' # should not use dot imports
       # errcheck: Almost all programs ignore errors on these functions and in most cases it's ok
       - path: (.+)\.go$
@@ -171,34 +166,18 @@ linters:
       - path: (.+)\.go$
         text: 'exported: (type|func) name will be used as .* by other packages, and that stutters;'
       - path: (.+)\.go$
-        text: exported function Convert_.* should have comment or be unexported
-      - path: (.+)\.go$
         text: redundant-import-alias
       # typecheck:
       - path: (.+)\.go$
         text: 'undeclared name: `.*`'
       - path: (.+)\.go$
         text: '".*" imported but not used'
-      # allow non-capitalized messages if they start with technical terms
-      - path: (.+)\.go$
-        text: 'structured logging message should be capitalized: "garden(er-apiserver|er-controller-manager|er-admission-controller|er-operator|er-resource-manager|let)'
-    paths:
-      - zz_generated\..*\.go$
-      - third_party$
-      - builtin$
-      - examples$
 formatters:
   settings:
     gofmt:
       rewrite-rules:
         - pattern: interface{}
           replacement: any
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
