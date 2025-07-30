@@ -40,6 +40,7 @@ func NewEnsurer(client client.Client, decoder runtime.Decoder, logger logr.Logge
 
 type ensurer struct {
 	genericmutator.NoopEnsurer
+
 	client  client.Client
 	decoder runtime.Decoder
 	logger  logr.Logger

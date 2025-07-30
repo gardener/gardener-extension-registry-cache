@@ -3,6 +3,7 @@ run:
   concurrency: 4
 linters:
   enable:
+    - embeddedstructfieldcheck
     - ginkgolinter
     - importas
     - logcheck
@@ -15,6 +16,9 @@ linters:
   disable:
     - unused
   settings:
+    embeddedstructfieldcheck:
+      # Checks that sync.Mutex and sync.RWMutex are not used as embedded fields.
+      forbid-mutex: true
     importas:
       alias:
         # External imported packages
