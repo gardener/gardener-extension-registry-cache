@@ -13,7 +13,7 @@ import (
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
-	gcontext "github.com/gardener/gardener/extensions/pkg/webhook/context"
+	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
 	v1beta1helper "github.com/gardener/gardener/pkg/apis/core/v1beta1/helper"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
@@ -24,7 +24,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 )
 
 const caBundlePath = "/etc/containerd/certs.d/ca-bundle.pem"
@@ -40,13 +40,14 @@ func NewEnsurer(client client.Client, decoder runtime.Decoder, logger logr.Logge
 
 type ensurer struct {
 	genericmutator.NoopEnsurer
+
 	client  client.Client
 	decoder runtime.Decoder
 	logger  logr.Logger
 }
 
 // EnsureCRIConfig ensures the CRI config.
-func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenContext, newCRIConfig, _ *extensionsv1alpha1.CRIConfig) error {
+func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextwebhook.GardenContext, newCRIConfig, _ *extensionsv1alpha1.CRIConfig) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -94,7 +95,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx gcontext.GardenConte
 }
 
 // EnsureAdditionalFiles ensures that the CA bundle is added to the <new> files.
-func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx gcontext.GardenContext, newFiles, _ *[]extensionsv1alpha1.File) error {
+func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx extensionscontextwebhook.GardenContext, newFiles, _ *[]extensionsv1alpha1.File) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get the cluster resource: %w", err)
@@ -160,7 +161,7 @@ func (e *ensurer) shouldMutate(cluster *extensionscontroller.Cluster) bool {
 	return true
 }
 
-func (e *ensurer) getProviderStatus(ctx context.Context, cluster *extensionscontroller.Cluster) (*api.RegistryStatus, error) {
+func (e *ensurer) getProviderStatus(ctx context.Context, cluster *extensionscontroller.Cluster) (*registryapi.RegistryStatus, error) {
 	extension := &extensionsv1alpha1.Extension{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "registry-cache",
@@ -175,7 +176,7 @@ func (e *ensurer) getProviderStatus(ctx context.Context, cluster *extensionscont
 		return nil, fmt.Errorf("extension '%s' does not have a .status.providerStatus specified", client.ObjectKeyFromObject(extension))
 	}
 
-	registryStatus := &api.RegistryStatus{}
+	registryStatus := &registryapi.RegistryStatus{}
 	if err := runtime.DecodeInto(e.decoder, extension.Status.ProviderStatus.Raw, registryStatus); err != nil {
 		return nil, fmt.Errorf("failed to decode providerStatus of extension '%s': %w", client.ObjectKeyFromObject(extension), err)
 	}

@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	api "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
+	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/component/registrycacheservices"
 )
 
@@ -92,13 +92,13 @@ var _ = Describe("RegistryCacheServices", func() {
 	BeforeEach(func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		values = Values{
-			Caches: []api.RegistryCache{
+			Caches: []registryapi.RegistryCache{
 				{
 					Upstream: "docker.io",
 				},
 				{
 					Upstream: "europe-docker.pkg.dev",
-					HTTP: &api.HTTP{
+					HTTP: &registryapi.HTTP{
 						TLS: false,
 					},
 				},

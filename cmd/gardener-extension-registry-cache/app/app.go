@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
-	heartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
+	extensionsheartbeatcontroller "github.com/gardener/gardener/extensions/pkg/controller/heartbeat"
 	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
@@ -109,7 +109,7 @@ func (o *Options) run(ctx context.Context) error {
 	ctrlConfig.Apply(&cachecontroller.DefaultAddOptions.Config)
 	o.controllerOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.ControllerOptions)
 	o.reconcileOptions.Completed().Apply(&cachecontroller.DefaultAddOptions.IgnoreOperationAnnotation, ptr.To(extensionsv1alpha1.ExtensionClassShoot))
-	o.heartbeatOptions.Completed().Apply(&heartbeatcontroller.DefaultAddOptions)
+	o.heartbeatOptions.Completed().Apply(&extensionsheartbeatcontroller.DefaultAddOptions)
 
 	if err := o.controllerSwitches.Completed().AddToManager(ctx, mgr); err != nil {
 		return fmt.Errorf("could not add controllers to manager: %w", err)

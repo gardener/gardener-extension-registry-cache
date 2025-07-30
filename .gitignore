@@ -26,3 +26,5 @@ TODO
 
 # gosec
 gosec-report.sarif
+
+.golangci.yaml
