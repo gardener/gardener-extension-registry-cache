@@ -22,6 +22,7 @@ import (
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
+	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
 // ValidateRegistryConfig validates the passed configuration instance.
@@ -34,6 +35,7 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 
 	upstreams := sets.New[string]()
 	serviceNameSuffixes := sets.New[string]()
+	upstreamBasedSuffixes := map[string]string{}
 	for i, cache := range config.Caches {
 		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
 
@@ -41,6 +43,10 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 			allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("upstream"), cache.Upstream))
 		} else {
 			upstreams.Insert(cache.Upstream)
+		}
+
+		if cache.ServiceNameSuffix == nil {
+			upstreamBasedSuffixes[strings.ReplaceAll(registryutils.ComputeUpstreamLabelValue(cache.Upstream), ".", "-")] = cache.Upstream
 		}
 	}
 
@@ -52,8 +58,8 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 				serviceNameSuffixes.Insert(*cache.ServiceNameSuffix)
 			}
 
-			if cache.Upstream != *cache.ServiceNameSuffix && upstreams.Has(*cache.ServiceNameSuffix) {
-				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix, "cannot collide with upstream"))
+			if val, ok := upstreamBasedSuffixes[*cache.ServiceNameSuffix]; ok {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix, fmt.Sprintf("cannot collide with %q upstream", val)))
 			}
 		}
 	}
