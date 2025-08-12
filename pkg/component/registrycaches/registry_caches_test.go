@@ -28,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -150,6 +151,33 @@ var _ = Describe("RegistryCaches", func() {
 
 	Describe("#Deploy", func() {
 		var (
+			networkPolicy = &networkingv1.NetworkPolicy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gardener.cloud--allow-registry-cache",
+					Namespace: "kube-system",
+					Annotations: map[string]string{
+						"gardener.cloud/description": "Allows registry cache to be reachable via its server and debug ports.",
+					},
+				},
+				Spec: networkingv1.NetworkPolicySpec{
+					PodSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app.kubernetes.io/name": "registry-cache",
+						},
+					},
+					Ingress: []networkingv1.NetworkPolicyIngressRule{
+						{
+							Ports: []networkingv1.NetworkPolicyPort{
+								{Port: ptr.To(intstr.FromInt32(5000)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
+								{Port: ptr.To(intstr.FromInt32(5001)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's debug port (metrics and health endpoints)
+
+							},
+						},
+					},
+					PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
+				},
+			}
+
 			configSecretFor = func(name, upstream, configYAML string) *corev1.Secret {
 				configSecret := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
@@ -284,6 +312,7 @@ proxy:
 								Labels: map[string]string{
 									"app":                              name,
 									"upstream-host":                    upstream,
+									"app.kubernetes.io/name":           "registry-cache",
 									"networking.gardener.cloud/to-dns": "allowed",
 									"networking.gardener.cloud/to-public-networks": "allowed",
 								},
@@ -553,6 +582,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
 				Expect(managedResource).To(consistOf(
+					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
@@ -582,6 +612,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
 				Expect(managedResource).To(consistOf(
+					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
@@ -627,6 +658,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
 				Expect(managedResource).To(consistOf(
+					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, additionalEnvs, false),
@@ -657,6 +689,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
 				Expect(managedResource).To(consistOf(
+					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, true),
@@ -697,6 +730,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(ok).To(BeFalse())
 
 				Expect(managedResource).To(consistOf(
+					networkPolicy,
 					dockerConfigSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, false, "", nil, nil, false),
 					vpaFor("registry-docker-io"),
@@ -764,6 +798,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
 
 				Expect(managedResource).To(consistOf(
+					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),

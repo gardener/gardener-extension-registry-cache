@@ -77,12 +77,20 @@ var _ = Describe("RegistryCacheServices", func() {
 						"app":           name,
 						"upstream-host": upstream,
 					},
-					Ports: []corev1.ServicePort{{
-						Name:       "registry-cache",
-						Port:       5000,
-						Protocol:   corev1.ProtocolTCP,
-						TargetPort: intstr.FromString("registry-cache"),
-					}},
+					Ports: []corev1.ServicePort{
+						{
+							Name:       "registry-cache",
+							Port:       5000,
+							Protocol:   corev1.ProtocolTCP,
+							TargetPort: intstr.FromString("registry-cache"),
+						},
+						{
+							Name:       "debug",
+							Port:       5001,
+							Protocol:   corev1.ProtocolTCP,
+							TargetPort: intstr.FromString("debug"),
+						},
+					},
 					Type: corev1.ServiceTypeClusterIP,
 				},
 			}
