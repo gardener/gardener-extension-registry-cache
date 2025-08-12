@@ -137,12 +137,20 @@ func computeResourcesDataForService(cache *registryapi.RegistryCache) *corev1.Se
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: registryutils.GetLabels(name, upstreamLabel),
-			Ports: []corev1.ServicePort{{
-				Name:       "registry-cache",
-				Port:       constants.RegistryCachePort,
-				Protocol:   corev1.ProtocolTCP,
-				TargetPort: intstr.FromString("registry-cache"),
-			}},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "registry-cache",
+					Port:       constants.RegistryCacheServerPort,
+					Protocol:   corev1.ProtocolTCP,
+					TargetPort: intstr.FromString("registry-cache"),
+				},
+				{
+					Name:       "debug",
+					Port:       constants.RegistryCacheDebugPort,
+					Protocol:   corev1.ProtocolTCP,
+					TargetPort: intstr.FromString("debug"),
+				},
+			},
 			Type: corev1.ServiceTypeClusterIP,
 		},
 	}

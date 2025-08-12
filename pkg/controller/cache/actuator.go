@@ -237,7 +237,7 @@ func computeProviderStatus(services []corev1.Service, caSecretName *string) *v1a
 	for _, service := range services {
 		caches = append(caches, v1alpha3.RegistryCacheStatus{
 			Upstream:  service.Annotations[constants.UpstreamAnnotation],
-			Endpoint:  fmt.Sprintf("%s://%s:%d", service.Annotations[constants.SchemeAnnotation], service.Spec.ClusterIP, constants.RegistryCachePort),
+			Endpoint:  fmt.Sprintf("%s://%s:%d", service.Annotations[constants.SchemeAnnotation], service.Spec.ClusterIP, constants.RegistryCacheServerPort),
 			RemoteURL: service.Annotations[constants.RemoteURLAnnotation],
 		})
 	}
