@@ -14,8 +14,10 @@ const (
 
 	// UpstreamHostLabel is a label on registry cache resources (Service, StatefulSet) which denotes the upstream host.
 	UpstreamHostLabel = "upstream-host"
-	// RegistryCachePort is the port on which the pull through cache serves requests.
-	RegistryCachePort = 5000
+	// RegistryCacheServerPort is the port on which the pull through cache server is served.
+	RegistryCacheServerPort int32 = 5000
+	// RegistryCacheDebugPort is the port on which the debug server (used for metrics and health endpoints) is served.
+	RegistryCacheDebugPort int32 = 5001
 
 	// RemoteURLAnnotation is an annotation on registry cache Service which denotes the upstream registry URL.
 	RemoteURLAnnotation = "remote-url"

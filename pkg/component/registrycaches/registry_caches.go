@@ -29,6 +29,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -205,7 +206,7 @@ func (r *registryCaches) CASecretName() *string {
 }
 
 func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecrets map[string]*corev1.Secret) (map[string][]byte, error) {
-	var objects []client.Object
+	objects := []client.Object{networkPolicy()}
 
 	for _, cache := range r.values.Caches {
 		var generatedTLSSecret *corev1.Secret
@@ -219,7 +220,7 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecr
 			}
 		}
 
-		cacheObjects, err := r.computeResourcesDataForRegistryCache(ctx, &cache, generatedTLSSecret)
+		cacheObjects, err := r.registryCacheObjects(ctx, &cache, generatedTLSSecret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compute resources for upstream %s: %w", cache.Upstream, err)
 		}
@@ -232,7 +233,36 @@ func (r *registryCaches) computeResourcesData(ctx context.Context, generatedSecr
 	return registry.AddAllAndSerialize(objects...)
 }
 
-func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Context, cache *registryapi.RegistryCache, generatedTLSSecret *corev1.Secret) ([]client.Object, error) {
+func networkPolicy() *networkingv1.NetworkPolicy {
+	return &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "gardener.cloud--allow-registry-cache",
+			Namespace: metav1.NamespaceSystem,
+			Annotations: map[string]string{
+				v1beta1constants.GardenerDescription: "Allows registry cache to be reachable via its server and debug ports.",
+			},
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app.kubernetes.io/name": "registry-cache",
+				},
+			},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{
+				{
+					Ports: []networkingv1.NetworkPolicyPort{
+						{Port: ptr.To(intstr.FromInt32(constants.RegistryCacheServerPort)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
+						{Port: ptr.To(intstr.FromInt32(constants.RegistryCacheDebugPort)), Protocol: ptr.To(corev1.ProtocolTCP)},  // Registry cache's debug port (metrics and health endpoints)
+
+					},
+				},
+			},
+			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
+		},
+	}
+}
+
+func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *registryapi.RegistryCache, generatedTLSSecret *corev1.Secret) ([]client.Object, error) {
 	if cache.Volume == nil || cache.Volume.Size == nil {
 		return nil, fmt.Errorf("registry cache volume size is required")
 	}
@@ -242,7 +272,6 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		registryConfigVolumeName = "config-volume"
 		registryCertsVolumeName  = "certs-volume"
 		repositoryMountPath      = "/var/lib/registry"
-		debugPort                = 5001
 	)
 
 	var (
@@ -250,8 +279,8 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		configValues  = map[string]interface{}{
-			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCachePort),
-			"http_debug_addr": fmt.Sprintf(":%d", debugPort),
+			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCacheServerPort),
+			"http_debug_addr": fmt.Sprintf(":%d", constants.RegistryCacheDebugPort),
 			"proxy_remoteurl": remoteURL,
 			"proxy_ttl":       helper.GarbageCollectionTTL(cache).Duration.String(),
 			"http_tls":        helper.TLSEnabled(cache),
@@ -315,6 +344,7 @@ func (r *registryCaches) computeResourcesDataForRegistryCache(ctx context.Contex
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.MergeStringMaps(registryutils.GetLabels(name, upstreamLabel), map[string]string{
+						"app.kubernetes.io/name":                            "registry-cache",
 						v1beta1constants.LabelNetworkPolicyToDNS:            v1beta1constants.LabelNetworkPolicyAllowed,
 						v1beta1constants.LabelNetworkPolicyToPublicNetworks: v1beta1constants.LabelNetworkPolicyAllowed,
 					}),
@@ -366,11 +396,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 `},
 							Ports: []corev1.ContainerPort{
 								{
-									ContainerPort: constants.RegistryCachePort,
+									ContainerPort: constants.RegistryCacheServerPort,
 									Name:          "registry-cache",
 								},
 								{
-									ContainerPort: debugPort,
+									ContainerPort: constants.RegistryCacheDebugPort,
 									Name:          "debug",
 								},
 							},
@@ -388,7 +418,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Path: "/debug/health",
-										Port: intstr.FromInt32(debugPort),
+										Port: intstr.FromInt32(constants.RegistryCacheDebugPort),
 									},
 								},
 								FailureThreshold: 6,
@@ -399,7 +429,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 								ProbeHandler: corev1.ProbeHandler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Path: "/debug/health",
-										Port: intstr.FromInt32(debugPort),
+										Port: intstr.FromInt32(constants.RegistryCacheDebugPort),
 									},
 								},
 								FailureThreshold: 3,
