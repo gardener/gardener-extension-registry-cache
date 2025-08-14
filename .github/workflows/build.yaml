@@ -20,48 +20,20 @@ jobs:
     permissions:
       contents: read
 
-  verify:
-    runs-on: ubuntu-latest
+  sast-lint:
+    uses: gardener/cc-utils/.github/workflows/sastlint-ocm.yaml@master
     permissions:
       contents: read
-    steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.24.5'
-      - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
-      - name: run-verify
-        run: |
-          set -eu
-          .ci/verify
-          # verify calls `make sast-report`, which generates `gosec-report.sarif`
-          mkdir /tmp/blobs.d
-          tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
-      - name: add-sast-report-to-component-descriptor
-        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
-        with:
-          blobs-directory: /tmp/blobs.d
-          ocm-resources: |
-            name: gosec-report
-            relation: local
-            access:
-              type: localBlob
-              localReference: gosec-report.tar.gz
-            labels:
-              - name: gardener.cloud/purposes
-                value:
-                  - lint
-                  - sast
-                  - gosec
-              - name: gardener.cloud/comment
-                value: |
-                  we use gosec (linter) for SAST scans
-                  see: https://github.com/securego/gosec
+    with:
+      linter: gosec
+      run: .ci/verify
+      go-version: '1.24.5'
 
   oci-images:
     name: Build OCI-Images
     needs:
       - prepare
-      - verify
+      - sast-lint
     permissions:
       contents: read
       packages: write
