@@ -9,6 +9,7 @@ path = [
     ".github/**",
     ".gitignore",
     ".golangci.yaml.in",
+    ".ocm/**",
     ".test-defs/**",
     "OWNERS",
     "OWNERS_ALIASES",
