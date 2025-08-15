@@ -58,6 +58,7 @@ build:
             - pkg/apis/registry/v1alpha3
             - pkg/apis/registry/validation
             - pkg/constants
+            - pkg/utils/registry
             - VERSION
         ldflags:
           - '{{.LD_FLAGS}}'

@@ -276,6 +276,19 @@ HighAvailability
 <p>HighAvailability contains settings for high availability of the registry cache.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>serviceNameSuffix</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>ServiceNameSuffix allows to customize the naming of the deployed service.
+If not specified, the service suffix will be generated from the upstream.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="registry.extensions.gardener.cloud/v1alpha3.RegistryCacheStatus">RegistryCacheStatus

@@ -22,6 +22,7 @@ import (
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
+	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
 
 // ValidateRegistryConfig validates the passed configuration instance.
@@ -33,6 +34,8 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 	}
 
 	upstreams := sets.New[string]()
+	serviceNameSuffixes := sets.New[string]()
+	upstreamBasedSuffixes := map[string]string{}
 	for i, cache := range config.Caches {
 		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
 
@@ -40,6 +43,24 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 			allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("upstream"), cache.Upstream))
 		} else {
 			upstreams.Insert(cache.Upstream)
+		}
+
+		if cache.ServiceNameSuffix == nil {
+			upstreamBasedSuffixes[strings.ReplaceAll(registryutils.ComputeUpstreamLabelValue(cache.Upstream), ".", "-")] = cache.Upstream
+		}
+	}
+
+	for i, cache := range config.Caches {
+		if cache.ServiceNameSuffix != nil {
+			if serviceNameSuffixes.Has(*cache.ServiceNameSuffix) {
+				allErrs = append(allErrs, field.Duplicate(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix))
+			} else {
+				serviceNameSuffixes.Insert(*cache.ServiceNameSuffix)
+			}
+
+			if val, ok := upstreamBasedSuffixes[*cache.ServiceNameSuffix]; ok {
+				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix, fmt.Sprintf("cannot collide with %q upstream", val)))
+			}
 		}
 	}
 
@@ -102,6 +123,9 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpsProxy"), *cache.Proxy.HTTPSProxy)...)
 		}
 	}
+	if cache.ServiceNameSuffix != nil {
+		allErrs = append(allErrs, ValidateServiceNameSuffix(fldPath.Child("serviceNameSuffix"), *cache.ServiceNameSuffix)...)
+	}
 
 	return allErrs
 }
@@ -111,6 +135,24 @@ func ValidateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 	var allErrs field.ErrorList
 	for _, msg := range validateHostPort(upstream) {
 		allErrs = append(allErrs, field.Invalid(fldPath, upstream, msg))
+	}
+
+	return allErrs
+}
+
+// A label value length and a resource name length limits are 63 chars.
+// The cache resources name have prefix 'registry-', thus the label value length is limited to 54.
+const serviceNameSuffixValueLimit = 54
+
+// ValidateServiceNameSuffix validates that serviceNameSuffix is valid DNS subdomain (RFC 1123) and not longer than 54 characters.
+func ValidateServiceNameSuffix(fldPath *field.Path, serviceNameSuffix string) field.ErrorList {
+	var allErrs field.ErrorList
+	for _, msg := range validation.IsDNS1123Label(serviceNameSuffix) {
+		allErrs = append(allErrs, field.Invalid(fldPath, serviceNameSuffix, msg))
+	}
+
+	if len(serviceNameSuffix) > serviceNameSuffixValueLimit {
+		allErrs = append(allErrs, field.Invalid(fldPath, serviceNameSuffix, fmt.Sprintf("cannot be longer than %d characters", serviceNameSuffixValueLimit)))
 	}
 
 	return allErrs
