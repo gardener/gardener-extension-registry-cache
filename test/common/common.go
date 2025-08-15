@@ -170,7 +170,7 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
 		for _, upstream := range upstreams {
-			EventuallyWithOffset(2, ctx, func() string {
+			EventuallyWithOffset(1, ctx, func() string {
 				command := []string{"sh", "-c", fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)}
 				// err is ignored intentionally to reduce flakes from transient network errors in prow.
 				response, _ := rootPodExecutor.Execute(ctx, command...)
