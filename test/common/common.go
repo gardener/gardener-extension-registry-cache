@@ -148,10 +148,10 @@ func VerifyHostsTOMLFilesCreatedForAllNodes(ctx context.Context, log logr.Logger
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
 		for upstream, hostsTOML := range upstreamToHostsTOML {
-			EventuallyWithOffset(1, ctx, func() string {
+			EventuallyWithOffset(1, ctx, func(g Gomega) string {
 				command := []string{"cat", fmt.Sprintf("/etc/containerd/certs.d/%s/hosts.toml", upstream)}
-				// err is ignored intentionally to reduce flakes from transient network errors in prow.
-				response, _ := rootPodExecutor.Execute(ctx, command...)
+				response, err := rootPodExecutor.Execute(ctx, command...)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				return string(response)
 			}).WithPolling(10 * time.Second).Should(Equal(hostsTOML))
@@ -170,10 +170,10 @@ func VerifyHostsTOMLFilesDeletedForAllNodes(ctx context.Context, log logr.Logger
 		rootPodExecutor := framework.NewRootPodExecutor(log, shootClient, &node.Name, "kube-system")
 
 		for _, upstream := range upstreams {
-			EventuallyWithOffset(2, ctx, func() string {
+			EventuallyWithOffset(1, ctx, func(g Gomega) string {
 				command := []string{"sh", "-c", fmt.Sprintf("[ -f /etc/containerd/certs.d/%s/hosts.toml ] && echo 'file found' || echo 'file not found'", upstream)}
-				// err is ignored intentionally to reduce flakes from transient network errors in prow.
-				response, _ := rootPodExecutor.Execute(ctx, command...)
+				response, err := rootPodExecutor.Execute(ctx, command...)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				return string(response)
 			}).WithPolling(10*time.Second).Should(Equal("file not found\n"), fmt.Sprintf("Expected hosts.toml file on node %s for upstream %s to be deleted", node.Name, upstream))
