@@ -86,7 +86,7 @@ jobs:
                 attribute: image.repository
               - ref: ocm-resource:gardener-extension-registry-cache.tag
                 attribute: image.tag
-          - name: registry-cache-admission-application
+          - name: admission-registry-cache-application
             dir: charts/admission/charts/application
             oci-repository: charts/gardener/extensions
             ocm-mappings:
