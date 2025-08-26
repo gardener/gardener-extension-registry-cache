@@ -1,0 +1,12 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: extension-registry-cache
+  annotations:
+    security.gardener.cloud/pod-security-enforce: baseline
+spec:
+  resources:
+  - kind: Extension
+    type: registry-cache
+  - kind: Extension
+    type: registry-mirror
