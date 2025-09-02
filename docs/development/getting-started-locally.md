@@ -47,7 +47,7 @@ The make target will delete the ControllerDeployment and ControllerRegistration 
 
 ## Alternative Setup Using the `gardener-operator` Local Setup
 
-Alternatively, you can deploy the registry-cache extension in the `gardener-operator` local setup. To do this, make sure you are have a running local setup based on [Alternative Way to Set Up Garden and Seed Leveraging `gardener-operator`](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator). The `KUBECONFIG` environment variable should target the operator local KinD cluster (i.e. `<path_to_gardener_project>/example/gardener-local/kind/operator/kubeconfig`).
+Alternatively, you can deploy the registry-cache extension in the `gardener-operator` local setup. To do this, make sure you are have a running local setup based on [Alternative Way to Set Up Garden and Seed Leveraging `gardener-operator`](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator). The `KUBECONFIG` environment variable should target the operator local KinD cluster (i.e. `<path_to_gardener_project>/example/gardener-local/kind/multi-zone/kubeconfig`).
 
 #### Creating the registry-cache `Extension.operator.gardener.cloud` resource:
 
@@ -59,7 +59,7 @@ The corresponding make target will build the registry-cache admission and extens
 
 #### Creating a Shoot Cluster
 
-To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. `<path_to_gardener_project>/example/operator/virtual-garden/kubeconfig`) and then execute:
+To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. `<path_to_gardener_project>/dev-setup/kubeconfigs/virtual-garden/kubeconfig`) and then execute:
 ```bash
 kubectl create -f example/shoot-registry-cache.yaml
 ```
