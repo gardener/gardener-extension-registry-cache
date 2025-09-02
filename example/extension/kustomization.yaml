@@ -5,4 +5,4 @@ resources:
 - base
 
 patches:
-- path: extension.yaml
+- path: extension-patch.yaml
