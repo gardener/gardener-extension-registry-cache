@@ -59,7 +59,7 @@ The corresponding make target will build the registry-cache admission and extens
 
 #### Creating a Shoot Cluster
 
-To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. `<path_to_gardener_project>/example/operator/virtual-garden/kubeconfig`) and then execute:
+To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. `<path_to_gardener_project>/dev-setup/kubeconfigs/virtual-garden/kubeconfig`) and then execute:
 ```bash
 kubectl create -f example/shoot-registry-cache.yaml
 ```
