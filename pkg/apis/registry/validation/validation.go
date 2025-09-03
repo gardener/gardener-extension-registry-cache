@@ -35,7 +35,7 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 
 	upstreams := sets.New[string]()
 	serviceNameSuffixes := sets.New[string]()
-	upstreamBasedSuffixes := map[string]string{}
+	allocatedServiceNames := map[string]string{}
 	for i, cache := range config.Caches {
 		allErrs = append(allErrs, validateRegistryCache(cache, fldPath.Child("caches").Index(i))...)
 
@@ -46,7 +46,8 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 		}
 
 		if cache.ServiceNameSuffix == nil {
-			upstreamBasedSuffixes[strings.ReplaceAll(registryutils.ComputeUpstreamLabelValue(cache.Upstream), ".", "-")] = cache.Upstream
+			serviceName := registryutils.ComputeServiceName(cache.Upstream, nil)
+			allocatedServiceNames[serviceName] = cache.Upstream
 		}
 	}
 
@@ -58,7 +59,8 @@ func ValidateRegistryConfig(config *registry.RegistryConfig, fldPath *field.Path
 				serviceNameSuffixes.Insert(*cache.ServiceNameSuffix)
 			}
 
-			if val, ok := upstreamBasedSuffixes[*cache.ServiceNameSuffix]; ok {
+			serviceName := registryutils.ComputeServiceName(cache.Upstream, cache.ServiceNameSuffix)
+			if val, ok := allocatedServiceNames[serviceName]; ok {
 				allErrs = append(allErrs, field.Invalid(fldPath.Child("caches").Index(i).Child("serviceNameSuffix"), *cache.ServiceNameSuffix, fmt.Sprintf("cannot collide with %q upstream", val)))
 			}
 		}
@@ -87,6 +89,8 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 			if !helper.GarbageCollectionEnabled(&oldCache) && helper.GarbageCollectionEnabled(&newCache) {
 				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("garbageCollection").Child("ttl"), newCache.GarbageCollection, "garbage collection cannot be enabled (ttl > 0) once it is disabled (ttl = 0)"))
 			}
+
+			allErrs = append(allErrs, apivalidation.ValidateImmutableField(newCache.ServiceNameSuffix, oldCache.ServiceNameSuffix, cacheFldPath.Child("serviceNameSuffix"))...)
 		}
 	}
 
@@ -124,7 +128,7 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 		}
 	}
 	if cache.ServiceNameSuffix != nil {
-		allErrs = append(allErrs, ValidateServiceNameSuffix(fldPath.Child("serviceNameSuffix"), *cache.ServiceNameSuffix)...)
+		allErrs = append(allErrs, validateServiceNameSuffix(fldPath.Child("serviceNameSuffix"), *cache.ServiceNameSuffix)...)
 	}
 
 	return allErrs
@@ -142,17 +146,17 @@ func ValidateUpstream(fldPath *field.Path, upstream string) field.ErrorList {
 
 // A label value length and a resource name length limits are 63 chars.
 // The cache resources name have prefix 'registry-', thus the label value length is limited to 54.
-const serviceNameSuffixValueLimit = 54
+const serviceNameSuffixValueMaxLength = 54
 
-// ValidateServiceNameSuffix validates that serviceNameSuffix is valid DNS subdomain (RFC 1123) and not longer than 54 characters.
-func ValidateServiceNameSuffix(fldPath *field.Path, serviceNameSuffix string) field.ErrorList {
+// validateServiceNameSuffix validates that serviceNameSuffix is valid DNS subdomain (RFC 1123) and not longer than 54 characters.
+func validateServiceNameSuffix(fldPath *field.Path, serviceNameSuffix string) field.ErrorList {
 	var allErrs field.ErrorList
 	for _, msg := range validation.IsDNS1123Label(serviceNameSuffix) {
 		allErrs = append(allErrs, field.Invalid(fldPath, serviceNameSuffix, msg))
 	}
 
-	if len(serviceNameSuffix) > serviceNameSuffixValueLimit {
-		allErrs = append(allErrs, field.Invalid(fldPath, serviceNameSuffix, fmt.Sprintf("cannot be longer than %d characters", serviceNameSuffixValueLimit)))
+	if len(serviceNameSuffix) > serviceNameSuffixValueMaxLength {
+		allErrs = append(allErrs, field.TooLong(fldPath, serviceNameSuffix, serviceNameSuffixValueMaxLength))
 	}
 
 	return allErrs

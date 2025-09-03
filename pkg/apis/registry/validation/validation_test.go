@@ -254,10 +254,10 @@ var _ = Describe("Validation", func() {
 					"Detail":   Equal("must not contain dots"),
 				})),
 				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":     Equal(field.ErrorTypeInvalid),
-					"BadValue": Equal(strings.Repeat("n", 55)),
+					"Type":     Equal(field.ErrorTypeTooLong),
+					"BadValue": Equal("<value omitted>"),
 					"Field":    Equal("providerConfig.caches[1].serviceNameSuffix"),
-					"Detail":   Equal("cannot be longer than 54 characters"),
+					"Detail":   Equal("may not be more than 54 bytes"),
 				})),
 			))
 		})
@@ -450,6 +450,20 @@ var _ = Describe("Validation", func() {
 					"Type":   Equal(field.ErrorTypeInvalid),
 					"Field":  Equal("providerConfig.caches[0].garbageCollection.ttl"),
 					"Detail": Equal("garbage collection cannot be enabled (ttl > 0) once it is disabled (ttl = 0)"),
+				})),
+			))
+		})
+
+		It("should deny cache service name suffix update", func() {
+			oldRegistryConfig.Caches[0].ServiceNameSuffix = ptr.To("static-name1")
+			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("static-name2")
+
+			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.caches[0].serviceNameSuffix"),
+					"BadValue": Equal(ptr.To("static-name2")),
+					"Detail":   Equal("field is immutable"),
 				})),
 			))
 		})

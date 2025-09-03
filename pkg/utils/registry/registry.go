@@ -56,6 +56,8 @@ func ComputeUpstreamLabelValue(upstream string) string {
 	return upstreamLabel
 }
 
+const namePrefix = "registry-"
+
 // ComputeKubernetesResourceName computes a name for a Kubernetes resource (StatefulSet, Secret, ...) by given upstream.
 // The returned name is conformed with the restriction that a StatefulSet name can be at most 52 chars.
 // For more details, see https://github.com/kubernetes/kubernetes/issues/64023.
@@ -63,5 +65,14 @@ func ComputeUpstreamLabelValue(upstream string) string {
 // The returned name is at most 52 chars.
 func ComputeKubernetesResourceName(upstream string) string {
 	upstreamLabel := ComputeUpstreamLabelValue(upstream)
-	return "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
+	return namePrefix + strings.ReplaceAll(upstreamLabel, ".", "-")
+}
+
+// ComputeServiceName computes a name for a Kubernetes Service by given upstream and optional suffix.
+func ComputeServiceName(upstream string, serviceNameSuffix *string) string {
+	if serviceNameSuffix != nil {
+		return namePrefix + *serviceNameSuffix
+	}
+
+	return ComputeKubernetesResourceName(upstream)
 }

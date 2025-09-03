@@ -277,6 +277,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 	var (
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
+		serviceName   = registryutils.ComputeServiceName(cache.Upstream, cache.ServiceNameSuffix)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		configValues  = map[string]interface{}{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCacheServerPort),
@@ -336,7 +337,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 			Labels:    registryutils.GetLabels(name, upstreamLabel),
 		},
 		Spec: appsv1.StatefulSetSpec{
-			ServiceName: name,
+			ServiceName: serviceName,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: registryutils.GetLabels(name, upstreamLabel),
 			},

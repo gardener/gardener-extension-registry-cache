@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
@@ -24,7 +25,11 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	shoot := e2e.DefaultShoot("e2e-cache-fd")
 	size := resource.MustParse("2Gi")
 	common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
-		{Upstream: "gardener-extension-registry-cache-tests.common.repositories.cloud.sap", Volume: &v1alpha3.Volume{Size: &size}},
+		{
+			Upstream:          "gardener-extension-registry-cache-tests.common.repositories.cloud.sap",
+			Volume:            &v1alpha3.Volume{Size: &size},
+			ServiceNameSuffix: ptr.To("gardener-extension-registry-cache-tests"),
+		},
 	})
 	f.Shoot = shoot
 
