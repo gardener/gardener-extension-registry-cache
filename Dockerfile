@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ############# builder
-FROM golang:1.24.6 AS builder
+FROM golang:1.24.7 AS builder
 
 WORKDIR /go/src/github.com/gardener/gardener-extension-registry-cache
 
