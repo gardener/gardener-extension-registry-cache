@@ -7,7 +7,6 @@ package registrycacheservices
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gardener/gardener/pkg/client/kubernetes"
@@ -119,14 +118,15 @@ func (r *registryCacheServices) computeResourcesData() (map[string][]byte, error
 func computeResourcesDataForService(cache *registryapi.RegistryCache) *corev1.Service {
 	var (
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
-		name          = "registry-" + strings.ReplaceAll(upstreamLabel, ".", "-")
+		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
+		serviceName   = registryutils.ComputeServiceName(cache.Upstream, cache.ServiceNameSuffix)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		scheme        = computeScheme(cache)
 	)
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      serviceName,
 			Namespace: metav1.NamespaceSystem,
 			Labels:    registryutils.GetLabels(name, upstreamLabel),
 			Annotations: map[string]string{

@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
@@ -54,5 +55,13 @@ var _ = Describe("Registry utils", func() {
 		Entry("long upstream", "my-very-long-registry.very-long-subdomain.io", "registry-my-very-long-registry-very-long-subdo-2fae3"),
 		Entry("long upstream ends with port", "my-very-long-registry.long-subdomain.io:8443", "registry-my-very-long-registry-long-subdomain--8cb9e"),
 		Entry("long upstream ends like a port", "my-very-long-registry.long-subdomain.io-8443", "registry-my-very-long-registry-long-subdomain--e91ed"),
+	)
+
+	DescribeTable("#ComputeServiceName",
+		func(upsteam string, serviceNameSuffix *string, expected string) {
+			Expect(registryutils.ComputeServiceName(upsteam, serviceNameSuffix)).To(Equal(expected))
+		},
+		Entry("service name suffix is nil", "my-registry.io", nil, "registry-my-registry-io"),
+		Entry("service name suffix is set", "my-registry.io", ptr.To("static-name"), "registry-static-name"),
 	)
 })

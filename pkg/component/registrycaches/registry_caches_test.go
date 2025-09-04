@@ -170,7 +170,6 @@ var _ = Describe("RegistryCaches", func() {
 							Ports: []networkingv1.NetworkPolicyPort{
 								{Port: ptr.To(intstr.FromInt32(5000)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
 								{Port: ptr.To(intstr.FromInt32(5001)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's debug port (metrics and health endpoints)
-
 							},
 						},
 					},
@@ -280,7 +279,7 @@ proxy:
 				return config
 			}
 
-			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
+			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, serviceName string, additionalEnvs []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
 				env := []corev1.EnvVar{
 					{
 						Name:  "OTEL_TRACES_EXPORTER",
@@ -299,7 +298,7 @@ proxy:
 						},
 					},
 					Spec: appsv1.StatefulSetSpec{
-						ServiceName: name,
+						ServiceName: serviceName,
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"app":           name,
@@ -585,10 +584,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -615,9 +614,9 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, false),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
 				))
 			})
 		})
@@ -661,10 +660,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, additionalEnvs, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", additionalEnvs, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), additionalEnvs, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", additionalEnvs, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -692,11 +691,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, true),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, true),
 					podDisruptionBudget("registry-docker-io", "docker.io"),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, true),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, true),
 					podDisruptionBudget("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev"),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
@@ -732,10 +731,41 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
 					dockerConfigSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, false, "", nil, nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, false, "", nil, "registry-docker-io", nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
+					vpaFor("registry-europe-docker-pkg-dev"),
+				))
+			})
+		})
+
+		Context("when service name suffix is set", func() {
+			BeforeEach(func() {
+				values.Caches[0].ServiceNameSuffix = ptr.To("static-name1")
+				values.Caches[1].ServiceNameSuffix = ptr.To("static-name2")
+			})
+
+			It("should successfully deploy the resources", func() {
+				Expect(registryCaches.Deploy(ctx)).To(Succeed())
+
+				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
+
+				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "", true))
+				arConfigSecret := configSecretFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", configYAMLFor("https://europe-docker.pkg.dev", "0s", "", "", false))
+
+				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
+				Expect(ok).To(BeTrue())
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+
+				Expect(managedResource).To(consistOf(
+					networkPolicy,
+					dockerConfigSecret,
+					dockerTLSSecret,
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-static-name1", nil, false),
+					vpaFor("registry-docker-io"),
+					arConfigSecret,
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-static-name2", nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -801,10 +831,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})

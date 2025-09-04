@@ -57,13 +57,13 @@ var _ = Describe("RegistryCacheServices", func() {
 
 		registryCacheServices component.DeployWaiter
 
-		serviceFor = func(name, upstream, remoteURL, scheme string) *corev1.Service {
+		serviceFor = func(name, appLabelValue, upstream, remoteURL, scheme string) *corev1.Service {
 			return &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: "kube-system",
 					Labels: map[string]string{
-						"app":           name,
+						"app":           appLabelValue,
 						"upstream-host": upstream,
 					},
 					Annotations: map[string]string{
@@ -74,7 +74,7 @@ var _ = Describe("RegistryCacheServices", func() {
 				},
 				Spec: corev1.ServiceSpec{
 					Selector: map[string]string{
-						"app":           name,
+						"app":           appLabelValue,
 						"upstream-host": upstream,
 					},
 					Ports: []corev1.ServicePort{
@@ -109,6 +109,7 @@ var _ = Describe("RegistryCacheServices", func() {
 					HTTP: &registryapi.HTTP{
 						TLS: false,
 					},
+					ServiceNameSuffix: ptr.To("static-name"),
 				},
 			},
 		}
@@ -156,8 +157,8 @@ var _ = Describe("RegistryCacheServices", func() {
 			Expect(managedResource).To(DeepEqual(expectedMr))
 
 			Expect(managedResource).To(consistOf(
-				serviceFor("registry-docker-io", "docker.io", "https://registry-1.docker.io", "https"),
-				serviceFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http"),
+				serviceFor("registry-docker-io", "registry-docker-io", "docker.io", "https://registry-1.docker.io", "https"),
+				serviceFor("registry-static-name", "registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev", "http"),
 			))
 		})
 	})
