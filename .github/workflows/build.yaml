@@ -35,7 +35,7 @@ jobs:
           # tests are run using prow for non-release-runs, so early-exit
           echo "dummy" > gosec-report.sarif
         fi
-      go-version: '1.24.6'
+      go-version: '1.24.7'
 
   oci-images:
     name: Build OCI-Images
