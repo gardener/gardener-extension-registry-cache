@@ -15,3 +15,9 @@ patches:
     group: core.gardener.cloud
     kind: ControllerDeployment
     name: extension-registry-cache
+- patch: |-
+    $patch: delete
+    apiVersion: operator.gardener.cloud/v1alpha1
+    kind: Extension
+    metadata:
+      name: extension-registry-cache
