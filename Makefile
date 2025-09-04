@@ -63,7 +63,6 @@ tidy:
 clean:
 	@$(shell find ./example -type f -name "controller-registration.yaml" -exec rm '{}' \;)
 	@$(shell find ./example -type f -name "extension.yaml" -exec rm '{}' \;)
-	@$(shell find ./example/extension/base -type f -name "extension.yaml" -exec rm '{}' \;)
 	@bash $(GARDENER_HACK_DIR)/clean.sh ./cmd/... ./pkg/...
 
 .PHONY: check-generate
