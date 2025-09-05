@@ -19,13 +19,13 @@ rm -f $GOPATH/bin/*-gen
 PROJECT_ROOT=$(dirname $0)/..
 
 kube::codegen::gen_helpers \
-  --boilerplate "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt" \
+  --boilerplate "${GARDENER_HACK_DIR}/LICENSE_BOILERPLATE.txt" \
   "${PROJECT_ROOT}/pkg/apis/registry"
 
 kube::codegen::gen_helpers \
-  --boilerplate "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt" \
+  --boilerplate "${GARDENER_HACK_DIR}/LICENSE_BOILERPLATE.txt" \
   "${PROJECT_ROOT}/pkg/apis/mirror"
 
 kube::codegen::gen_helpers \
-  --boilerplate "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt" \
+  --boilerplate "${GARDENER_HACK_DIR}/LICENSE_BOILERPLATE.txt" \
   "${PROJECT_ROOT}/pkg/apis/config"
