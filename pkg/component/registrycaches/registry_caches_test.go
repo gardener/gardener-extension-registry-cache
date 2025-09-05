@@ -279,7 +279,7 @@ proxy:
 				return config
 			}
 
-			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, serviceName string, additionalEnvs []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
+			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
 				env := []corev1.EnvVar{
 					{
 						Name:  "OTEL_TRACES_EXPORTER",
@@ -296,16 +296,18 @@ proxy:
 							"app":           name,
 							"upstream-host": upstream,
 						},
+						// TODO(dimitar-kostadinov): Remove the `DeleteOnInvalidUpdate` annotation in the v0.19.0 release.
+						Annotations: map[string]string{resourcesv1alpha1.DeleteOnInvalidUpdate: "true"},
 					},
 					Spec: appsv1.StatefulSetSpec{
-						ServiceName: serviceName,
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"app":           name,
 								"upstream-host": upstream,
 							},
 						},
-						Replicas: ptr.To[int32](1),
+						RevisionHistoryLimit: ptr.To[int32](2),
+						Replicas:             ptr.To[int32](1),
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
@@ -584,10 +586,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -614,9 +616,9 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
 				))
 			})
 		})
@@ -660,10 +662,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", additionalEnvs, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, additionalEnvs, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", additionalEnvs, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), additionalEnvs, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -691,11 +693,11 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, true),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, true),
 					podDisruptionBudget("registry-docker-io", "docker.io"),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, true),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, true),
 					podDisruptionBudget("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev"),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
@@ -731,10 +733,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
 					dockerConfigSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, false, "", nil, "registry-docker-io", nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, false, "", nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -762,10 +764,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-static-name1", nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-static-name2", nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -831,10 +833,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, "registry-docker-io", nil, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), "registry-europe-docker-pkg-dev", nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})

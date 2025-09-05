@@ -277,7 +277,6 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 	var (
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
-		serviceName   = registryutils.ComputeServiceName(cache.Upstream, cache.ServiceNameSuffix)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
 		configValues  = map[string]interface{}{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCacheServerPort),
@@ -335,13 +334,16 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 			Name:      name,
 			Namespace: metav1.NamespaceSystem,
 			Labels:    registryutils.GetLabels(name, upstreamLabel),
+			// StatefulSets need to be recreated due to the removal of the `spec.serviceName` field and the addition of the `spec.revisionHistoryLimit` field.
+			// TODO(dimitar-kostadinov): Remove the `DeleteOnInvalidUpdate` annotation in the v0.19.0 release.
+			Annotations: map[string]string{resourcesv1alpha1.DeleteOnInvalidUpdate: "true"},
 		},
 		Spec: appsv1.StatefulSetSpec{
-			ServiceName: serviceName,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: registryutils.GetLabels(name, upstreamLabel),
 			},
-			Replicas: ptr.To[int32](1),
+			RevisionHistoryLimit: ptr.To[int32](2),
+			Replicas:             ptr.To[int32](1),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.MergeStringMaps(registryutils.GetLabels(name, upstreamLabel), map[string]string{
