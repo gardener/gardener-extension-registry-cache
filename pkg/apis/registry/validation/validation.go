@@ -89,8 +89,6 @@ func ValidateRegistryConfigUpdate(oldConfig, newConfig *registry.RegistryConfig,
 			if !helper.GarbageCollectionEnabled(&oldCache) && helper.GarbageCollectionEnabled(&newCache) {
 				allErrs = append(allErrs, field.Invalid(cacheFldPath.Child("garbageCollection").Child("ttl"), newCache.GarbageCollection, "garbage collection cannot be enabled (ttl > 0) once it is disabled (ttl = 0)"))
 			}
-
-			allErrs = append(allErrs, apivalidation.ValidateImmutableField(newCache.ServiceNameSuffix, oldCache.ServiceNameSuffix, cacheFldPath.Child("serviceNameSuffix"))...)
 		}
 	}
 
