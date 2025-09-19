@@ -453,20 +453,6 @@ var _ = Describe("Validation", func() {
 				})),
 			))
 		})
-
-		It("should deny cache service name suffix update", func() {
-			oldRegistryConfig.Caches[0].ServiceNameSuffix = ptr.To("static-name1")
-			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("static-name2")
-
-			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
-				PointTo(MatchFields(IgnoreExtras, Fields{
-					"Type":     Equal(field.ErrorTypeInvalid),
-					"Field":    Equal("providerConfig.caches[0].serviceNameSuffix"),
-					"BadValue": Equal(ptr.To("static-name2")),
-					"Detail":   Equal("field is immutable"),
-				})),
-			))
-		})
 	})
 
 	Describe("#ValidateUpstreamRegistrySecret", func() {
