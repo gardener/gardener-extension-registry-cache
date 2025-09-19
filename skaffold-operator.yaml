@@ -93,8 +93,9 @@ build:
   insecureRegistries:
     - garden.local.gardener.cloud:5001
 manifests:
-  rawYaml:
-    - local-setup/operator-extension-resource.yaml
+  kustomize:
+    paths:
+      - local-setup/operator
 deploy:
   kubectl: {}
 resourceSelector:
