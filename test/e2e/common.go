@@ -59,8 +59,9 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 				},
 			},
 			Networking: &gardencorev1beta1.Networking{
-				Type:  ptr.To("calico"),
-				Nodes: ptr.To("10.10.0.0/16"),
+				Type: ptr.To("calico"),
+				// Must be within 10.0.0.0/16 (subnet of kind pod CIDR 10.0.0.0/15, but disjoint with seed pod CIDR 10.1.0.0/16).
+				Nodes: ptr.To("10.0.0.0/16"),
 			},
 			Provider: gardencorev1beta1.Provider{
 				Type: "local",
