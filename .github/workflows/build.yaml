@@ -25,6 +25,7 @@ jobs:
     permissions:
       contents: read
     with:
+      setup-git-identity: true
       linter: gosec
       run: |
         set -euo pipefail
