@@ -23,7 +23,7 @@ vpa:
       memory: 32Mi
     controlledValues: RequestsOnly
   updatePolicy:
-    updateMode: "Auto"
+    updateMode: "Recreate"
 
 healthPort: 8081
 
