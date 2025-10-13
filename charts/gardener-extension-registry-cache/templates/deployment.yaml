@@ -36,6 +36,8 @@ spec:
         networking.resources.gardener.cloud/to-all-shoots-kube-apiserver-tcp-443: allowed
     spec:
       priorityClassName: gardener-system-900
+      securityContext:
+        runAsNonRoot: true
       serviceAccountName: gardener-extension-registry-cache
       containers:
       - name: gardener-extension-registry-cache
@@ -68,6 +70,8 @@ spec:
         {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         livenessProbe:
           httpGet:
             path: /healthz
