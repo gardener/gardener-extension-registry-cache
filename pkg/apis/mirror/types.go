@@ -23,6 +23,8 @@ type MirrorConfiguration struct {
 	// Upstream is the remote registry host to mirror.
 	// The value must be a valid DNS subdomain (RFC 1123) and optionally a port.
 	Upstream string
+	// New field for containerd server configuration
+	Server string `json:"server,omitempty"`
 	// Hosts are the mirror hosts to be used for the upstream.
 	Hosts []MirrorHost
 }
@@ -35,6 +37,10 @@ type MirrorHost struct {
 	// This also represents the set of operations for which the mirror host may be trusted to perform.
 	// The supported values are "pull" and "resolve".
 	Capabilities []MirrorHostCapability
+	// override_path is used to indicate the host's API root endpoint is defined in the URL path rather than by the API specification.
+	// This may be used with non-compliant OCI registries which are missing the /v2 prefix. Defaults to false.
+	// +optional
+	OverridePath bool `json:"override_path"`
 }
 
 // MirrorHostCapability represents a mirror host capability.
@@ -45,4 +51,11 @@ const (
 	MirrorHostCapabilityPull MirrorHostCapability = "pull"
 	// MirrorHostCapabilityResolve represents the capability to fetch manifests by name.
 	MirrorHostCapabilityResolve MirrorHostCapability = "resolve"
+)
+
+type MirrorHostOverridePath bool
+
+const (
+	MirrorHostOverridePathTrue MirrorHostOverridePath = true
+	MirrorHostOverridePathFalse MirrorHostOverridePath = false
 )

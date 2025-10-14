@@ -74,14 +74,25 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 	}
 
 	for _, mirror := range mirrorConfig.Mirrors {
+		var server string = mirror.Server
+		if server == "" {
+			server = registryutils.GetUpstreamURL(mirror.Upstream)
+		}
 		cfg := extensionsv1alpha1.RegistryConfig{
 			Upstream: mirror.Upstream,
-			Server:   ptr.To(registryutils.GetUpstreamURL(mirror.Upstream)),
+			Server:   ptr.To(server),
 		}
 		for _, host := range mirror.Hosts {
 			registryHost := extensionsv1alpha1.RegistryHost{
 				URL: host.Host,
 			}
+			var overridePath bool = host.OverridePath
+			if overridePath {
+				registryHost.OverridePath = ptr.To(true)
+			} else {
+				registryHost.OverridePath = ptr.To(false)
+			}
+
 			for _, c := range host.Capabilities {
 				switch c {
 				case mirrorapi.MirrorHostCapabilityPull:
