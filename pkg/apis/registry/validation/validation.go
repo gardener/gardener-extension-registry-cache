@@ -237,22 +237,49 @@ func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, 
 // `<host>` is valid DNS subdomain (RFC 1123) and optional `<port>` is in range [1,65535].
 func ValidateURL(fldPath *field.Path, url string) field.ErrorList {
 	var allErrs field.ErrorList
-	var scheme string
-	host := url
-	index := strings.Index(url, "://")
-	if index != -1 {
-		scheme = url[:index]
-		host = url[index+len("://"):]
+	var hostAndPath string
+	if strings.HasPrefix(url, "http://") {
+	    hostAndPath = strings.TrimPrefix(url, "http://")
+        } else if strings.HasPrefix(url, "https://") {
+	    hostAndPath = strings.TrimPrefix(url, "https://")
+	} else {
+	    allErrs = append(allErrs, field.Invalid(fldPath, url, "url must start with 'http://' or 'https://' scheme"))
 	}
-	if scheme != "https" && scheme != "http" {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must start with 'http://' or 'https://' scheme"))
+
+	// Split host and path
+	var host, path string
+	pathIndex := strings.Index(hostAndPath, "/")
+	if pathIndex != -1 {
+		host = hostAndPath[:pathIndex]
+		path = hostAndPath[pathIndex:]
+	} else {
+		host = hostAndPath
 	}
 	for _, msg := range validateHostPort(host) {
 		allErrs = append(allErrs, field.Invalid(fldPath, url, msg))
 	}
+	if path != "" {
+		if path[0] != '/' {
+	                allErrs = append(allErrs, field.Invalid(fldPath, url, "path must start with '/'"))
+		}
+		for _, ch := range path {
+			if ch == ' ' {
+	                        allErrs = append(allErrs, field.Invalid(fldPath, url, "path must not contain spaces"))
+			}
+			// allow unreserved + reserved characters roughly per RFC3986
+			if !(ch >= 'A' && ch <= 'Z' ||
+				ch >= 'a' && ch <= 'z' ||
+				ch >= '0' && ch <= '9' ||
+				strings.ContainsRune("-._~:/?#[]@!$&'()*+,;=%", ch)) {
+	                        allErrs = append(allErrs, field.Invalid(fldPath, url, "URL path contains invalid characters (RFC 3986)"))
+			}
+		}
+	}
 
 	return allErrs
 }
+
+
 
 var serviceAccountAllowedFields = sets.New(
 	"type",

@@ -24,7 +24,7 @@ type MirrorConfiguration struct {
 	// The value must be a valid DNS subdomain (RFC 1123) and optionally a port.
 	Upstream string
 	// New field for containerd server configuration
-	Server string `json:"server,omitempty"`
+	Server string `json:"server"`
 	// Hosts are the mirror hosts to be used for the upstream.
 	Hosts []MirrorHost
 }

@@ -45,6 +45,9 @@ func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *fie
 	var allErrs field.ErrorList
 
 	allErrs = append(allErrs, registryvalidation.ValidateUpstream(fldPath.Child("upstream"), mirror.Upstream)...)
+	if server := mirror.Server; server != "" {
+	    allErrs = append(allErrs, registryvalidation.ValidateURL(fldPath.Child("server"), mirror.Server)...)
+        }
 
 	if len(mirror.Hosts) == 0 {
 		allErrs = append(allErrs, field.Required(fldPath.Child("hosts"), "at least one host must be provided"))
