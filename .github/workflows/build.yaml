@@ -20,29 +20,58 @@ jobs:
     permissions:
       contents: read
 
-  sast-lint:
-    uses: gardener/cc-utils/.github/workflows/sastlint-ocm.yaml@master
+  verify:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-    with:
-      setup-git-identity: true
-      linter: gosec
-      run: |
-        set -euo pipefail
-        if [ '${{ inputs.mode }}' == 'release' ]; then
-          make verify-extended
-          # verify calls `make sast-report`, which generates `gosec-report.sarif
-        else
-          # tests are run using prow for non-release-runs, so early-exit
-          echo "dummy" > gosec-report.sarif
-        fi
-      go-version: '1.25.5'
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+      - uses: gardener/cc-utils/.github/actions/setup-git-identity@master
+      - uses: gardener/cc-utils/.github/actions/trusted-checkout@master 
+      - name: run-verify
+        run: |
+          set -euo pipefail
+          mkdir /tmp/blobs.d
+          make verify-extended |& tee /tmp/blobs.d/test-results.txt
+          tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
+          tar czf /tmp/blobs.d/test-results.tar.gz -C /tmp/blobs.d test-results.txt
+      - name: add-reports-to-component-descriptor
+        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
+        with:
+          blobs-directory: /tmp/blobs.d
+          ocm-resources: |
+            - name: gosec-report
+              relation: local
+              access:
+                type: localBlob
+                localReference: gosec-report.tar.gz
+              labels:
+                - name: gardener.cloud/purposes
+                  value:
+                    - lint
+                    - sast
+                    - gosec
+                - name: gardener.cloud/comment
+                  value: |
+                    we use gosec (linter) for SAST scans
+                    see: https://github.com/securego/gosec
+            - name: test-results
+              relation: local
+              access:
+                type: localBlob
+                localReference: test-results.tar.gz
+              labels:
+                - name: gardener.cloud/purposes
+                  value:
+                    - test
 
   oci-images:
     name: Build OCI-Images
     needs:
       - prepare
-      - sast-lint
+      - verify
     permissions:
       contents: read
       packages: write
