@@ -27,12 +27,14 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 
 	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 
+	apiReader := mgr.GetAPIReader()
+
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
 		Provider: constants.RegistryCacheExtensionType,
 		Name:     Name,
 		Path:     "/webhooks/registry-config",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewShootValidator(decoder): {{Obj: &core.Shoot{}}},
+			NewShootValidator(apiReader, decoder): {{Obj: &core.Shoot{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{

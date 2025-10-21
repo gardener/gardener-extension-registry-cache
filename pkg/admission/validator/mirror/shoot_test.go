@@ -11,9 +11,11 @@ import (
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
+	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +42,8 @@ var _ = Describe("Shoot validator", func() {
 		size = resource.MustParse("20Gi")
 
 		shootValidator extensionswebhook.Validator
+		ctrl           *gomock.Controller
+		apiReader      *mockclient.MockReader
 
 		shoot *core.Shoot
 	)
@@ -52,7 +56,9 @@ var _ = Describe("Shoot validator", func() {
 
 			decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 
-			shootValidator = mirror.NewShootValidator(decoder)
+                        ctrl = gomock.NewController(GinkgoT())
+			apiReader = mockclient.NewMockReader(ctrl)
+			shootValidator = mirror.NewShootValidator(apiReader, decoder)
 
 			shoot = &core.Shoot{
 				ObjectMeta: metav1.ObjectMeta{
