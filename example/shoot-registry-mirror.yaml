@@ -21,12 +21,6 @@ spec:
       - upstream: docker.io
         hosts:
         - host: "https://mirror.gcr.io"
-      mirrors:
-      - upstream: ghcr.io
-        server: https://harbor.noris.net/v2/ghcr.io
-        hosts:
-        - host: "https://harbor.noris.net"
-          override_path: true
   networking:
     type: calico
     # Must be within 10.0.0.0/16 (subnet of kind pod CIDR 10.0.0.0/15, but disjoint with seed pod CIDR 10.1.0.0/16).
