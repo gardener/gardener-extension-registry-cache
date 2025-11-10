@@ -1,5 +1,5 @@
 {{- define "name" -}}
-gardener-extension-registry-cache-admission
+gardener-extension-admission-registry-cache
 {{- end -}}
 
 {{- define "labels.app.key" -}}
