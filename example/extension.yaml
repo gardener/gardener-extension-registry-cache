@@ -10,15 +10,15 @@ spec:
       runtimeCluster:
         helm:
           ociRepository:
-            ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/admission-registry-cache-runtime:v0.19.0
+            ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/admission-registry-cache-runtime:v0.20.0-dev
       virtualCluster:
         helm:
           ociRepository:
-            ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/admission-registry-cache-application:v0.19.0
+            ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/admission-registry-cache-application:v0.20.0-dev
     extension:
       helm:
         ociRepository:
-          ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/registry-cache:v0.19.0
+          ref: europe-docker.pkg.dev/gardener-project/public/charts/gardener/extensions/registry-cache:v0.20.0-dev
   resources:
   - kind: Extension
     type: registry-cache
