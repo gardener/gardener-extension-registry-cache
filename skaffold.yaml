@@ -39,7 +39,7 @@ build:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache
   insecureRegistries:
-    - garden.local.gardener.cloud:5001
+    - registry.local.gardener.cloud:5000
 manifests:
   kustomize:
     paths:
@@ -94,7 +94,7 @@ build:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache-admission
   insecureRegistries:
-    - garden.local.gardener.cloud:5001
+    - registry.local.gardener.cloud:5000
 deploy:
   helm:
     releases:
