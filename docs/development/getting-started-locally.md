@@ -9,6 +9,10 @@ description: Learn how to set up a local development environment
 
 - Make sure that you have a running local Gardener setup. The steps to complete this can be found in the [Deploying Gardener Locally guide](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md).
 
+> [TIP]
+> Ensure that the locally used Gardener version matches the version specified by the `github.com/gardener/gardener` dependency.
+> The extension’s local setup must run successfully against a local Gardener setup at the version referenced by this dependency, as verified by end-to-end tests.
+
 ## Setting up the Registry Cache Extension
 
 Make sure that your `KUBECONFIG` environment variable is targeting the local Gardener cluster. When this is ensured, run:

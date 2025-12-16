@@ -38,7 +38,7 @@ else
 fi
 
 echo "Deploying registry-cache admission in garden cluster"
-SKAFFOLD_CHECK_CLUSTER_NODE_PLATFORMS=true SKAFFOLD_DEFAULT_REPO=registry.local.gardener.cloud:5000 SKAFFOLD_PUSH=true skaffold run -m admission -p remote-extensions
+skaffold run -m admission -p remote-extensions
 
 echo "Deploying registry-cache extension"
 SKAFFOLD_DEFAULT_REPO=$registry_domain \

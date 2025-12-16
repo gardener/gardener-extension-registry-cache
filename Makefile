@@ -127,11 +127,12 @@ ci-e2e-kind:
 
 # speed-up skaffold deployments by building all images concurrently
 export SKAFFOLD_BUILD_CONCURRENCY = 0
-extension-up extension-dev extension-operator-up: export SKAFFOLD_CHECK_CLUSTER_NODE_PLATFORMS = true
-extension-up extension-dev extension-operator-up: export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5000
-extension-up extension-dev extension-operator-up: export SKAFFOLD_PUSH = true
+# build the images for the platform matching the nodes of the active kubernetes cluster, even in `skaffold build`, which doesn't enable this by default
+export SKAFFOLD_CHECK_CLUSTER_NODE_PLATFORMS = true
+export SKAFFOLD_DEFAULT_REPO = registry.local.gardener.cloud:5000
+export SKAFFOLD_PUSH = true
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
-extension-up extension-dev extension-down extension-operator-up extension-operator-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
+export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
 extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
 	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run
