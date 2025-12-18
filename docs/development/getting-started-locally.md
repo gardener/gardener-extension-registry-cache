@@ -9,6 +9,10 @@ description: Learn how to set up a local development environment
 
 - Make sure that you have a running local Gardener setup. The steps to complete this can be found in the [Deploying Gardener Locally guide](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md).
 
+> [!TIP]
+> Ensure that the locally used Gardener version matches the version specified by the `github.com/gardener/gardener` dependency.
+> The extension’s local setup must run successfully against a local Gardener setup at the version referenced by this dependency, as verified by end-to-end tests.
+
 ## Setting up the Registry Cache Extension
 
 Make sure that your `KUBECONFIG` environment variable is targeting the local Gardener cluster. When this is ensured, run:
@@ -55,7 +59,7 @@ Alternatively, you can deploy the registry-cache extension in the `gardener-oper
 make extension-operator-up
 ```
 
-The corresponding make target will build the registry-cache admission and extension container images, OCI artifacts for the admission runtime and application charts, and the extension chart. Then, the container images and the OCI artifacts are pushed into the default skaffold registry (i.e. `garden.local.gardener.cloud:5001`). Next, the registry-cache `Extension.operator.gardener.cloud` resource is deployed into the KinD cluster. Based on this resource the gardener-operator will deploy the registry-cache admission component, as well as the registry-cache ControllerDeployment and ControllerRegistration resources.
+The corresponding make target will build the registry-cache admission and extension container images, OCI artifacts for the admission runtime and application charts, and the extension chart. Then, the container images and the OCI artifacts are pushed into the default skaffold registry (i.e. `registry.local.gardener.cloud:5000`). Next, the registry-cache `Extension.operator.gardener.cloud` resource is deployed into the KinD cluster. Based on this resource the gardener-operator will deploy the registry-cache admission component, as well as the registry-cache ControllerDeployment and ControllerRegistration resources.
 
 #### Creating a Shoot Cluster
 
