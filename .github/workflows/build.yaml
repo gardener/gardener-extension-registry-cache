@@ -21,32 +21,61 @@ jobs:
       contents: read
 
   sast-lint:
-    runs-on: ubuntu-latest
+    environment: ${{ inputs.github-environment }}
+    runs-on: ${{ vars.DEFAULT_RUNNER || 'ubuntu-latest' }}
     permissions:
-          contents: read
+      contents: read
     steps:
-      - name: verify-extended
-        uses: gardener/cc-utils/.github/workflows/sastlint-ocm.yaml@master        
+      - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
         with:
-          setup-git-identity: true
-          linter: gosec
-          run: |
-            set -euo pipefail
-            if [ '${{ inputs.mode }}' == 'release' ]; then
-              mkdir /tmp/blobs.d
-              make verify-extended |& tee /tmp/blobs.d/verify-log.txt
-              tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
-              # verify calls `make sast-report`, which generates `gosec-report.sarif
-            else
-              # tests are run using prow for non-release-runs, so early-exit
-              echo "dummy" > gosec-report.sarif
-            fi
-          go-version: '1.25.7'
-      - name: add-reports-to-component-descriptor
+          remove-trusted-label: false
+      - uses: actions/setup-go@v5
+        if: ${{ inputs.go-version != '' || inputs.go-version-file != '' }}
+        with:
+          go-version: ${{ inputs.go-version != 'greatest' && inputs.go-version || '' }}
+          go-version-file: ${{ inputs.go-version-file }}
+      - name: setup-git-identity
+        if: ${{ inputs.setup-git-identity }}
+        uses: 'gardener/cc-utils/.github/actions/setup-git-identity@master'
+      - name: run-linter
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ '${{ inputs.linter }}' != 'gosec' ]; then
+            echo 'do not know how to run ${{ inputs.linter }}'
+            exit 1
+          fi
+
+          # it is okay for the passed expression to be split into multiple tokens - have bash
+          # interpret whatever is passed
+          ${{ inputs.run }}
+
+          # linter-script is expected to output `gosec-report.sarif` (hardcoded contract)
+          mkdir -p /tmp/blobs.d
+          tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
+          tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
+
+      - name: add-sast-report-to-component-descriptor
         uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
         with:
           blobs-directory: /tmp/blobs.d
           ocm-resources: |
+            - name: gosec-report
+              relation: local
+              access:
+                type: localBlob
+                localReference: gosec-report.tar.gz
+              labels:
+                - name: gardener.cloud/purposes
+                  value:
+                    - lint
+                    - sast
+                    - gosec
+                - name: gardener.cloud/comment
+                  value: |
+                    we use gosec (linter) for SAST scans
+                    see: https://github.com/securego/gosec
             - name: test-results
               relation: local
               access:
