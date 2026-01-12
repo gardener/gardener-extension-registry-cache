@@ -21,7 +21,6 @@ jobs:
       contents: read
 
   sast-lint:
-    environment: ${{ inputs.github-environment }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
