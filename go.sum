@@ -451,6 +451,8 @@ github.com/operator-framework/operator-lib v0.18.0 h1:6OaWemt/CuyrjFMkLyk4O8Vj4C
 github.com/operator-framework/operator-lib v0.18.0/go.mod h1:EWS6xGYBcMn04wj81j0bluAYbFHl3cJcar++poQMzqE=
 github.com/ovh/go-ovh v1.6.0 h1:ixLOwxQdzYDx296sXcgS35TOPEahJkpjMGtzPadCjQI=
 github.com/ovh/go-ovh v1.6.0/go.mod h1:cTVDnl94z4tl8pP1uZ/8jlVxntjSIf09bNcQ5TJSC7c=
+github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
+github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/perses/common v0.27.1-0.20250326140707-96e439b14e0e h1:AormqtWdtHdoQyGO90U1fRoElR0XQHmP0W9oJUsCOZY=
 github.com/perses/common v0.27.1-0.20250326140707-96e439b14e0e/go.mod h1:CMTbKu0uWCFKgo4oDVoT8GcMC0bKyDH4cNG3GVfi+rA=
 github.com/perses/perses v0.51.0 h1:lLssvsMjxFg2oP+vKX6pz2SFTfrUyso/A2/A/6oFens=
