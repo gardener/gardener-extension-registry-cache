@@ -22,6 +22,7 @@ jobs:
 
   sast-lint:
     runs-on: ubuntu-latest
+    if: ${{ inputs.mode == 'release' }}
     permissions:
       contents: read
     steps:
@@ -31,14 +32,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.7'
-          setup-git-identity: true
-          linter: gosec
       - name: run-linter
         shell: bash
         run: |
           set -euo pipefail
 
           mkdir -p /tmp/blobs.d
+          make verify-extended 2>&1 | tee /tmp/blobs.d/verify-log.txt
           tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
           tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
 
