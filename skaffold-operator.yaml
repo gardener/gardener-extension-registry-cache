@@ -91,7 +91,7 @@ build:
         - image: local-skaffold/gardener-extension-registry-cache
           alias: IMG
   insecureRegistries:
-    - registry.local.gardener.cloud:5000
+    - registry.local.gardener.cloud:5001
 manifests:
   rawYaml:
     - local-setup/operator-extension-resource.yaml
