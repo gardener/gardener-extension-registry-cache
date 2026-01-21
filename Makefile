@@ -84,7 +84,7 @@ generate: $(VGOPATH) $(CONTROLLER_GEN) $(EXTENSION_GEN) $(GEN_CRD_API_REFERENCE_
 
 .PHONE: generate-in-docker
 generate-in-docker:
-	docker run --rm -it -v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache golang:1.25.5 \
+	docker run --rm -it -v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache golang:1.25.6 \
 		sh -c "cd /go/src/github.com/gardener/gardener-extension-registry-cache \
 				&& make tidy generate \
 				&& chown -R $(shell id -u):$(shell id -g) ."
