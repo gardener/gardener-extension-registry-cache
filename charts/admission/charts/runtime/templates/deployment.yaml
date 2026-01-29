@@ -29,8 +29,6 @@ spec:
       {{- if .Values.gardener.runtimeCluster.priorityClassName }}
       priorityClassName: {{ .Values.gardener.runtimeCluster.priorityClassName }}
       {{- end }}
-      securityContext:
-        runAsNonRoot: true
       serviceAccountName: {{ include "name" . }}
       {{- if .Values.kubeconfig }}
       automountServiceAccountToken: false
@@ -66,6 +64,7 @@ spec:
         {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
+          runAsNonRoot: true
           capabilities:
             drop: [ALL]
         livenessProbe:
