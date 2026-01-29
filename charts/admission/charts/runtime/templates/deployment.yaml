@@ -64,6 +64,9 @@ spec:
         {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          capabilities:
+            drop: [ALL]
         livenessProbe:
           httpGet:
             path: /healthz
