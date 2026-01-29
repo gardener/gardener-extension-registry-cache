@@ -255,4 +255,238 @@ var _ = Describe("Ensurer", func() {
 			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
 	})
+
+	Describe("#EnsureCRIConfig", func() {
+		var (
+			cluster   *extensions.Cluster
+			extension *extensionsv1alpha1.Extension
+			files     []extensionsv1alpha1.File
+		)
+
+		BeforeEach(func() {
+			cluster = &extensions.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
+				Shoot:      &gardencorev1beta1.Shoot{},
+			}
+
+			extension = &extensionsv1alpha1.Extension{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "registry-mirror",
+					Namespace: cluster.ObjectMeta.Name,
+				},
+				Spec: extensionsv1alpha1.ExtensionSpec{
+					DefaultSpec: extensionsv1alpha1.DefaultSpec{
+						ProviderConfig: &runtime.RawExtension{
+							Object: &v1alpha1.MirrorConfig{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha1.SchemeGroupVersion.String(),
+									Kind:       "MirrorConfig",
+								},
+								Mirrors: []v1alpha1.MirrorConfiguration{
+									{
+										Upstream: "docker.io",
+										Hosts: []v1alpha1.MirrorHost{
+											{
+												Host:         "https://mirror.gcr.io",
+												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+											},
+										},
+									},
+									{
+										Upstream: "provision-registry.example.com",
+										Hosts: []v1alpha1.MirrorHost{
+											{
+												Host:         "https://mirror.provision-registry.example.com",
+												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+											},
+										},
+										ProvisionRelevant: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			files = []extensionsv1alpha1.File{}
+		})
+
+		It("should return err when it fails to get the cluster", func() {
+			osc := &extensionsv1alpha1.OperatingSystemConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "shoot--foo--bar",
+				},
+			}
+			gctx := extensionscontextwebhook.NewGardenContext(fakeClient, osc)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalProvisionFiles(ctx, gctx, &files, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace 'shoot--foo--bar'")))
+		})
+
+		It("should do nothing if the shoot has a deletion timestamp set", func() {
+			deletionTimestamp := metav1.Now()
+			cluster.Shoot.DeletionTimestamp = &deletionTimestamp
+
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			Expect(ensurer.EnsureAdditionalProvisionFiles(ctx, gctx, &files, nil)).To(Succeed())
+			Expect(files).To(BeEmpty())
+		})
+
+		It("should return err when extension .spec.providerConfig is nil", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = nil
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalProvisionFiles(ctx, gctx, &files, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("extension 'shoot--foo--bar/registry-mirror' does not have a .spec.providerConfig specified")))
+		})
+
+		It("should only add ProvisionRelevant mirrors in ProvisionFiles", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			expectedFiles := []extensionsv1alpha1.File{
+				{
+					Path:        "/etc/containerd/certs.d/provision-registry.example.com/hosts.toml",
+					Permissions: ptr.To[uint32](0o644),
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Data: "# Created by gardener-extension-registry-mirror\nserver = 'https://provision-registry.example.com'\n\n[host]\n[host.'https://mirror.provision-registry.example.com']\ncapabilities = ['pull', 'pull']\n",
+						},
+					},
+				},
+			}
+
+			Expect(ensurer.EnsureAdditionalProvisionFiles(ctx, gctx, &files, nil)).To(Succeed())
+			Expect(files).To(ConsistOf(expectedFiles))
+		})
+
+	})
+
+	Describe("#EnsureAdditionalFiles", func() {
+		var (
+			cluster   *extensions.Cluster
+			extension *extensionsv1alpha1.Extension
+			files     []extensionsv1alpha1.File
+		)
+
+		BeforeEach(func() {
+			cluster = &extensions.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
+				Shoot:      &gardencorev1beta1.Shoot{},
+			}
+
+			extension = &extensionsv1alpha1.Extension{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "registry-mirror",
+					Namespace: cluster.ObjectMeta.Name,
+				},
+				Spec: extensionsv1alpha1.ExtensionSpec{
+					DefaultSpec: extensionsv1alpha1.DefaultSpec{
+						ProviderConfig: &runtime.RawExtension{
+							Object: &v1alpha1.MirrorConfig{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha1.SchemeGroupVersion.String(),
+									Kind:       "MirrorConfig",
+								},
+								Mirrors: []v1alpha1.MirrorConfiguration{
+									{
+										Upstream: "provision-registry.example.com",
+										Hosts: []v1alpha1.MirrorHost{
+											{
+												Host:         "https://mirror.provision-registry.example.com",
+												Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+												CABundle:     []byte("LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJiekNDQVNHZ0F3SUJBZ0lVUTdWd0QzOGdrcGpGaTBEU2krME9LTi9BVXRZd0JRWURLMlZ3TUJZeEZEQVMKQmdOVkJBTU1DMlY0WVcxd2JHVXVZMjl0TUI0WERUSTFNVEV5TlRFeE5EVTFORm9YRFRNMU1URXlNekV4TkRVMQpORm93RmpFVU1CSUdBMVVFQXd3TFpYaGhiWEJzWlM1amIyMHdLakFGQmdNclpYQURJUUQ1WWhacGk4QWZVUjJoCmFGbHhGNzN4SUpMZ2h1NjU0V0RNVlY5Zjh3Sk9EYU9CZ0RCK01CMEdBMVVkRGdRV0JCVHVGWWtXSW5LRUpnQlEKMFVTVk5jbmdxN3FwcWpBZkJnTlZIU01FR0RBV2dCVHVGWWtXSW5LRUpnQlEwVVNWTmNuZ3E3cXBxakFQQmdOVgpIUk1CQWY4RUJUQURBUUgvTUNzR0ExVWRFUVFrTUNLQ0MyVjRZVzF3YkdVdVkyOXRnZzBxTG1WNFlXMXdiR1V1ClkyOXRod1FLQUFBQk1BVUdBeXRsY0FOQkFESnFITE16a3hUVThwZTdZbHh2cU9qQkYxOEh4eGpwNFd1Z2tRcHMKNHFFZko0aHFRaGZERTl6Vm15K1R4RGhuT043Wng2UDB5K2QzZkhlV1YzK2ZtUXM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			files = []extensionsv1alpha1.File{}
+		})
+
+		It("should return err when it fails to get the cluster", func() {
+			osc := &extensionsv1alpha1.OperatingSystemConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "shoot--foo--bar",
+				},
+			}
+			gctx := extensionscontextwebhook.NewGardenContext(fakeClient, osc)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace 'shoot--foo--bar'")))
+		})
+
+		It("should do nothing if the shoot has a deletion timestamp set", func() {
+			deletionTimestamp := metav1.Now()
+			cluster.Shoot.DeletionTimestamp = &deletionTimestamp
+
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
+			Expect(files).To(BeEmpty())
+		})
+
+		It("should return err when extension .spec.providerConfig is nil", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = nil
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("extension 'shoot--foo--bar/registry-mirror' does not have a .spec.providerConfig specified")))
+		})
+
+		It("should only add ProvisionRelevant mirrors in ProvisionFiles", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			expectedFiles := []extensionsv1alpha1.File{
+				{
+					Path:        "/etc/containerd/certs.d/provision-registry.example.com/mirror.provision-registry.example.com.crt",
+					Permissions: ptr.To[uint32](0o644),
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Encoding: "b64",
+							Data:     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJiekNDQVNHZ0F3SUJBZ0lVUTdWd0QzOGdrcGpGaTBEU2krME9LTi9BVXRZd0JRWURLMlZ3TUJZeEZEQVMKQmdOVkJBTU1DMlY0WVcxd2JHVXVZMjl0TUI0WERUSTFNVEV5TlRFeE5EVTFORm9YRFRNMU1URXlNekV4TkRVMQpORm93RmpFVU1CSUdBMVVFQXd3TFpYaGhiWEJzWlM1amIyMHdLakFGQmdNclpYQURJUUQ1WWhacGk4QWZVUjJoCmFGbHhGNzN4SUpMZ2h1NjU0V0RNVlY5Zjh3Sk9EYU9CZ0RCK01CMEdBMVVkRGdRV0JCVHVGWWtXSW5LRUpnQlEKMFVTVk5jbmdxN3FwcWpBZkJnTlZIU01FR0RBV2dCVHVGWWtXSW5LRUpnQlEwVVNWTmNuZ3E3cXBxakFQQmdOVgpIUk1CQWY4RUJUQURBUUgvTUNzR0ExVWRFUVFrTUNLQ0MyVjRZVzF3YkdVdVkyOXRnZzBxTG1WNFlXMXdiR1V1ClkyOXRod1FLQUFBQk1BVUdBeXRsY0FOQkFESnFITE16a3hUVThwZTdZbHh2cU9qQkYxOEh4eGpwNFd1Z2tRcHMKNHFFZko0aHFRaGZERTl6Vm15K1R4RGhuT043Wng2UDB5K2QzZkhlV1YzK2ZtUXM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
+						},
+					},
+				},
+			}
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
+			Expect(files).To(ConsistOf(expectedFiles))
+		})
+
+	})
 })

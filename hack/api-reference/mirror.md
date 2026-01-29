@@ -80,6 +80,18 @@ The value must be a valid DNS subdomain (RFC 1123) and optionally a port.</p>
 <p>Hosts are the mirror hosts to be used for the upstream.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>provisionRelevant</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<p>ProvisionRelevant deploys the mirror config via the provision OSC. This is only needed if the gardener-node-agent
+is consumed via the mirror. Use this only if it is really needed.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorHost">MirrorHost
@@ -125,6 +137,18 @@ string
 This also represents the set of operations for which the mirror host may be trusted to perform.
 The supported values are &ldquo;pull&rdquo; and &ldquo;resolve&rdquo;.
 Defaults to [&ldquo;pull&rdquo;].</p>
+</td>
+</tr>
+<tr>
+<td>
+<code>caBundle</code></br>
+<em>
+[]byte
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>CABundle is the CABundle for a MirrorHost.</p>
 </td>
 </tr>
 </tbody>

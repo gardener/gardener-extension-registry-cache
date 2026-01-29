@@ -80,6 +80,7 @@ func Convert_mirror_MirrorConfig_To_v1alpha1_MirrorConfig(in *mirror.MirrorConfi
 func autoConvert_v1alpha1_MirrorConfiguration_To_mirror_MirrorConfiguration(in *MirrorConfiguration, out *mirror.MirrorConfiguration, s conversion.Scope) error {
 	out.Upstream = in.Upstream
 	out.Hosts = *(*[]mirror.MirrorHost)(unsafe.Pointer(&in.Hosts))
+	out.ProvisionRelevant = in.ProvisionRelevant
 	return nil
 }
 
@@ -91,6 +92,7 @@ func Convert_v1alpha1_MirrorConfiguration_To_mirror_MirrorConfiguration(in *Mirr
 func autoConvert_mirror_MirrorConfiguration_To_v1alpha1_MirrorConfiguration(in *mirror.MirrorConfiguration, out *MirrorConfiguration, s conversion.Scope) error {
 	out.Upstream = in.Upstream
 	out.Hosts = *(*[]MirrorHost)(unsafe.Pointer(&in.Hosts))
+	out.ProvisionRelevant = in.ProvisionRelevant
 	return nil
 }
 
@@ -102,6 +104,7 @@ func Convert_mirror_MirrorConfiguration_To_v1alpha1_MirrorConfiguration(in *mirr
 func autoConvert_v1alpha1_MirrorHost_To_mirror_MirrorHost(in *MirrorHost, out *mirror.MirrorHost, s conversion.Scope) error {
 	out.Host = in.Host
 	out.Capabilities = *(*[]mirror.MirrorHostCapability)(unsafe.Pointer(&in.Capabilities))
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	return nil
 }
 
@@ -113,6 +116,7 @@ func Convert_v1alpha1_MirrorHost_To_mirror_MirrorHost(in *MirrorHost, out *mirro
 func autoConvert_mirror_MirrorHost_To_v1alpha1_MirrorHost(in *mirror.MirrorHost, out *MirrorHost, s conversion.Scope) error {
 	out.Host = in.Host
 	out.Capabilities = *(*[]MirrorHostCapability)(unsafe.Pointer(&in.Capabilities))
+	out.CABundle = *(*[]byte)(unsafe.Pointer(&in.CABundle))
 	return nil
 }
 

@@ -25,6 +25,9 @@ type MirrorConfiguration struct {
 	Upstream string `json:"upstream"`
 	// Hosts are the mirror hosts to be used for the upstream.
 	Hosts []MirrorHost `json:"hosts"`
+	// ProvisionRelevant deploys the mirror config via the provision OSC. This is only needed if the gardener-node-agent
+	// is consumed via the mirror. Use this only if it is really needed.
+	ProvisionRelevant bool `json:"provisionRelevant"`
 }
 
 // MirrorHost represents a mirror host.
@@ -37,6 +40,9 @@ type MirrorHost struct {
 	// Defaults to ["pull"].
 	// +optional
 	Capabilities []MirrorHostCapability `json:"capabilities"`
+	// CABundle is the CABundle for a MirrorHost.
+	// +optional
+	CABundle []byte `json:"caBundle"`
 }
 
 // MirrorHostCapability represents a mirror host capability.

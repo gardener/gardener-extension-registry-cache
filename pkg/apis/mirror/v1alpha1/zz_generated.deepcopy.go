@@ -76,6 +76,11 @@ func (in *MirrorHost) DeepCopyInto(out *MirrorHost) {
 		*out = make([]MirrorHostCapability, len(*in))
 		copy(*out, *in)
 	}
+	if in.CABundle != nil {
+		in, out := &in.CABundle, &out.CABundle
+		*out = make([]byte, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 
