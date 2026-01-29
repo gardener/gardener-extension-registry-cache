@@ -43,6 +43,7 @@ func NewOptions() *Options {
 		"registry-cache",
 		"",
 		nil,
+		nil,
 		webhookServerOptions,
 		webhookSwitches,
 	)
