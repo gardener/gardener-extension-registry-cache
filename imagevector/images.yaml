@@ -7,8 +7,15 @@ images:
 # registry cache StatefulSet
 - name: registry
   sourceRepository: github.com/distribution/distribution
+  # The Docker Hub image ("docker.io/library/registry") is copied to Google Artifact Registry ("europe-docker.pkg.dev/gardener-project/releases/3rd/registry").
+  # There is a strict rate-limit for image pull operations from the Docker Hub registry.
   repository: europe-docker.pkg.dev/gardener-project/releases/3rd/registry
-  tag: 3.0.0
+  # The images in the Docker's Official Images program are (by design) rebuilt frequently.
+  # For more details, refer to: https://github.com/distribution/distribution-library-image/issues/195#issuecomment-3850345955.
+  # As a result, digest is used instead of tag for image references.
+  #
+  # Keep the digest in sync with the "3.0.0" tag of the "europe-docker.pkg.dev/gardener-project/releases/3rd/registry" image.
+  tag: sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
   labels:
   - name: gardener.cloud/cve-categorisation
     value:

@@ -32,7 +32,7 @@ import (
 
 const (
 	alpine3188         = "alpine:3.18.8"
-	registry300Image   = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0"
+	registry300Image   = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e"
 	upstreamConfigYAML = `version: 0.1
 log:
   fields:
