@@ -14,7 +14,8 @@ images:
   # For more details, refer to: https://github.com/distribution/distribution-library-image/issues/195#issuecomment-3850345955.
   # As a result, digest is used instead of tag to ensure reproducibility.
   tag: 3.0.0@sha256:6c5666b861f3505b116bb9aa9b25175e71210414bd010d92035ff64018f9457e
-  version: 3.0.0
+  resourceId:
+    version: 3.0.0
   labels:
   - name: gardener.cloud/cve-categorisation
     value:
