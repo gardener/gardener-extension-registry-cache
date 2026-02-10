@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
 
-  sast-lint:
+  verify:
     runs-on: ubuntu-latest
     if: ${{ inputs.mode == 'release' }}
     permissions:
@@ -33,7 +33,7 @@ jobs:
         with:
           go-version: '1.25.7'
       - uses: gardener/cc-utils/.github/actions/setup-git-identity@master
-      - name: run-linter
+      - name: Run 'make verify-extended'
         shell: bash
         run: |
           set -euo pipefail
@@ -45,7 +45,7 @@ jobs:
           tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
           tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
 
-      - name: add-sast-report-to-component-descriptor
+      - name: Add results to component descriptor
         uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
         with:
           blobs-directory: /tmp/blobs.d
@@ -79,7 +79,7 @@ jobs:
     name: Build OCI-Images
     needs:
       - prepare
-      - sast-lint
+      - verify
     permissions:
       contents: read
       packages: write
