@@ -22,7 +22,6 @@ jobs:
 
   verify:
     runs-on: ubuntu-latest
-    if: ${{ inputs.mode == 'release' }}
     permissions:
       contents: read
     steps:
@@ -40,11 +39,16 @@ jobs:
 
           mkdir -p /tmp/blobs.d
 
-          make verify-extended |& tee /tmp/blobs.d/verify-log.txt
-
-          tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
-          tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
-
+          # For non-release runs, make verify-extended is executed in Prow.
+          # Execute make verify-extended only for release runs.
+          if [ '${{ inputs.mode }}' == 'release' ]; then
+            make verify-extended |& tee /tmp/blobs.d/verify-log.txt
+            tar czf /tmp/blobs.d/gosec-report.tar.gz gosec-report.sarif
+            tar czf /tmp/blobs.d/verify-log.tar.gz -C /tmp/blobs.d verify-log.txt
+          else
+            echo "dummy" > /tmp/blobs.d/gosec-report.tar.gz
+            echo "dummy" > /tmp/blobs.d/verify-log.tar.gz
+          fi
       - name: Add results to component descriptor
         uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
         with:
