@@ -268,6 +268,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 	}
 
 	const (
+		containerName            = "registry-cache"
 		registryCacheVolumeName  = "cache-volume"
 		registryConfigVolumeName = "config-volume"
 		registryCertsVolumeName  = "certs-volume"
@@ -363,7 +364,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 					},
 					Containers: []corev1.Container{
 						{
-							Name:            "registry-cache",
+							Name:            containerName,
 							Image:           r.values.Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources: corev1.ResourceRequirements{
@@ -577,11 +578,15 @@ source /entrypoint.sh /etc/distribution/config.yml
 				ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
 					ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
 						{
-							ContainerName:    vpaautoscalingv1.DefaultContainerResourcePolicy,
+							ContainerName:    containerName,
 							ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
 							MinAllowed: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("20Mi"),
 							},
+						},
+						{
+							ContainerName: vpaautoscalingv1.DefaultContainerResourcePolicy,
+							Mode:          ptr.To(vpaautoscalingv1.ContainerScalingModeOff),
 						},
 					},
 				},
