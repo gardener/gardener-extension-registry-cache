@@ -1,4 +1,11 @@
 name: github.com/gardener/gardener-extension-registry-cache
+labels:
+  - name: cloud.gardener.cnudie/responsibles
+    value:
+      - type: githubTeam
+        teamname: gardener/gardener-extension-registry-cache-maintainers
+        github_hostname: github.com
+
 main-source:
   labels:
     - name: cloud.gardener.cnudie/dso/scanning-hints/source_analysis/v1
