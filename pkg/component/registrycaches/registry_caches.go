@@ -356,7 +356,8 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 					AutomountServiceAccountToken: ptr.To(false),
 					PriorityClassName:            "system-cluster-critical",
 					SecurityContext: &corev1.PodSecurityContext{
-						FSGroup: ptr.To(int64(65532)),
+						FSGroup:             ptr.To(int64(65532)),
+						FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
