@@ -4,7 +4,7 @@ go 1.25.6
 
 require (
 	github.com/ahmetb/gen-crd-api-reference-docs v0.3.0
-	github.com/gardener/gardener v1.136.1
+	github.com/gardener/gardener v1.136.2
 	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260214065137-f7a1de9e6993
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.28.1
