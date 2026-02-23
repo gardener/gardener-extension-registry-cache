@@ -6,6 +6,7 @@ package mirror_test
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -374,7 +375,6 @@ var _ = Describe("Ensurer", func() {
 			Expect(ensurer.EnsureAdditionalProvisionFiles(ctx, gctx, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(expectedFiles))
 		})
-
 	})
 
 	Describe("#EnsureAdditionalFiles", func() {
@@ -478,7 +478,7 @@ var _ = Describe("Ensurer", func() {
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
-							Data:     "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJiekNDQVNHZ0F3SUJBZ0lVUTdWd0QzOGdrcGpGaTBEU2krME9LTi9BVXRZd0JRWURLMlZ3TUJZeEZEQVMKQmdOVkJBTU1DMlY0WVcxd2JHVXVZMjl0TUI0WERUSTFNVEV5TlRFeE5EVTFORm9YRFRNMU1URXlNekV4TkRVMQpORm93RmpFVU1CSUdBMVVFQXd3TFpYaGhiWEJzWlM1amIyMHdLakFGQmdNclpYQURJUUQ1WWhacGk4QWZVUjJoCmFGbHhGNzN4SUpMZ2h1NjU0V0RNVlY5Zjh3Sk9EYU9CZ0RCK01CMEdBMVVkRGdRV0JCVHVGWWtXSW5LRUpnQlEKMFVTVk5jbmdxN3FwcWpBZkJnTlZIU01FR0RBV2dCVHVGWWtXSW5LRUpnQlEwVVNWTmNuZ3E3cXBxakFQQmdOVgpIUk1CQWY4RUJUQURBUUgvTUNzR0ExVWRFUVFrTUNLQ0MyVjRZVzF3YkdVdVkyOXRnZzBxTG1WNFlXMXdiR1V1ClkyOXRod1FLQUFBQk1BVUdBeXRsY0FOQkFESnFITE16a3hUVThwZTdZbHh2cU9qQkYxOEh4eGpwNFd1Z2tRcHMKNHFFZko0aHFRaGZERTl6Vm15K1R4RGhuT043Wng2UDB5K2QzZkhlV1YzK2ZtUXM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
+							Data:     base64.StdEncoding.EncodeToString([]byte("LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJiekNDQVNHZ0F3SUJBZ0lVUTdWd0QzOGdrcGpGaTBEU2krME9LTi9BVXRZd0JRWURLMlZ3TUJZeEZEQVMKQmdOVkJBTU1DMlY0WVcxd2JHVXVZMjl0TUI0WERUSTFNVEV5TlRFeE5EVTFORm9YRFRNMU1URXlNekV4TkRVMQpORm93RmpFVU1CSUdBMVVFQXd3TFpYaGhiWEJzWlM1amIyMHdLakFGQmdNclpYQURJUUQ1WWhacGk4QWZVUjJoCmFGbHhGNzN4SUpMZ2h1NjU0V0RNVlY5Zjh3Sk9EYU9CZ0RCK01CMEdBMVVkRGdRV0JCVHVGWWtXSW5LRUpnQlEKMFVTVk5jbmdxN3FwcWpBZkJnTlZIU01FR0RBV2dCVHVGWWtXSW5LRUpnQlEwVVNWTmNuZ3E3cXBxakFQQmdOVgpIUk1CQWY4RUJUQURBUUgvTUNzR0ExVWRFUVFrTUNLQ0MyVjRZVzF3YkdVdVkyOXRnZzBxTG1WNFlXMXdiR1V1ClkyOXRod1FLQUFBQk1BVUdBeXRsY0FOQkFESnFITE16a3hUVThwZTdZbHh2cU9qQkYxOEh4eGpwNFd1Z2tRcHMKNHFFZko0aHFRaGZERTl6Vm15K1R4RGhuT043Wng2UDB5K2QzZkhlV1YzK2ZtUXM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K")),
 						},
 					},
 				},
@@ -487,6 +487,5 @@ var _ = Describe("Ensurer", func() {
 			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &files, nil)).To(Succeed())
 			Expect(files).To(ConsistOf(expectedFiles))
 		})
-
 	})
 })

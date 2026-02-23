@@ -6,6 +6,7 @@ package mirror
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"path"
 	"slices"
@@ -99,6 +100,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 
 	return nil
 }
+
 func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx extensionscontextwebhook.GardenContext, newObj, _ *[]extensionsv1alpha1.File) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {
@@ -240,7 +242,7 @@ func getCAFiles(config mirrorapi.MirrorConfiguration) []extensionsv1alpha1.File 
 			Content: extensionsv1alpha1.FileContent{
 				Inline: &extensionsv1alpha1.FileContentInline{
 					Encoding: "b64",
-					Data:     string(host.CABundle),
+					Data:     base64.StdEncoding.EncodeToString(host.CABundle),
 				},
 			},
 		}
