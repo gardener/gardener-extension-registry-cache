@@ -62,3 +62,7 @@ The value must include a scheme - `http://` or `https://`.
 
 The `providerConfig.mirror[].hosts[].capabilities` field represents the operations a host is capable of performing. This also represents the set of operations for which the mirror host may be trusted to perform. Defaults to `["pull"]`. The supported values are `pull` and `resolve`.
 See the [capabilities field documentation](https://github.com/containerd/containerd/blob/v1.7.0/docs/hosts.md#capabilities-field) for more information on which operations are considered trusted ones against public/private mirrors.
+
+The `providerConfig.mirror[].hosts[].caBundle` field sets an optional CABundle for the mirror.
+
+The `providerConfig.mirror[].provisionRelevant` field represents if the mirror is needed for provisioning a node (for example contains the `gardener-node-agent`). If this is set to true the mirror will be additionally added with the provision `operatingsystemconfig` to have the mirror available before the `gardener-node-agent` is running. After startup the `gardener-node-agent` will adopt the mirror and reconcile the mirror as usual.
