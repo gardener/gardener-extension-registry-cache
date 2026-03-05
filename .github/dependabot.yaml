@@ -8,6 +8,12 @@ updates:
   open-pull-requests-limit: 5
   allow:
   - dependency-name: "github.com/gardener/gardener"
+  - dependency-name: "github.com/gardener/gardener/pkg/apis"
+  groups:
+    gardener:
+      patterns:
+      - "github.com/gardener/gardener"
+      - "github.com/gardener/gardener/pkg/apis"
   labels:
   - kind/enhancement
 # Create PRs for golang version updates
