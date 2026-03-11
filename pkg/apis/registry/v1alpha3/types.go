@@ -40,7 +40,7 @@ type RegistryCache struct {
 	// Defaults to enabled garbage collection.
 	// +optional
 	GarbageCollection *GarbageCollection `json:"garbageCollection,omitempty"`
-	// SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials.
+	// SecretReferenceName is the reference name for a Secret containing the upstream registry credentials.
 	// +optional
 	SecretReferenceName *string `json:"secretReferenceName,omitempty"`
 	// Proxy contains settings for a proxy used in the registry cache.

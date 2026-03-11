@@ -36,7 +36,7 @@ type RegistryCache struct {
 	Volume *Volume
 	// GarbageCollection contains settings for the garbage collection of content from the cache.
 	GarbageCollection *GarbageCollection
-	// SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials
+	// SecretReferenceName is the reference name for a Secret containing the upstream registry credentials.
 	SecretReferenceName *string
 	// Proxy contains settings for a proxy used in the registry cache.
 	Proxy *Proxy
