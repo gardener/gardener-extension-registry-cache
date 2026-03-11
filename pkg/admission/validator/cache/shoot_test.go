@@ -23,11 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
 	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
-	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestRegistryCacheValidator(t *testing.T) {

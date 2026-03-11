@@ -6,6 +6,7 @@ package mirror_test
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 
 	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +36,8 @@ func TestRegistryMirrorWebhook(t *testing.T) {
 }
 
 var _ = Describe("Ensurer", func() {
+	const namespace = "shoot--foo--bar"
+
 	var (
 		logger = logr.Discard()
 		ctx    = context.Background()
@@ -45,6 +49,7 @@ var _ = Describe("Ensurer", func() {
 	BeforeEach(func() {
 		scheme := runtime.NewScheme()
 		Expect(extensionsv1alpha1.AddToScheme(scheme)).To(Succeed())
+		Expect(corev1.AddToScheme(scheme)).To(Succeed())
 		mirrorinstall.Install(scheme)
 
 		decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
@@ -60,7 +65,7 @@ var _ = Describe("Ensurer", func() {
 
 		BeforeEach(func() {
 			cluster = &extensions.Cluster{
-				ObjectMeta: metav1.ObjectMeta{Name: "shoot--foo--bar"},
+				ObjectMeta: metav1.ObjectMeta{Name: namespace},
 				Shoot:      &gardencorev1beta1.Shoot{},
 			}
 
@@ -115,7 +120,7 @@ var _ = Describe("Ensurer", func() {
 		It("should return err when it fails to get the cluster", func() {
 			osc := &extensionsv1alpha1.OperatingSystemConfig{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "shoot--foo--bar",
+					Namespace: namespace,
 				},
 			}
 			gctx := extensionscontextwebhook.NewGardenContext(fakeClient, osc)
@@ -124,7 +129,7 @@ var _ = Describe("Ensurer", func() {
 
 			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace 'shoot--foo--bar'")))
+			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace '%s'", namespace)))
 		})
 
 		It("should do nothing if the shoot has a deletion timestamp set", func() {
@@ -147,7 +152,7 @@ var _ = Describe("Ensurer", func() {
 
 			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("failed to get extension 'shoot--foo--bar/registry-mirror'")))
+			Expect(err).To(MatchError(ContainSubstring("failed to get extension '%s/registry-mirror'", namespace)))
 		})
 
 		It("should return err when extension .spec.providerConfig is nil", func() {
@@ -160,7 +165,7 @@ var _ = Describe("Ensurer", func() {
 
 			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("extension 'shoot--foo--bar/registry-mirror' does not have a .spec.providerConfig specified")))
+			Expect(err).To(MatchError(ContainSubstring("extension '%s/registry-mirror' does not have a .spec.providerConfig specified", namespace)))
 		})
 
 		It("should return err when extension .spec.providerConfig cannot be decoded", func() {
@@ -173,7 +178,7 @@ var _ = Describe("Ensurer", func() {
 
 			err := ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig of extension 'shoot--foo--bar/registry-mirror'")))
+			Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig of extension '%s/registry-mirror'", namespace)))
 		})
 
 		It("should add additional registry config to a nil containerd registry configs", func() {
@@ -254,5 +259,256 @@ var _ = Describe("Ensurer", func() {
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
 			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
+	})
+
+	Describe("#EnsureAdditionalFiles", func() {
+		const caSecretName = "ca-bundle-v1"
+
+		var (
+			cluster        *extensions.Cluster
+			extension      *extensionsv1alpha1.Extension
+			caBundleSecret *corev1.Secret
+
+			newFiles []extensionsv1alpha1.File
+		)
+
+		BeforeEach(func() {
+			cluster = &extensions.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: namespace},
+				Shoot: &gardencorev1beta1.Shoot{
+					Spec: gardencorev1beta1.ShootSpec{
+						Resources: []gardencorev1beta1.NamedResourceReference{
+							{
+								Name: "ca-bundle",
+								ResourceRef: autoscalingv1.CrossVersionObjectReference{
+									Kind: "Secret",
+									Name: caSecretName,
+								},
+							},
+						},
+					},
+				},
+			}
+			extension = &extensionsv1alpha1.Extension{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "registry-mirror",
+					Namespace: cluster.ObjectMeta.Name,
+				},
+				Spec: extensionsv1alpha1.ExtensionSpec{
+					DefaultSpec: extensionsv1alpha1.DefaultSpec{
+						ProviderConfig: &runtime.RawExtension{
+							Object: &v1alpha1.MirrorConfig{
+								TypeMeta: metav1.TypeMeta{
+									APIVersion: v1alpha1.SchemeGroupVersion.String(),
+									Kind:       "MirrorConfig",
+								},
+								Mirrors: []v1alpha1.MirrorConfiguration{
+									{
+										Upstream: "docker.io",
+										Hosts: []v1alpha1.MirrorHost{
+											{
+												Host:                        "https://private-mirror.internal",
+												CABundleSecretReferenceName: ptr.To("ca-bundle"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			caBundleSecret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ref-" + caSecretName,
+					Namespace: namespace,
+				},
+				Immutable: ptr.To(true),
+				Data: map[string][]byte{
+					"bundle.crt": []byte("bar"),
+				},
+			}
+
+			newFiles = []extensionsv1alpha1.File{
+				{
+					Path: "/var/lib/foo/bar.txt",
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Data: "plain-text",
+						},
+					},
+				},
+			}
+		})
+
+		It("should return err when it fails to get the cluster", func() {
+			osc := &extensionsv1alpha1.OperatingSystemConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+				},
+			}
+			gctx := extensionscontextwebhook.NewGardenContext(fakeClient, osc)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, nil, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to get the cluster resource: could not get cluster for namespace '%s'", namespace)))
+		})
+
+		It("should do nothing if the shoot has a deletion timestamp set", func() {
+			deletionTimestmap := metav1.Now()
+			cluster.Shoot.DeletionTimestamp = &deletionTimestmap
+
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+			expectedNewFiles := make([]extensionsv1alpha1.File, len(newFiles))
+			copy(expectedNewFiles, newFiles)
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)).To(Succeed())
+			Expect(newFiles).To(Equal(expectedNewFiles))
+		})
+
+		It("return err when it fails to get the extension", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to get extension '%s/registry-mirror'", namespace)))
+		})
+
+		It("should return err when extension .spec.providerConfig is nil", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = nil
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("extension '%s/registry-mirror' does not have a .spec.providerConfig specified", namespace)))
+		})
+
+		It("should return err when extension .spec.providerConfig cannot be decoded", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = &runtime.RawExtension{Object: &corev1.Pod{}}
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to decode providerConfig of extension '%s/registry-mirror'", namespace)))
+		})
+
+		It("should return err when shoot does not contain referenced resource for CA bundle secret", func() {
+			cluster.Shoot.Spec.Resources = nil
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to find referenced resource with name ca-bundle and kind Secret")))
+		})
+
+		It("return err when it fails to get the CA bundle secret", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to read referenced secret %s for reference ca-bundle", caBundleSecret.Name)))
+		})
+
+		It("should return err when the CA bundle secret does not contain the required field", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			caBundleSecret.Data = map[string][]byte{
+				"foo": []byte("bar"),
+			}
+			Expect(fakeClient.Create(ctx, caBundleSecret)).To(Succeed())
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			err := ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to find 'bundle.crt' key in the CA bundle secret '%s/%s'", namespace, caBundleSecret.Name)))
+		})
+
+		It("should add additional file to the current files", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, caBundleSecret)).To(Succeed())
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+			expectedNewFiles := make([]extensionsv1alpha1.File, len(newFiles))
+			copy(expectedNewFiles, newFiles)
+			expectedNewFiles = append(expectedNewFiles,
+				extensionsv1alpha1.File{
+					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
+					Permissions: ptr.To[uint32](0644),
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Encoding: "b64",
+							Data:     base64.StdEncoding.EncodeToString([]byte("bar")),
+						},
+					},
+				},
+			)
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)).To(Succeed())
+			Expect(newFiles).To(ConsistOf(expectedNewFiles))
+		})
+
+		It("should update file with the expected content if it already exists", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+
+			Expect(fakeClient.Create(ctx, caBundleSecret)).To(Succeed())
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			newFiles = append(newFiles,
+				extensionsv1alpha1.File{
+					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
+					Permissions: ptr.To[uint32](0642),
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Encoding: "b64",
+							Data:     base64.StdEncoding.EncodeToString([]byte("old-content")),
+						},
+					},
+				},
+			)
+			expectedNewFiles := make([]extensionsv1alpha1.File, len(newFiles))
+			copy(expectedNewFiles, newFiles)
+			expectedNewFiles[1] = extensionsv1alpha1.File{
+				Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
+				Permissions: ptr.To[uint32](0644),
+				Content: extensionsv1alpha1.FileContent{
+					Inline: &extensionsv1alpha1.FileContentInline{
+						Encoding: "b64",
+						Data:     base64.StdEncoding.EncodeToString([]byte("bar")),
+					},
+				},
+			}
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)).To(Succeed())
+			Expect(newFiles).To(ConsistOf(expectedNewFiles))
+		})
+
 	})
 })
