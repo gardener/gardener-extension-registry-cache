@@ -109,9 +109,8 @@ func (s *shoot) validateRegistryCredentials(ctx context.Context, config *registr
 	allErrs := field.ErrorList{}
 
 	for i, cache := range config.Caches {
-		cacheFldPath := fldPath.Child("caches").Index(i)
-
 		if cache.SecretReferenceName != nil {
+			cacheFldPath := fldPath.Child("caches").Index(i)
 			secretRefFldPath := cacheFldPath.Child("secretReferenceName")
 
 			ref := gardencorehelper.GetResourceByName(resources, *cache.SecretReferenceName)

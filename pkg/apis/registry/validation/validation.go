@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/helper"
@@ -188,39 +189,40 @@ func validatePositiveQuantity(value resource.Quantity, fldPath *field.Path) fiel
 	return allErrs
 }
 
-const (
-	usernameKey = "username"
-	passwordKey = "password"
-)
-
 // ValidateUpstreamRegistrySecret checks whether the given Secret is immutable and contains `data.username` and `data.password` fields.
 func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, secretReferenceName string) field.ErrorList {
-	var allErrors field.ErrorList
+	const (
+		usernameKey = "username"
+		passwordKey = "password"
+	)
 
-	secretKey := fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
+	var (
+		allErrors field.ErrorList
+		secretKey = fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
+	)
 
-	if secret.Immutable == nil || !*secret.Immutable {
-		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("referenced secret %q should be immutable", secretKey)))
+	if !ptr.Deref(secret.Immutable, false) {
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("the referenced secret %q should be immutable", secretKey)))
 	}
 	if len(secret.Data) != 2 {
-		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("referenced secret %q should have only two data entries", secretKey)))
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("the referenced secret %q should have only two data entries", secretKey)))
 	}
 	if username, ok := secret.Data[usernameKey]; ok {
 		if len(bytes.TrimSpace(username)) == 0 {
-			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("data entry %q in referenced secret %q is empty", usernameKey, secretKey)))
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("the data entry %q in the referenced secret %q is empty", usernameKey, secretKey)))
 		}
 		if bytes.ContainsFunc(username, unicode.IsSpace) {
-			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("data entry %q in referenced secret %q contains whitespace", usernameKey, secretKey)))
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("the data entry %q in the referenced secret %q contains whitespace", usernameKey, secretKey)))
 		}
 	} else {
-		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("missing %q data entry in referenced secret %q", usernameKey, secretKey)))
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("missing %q data entry in the referenced secret %q", usernameKey, secretKey)))
 	}
 	if password, ok := secret.Data[passwordKey]; ok {
 		if len(bytes.TrimSpace(password)) == 0 {
-			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("data entry %q in referenced secret %q is empty", passwordKey, secretKey)))
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("the data entry %q in the referenced secret %q is empty", passwordKey, secretKey)))
 		}
 	} else {
-		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("missing %q data entry in referenced secret %q", passwordKey, secretKey)))
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("missing %q data entry in the referenced secret %q", passwordKey, secretKey)))
 	}
 
 	// validate ServiceAccount json
@@ -273,12 +275,12 @@ func validateServiceAccountJSON(serviceAccountJSON []byte, fldPath *field.Path, 
 
 	serviceAccountMap := map[string]string{}
 	if err := json.Unmarshal(serviceAccountJSON, &serviceAccountMap); err != nil {
-		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("failed to unmarshal ServiceAccount json from password data entry in referenced secret %q: %v", secretKey, err)))
+		allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("failed to unmarshal ServiceAccount json from the password data entry in the referenced secret %q: %v", secretKey, err)))
 	}
 
 	for fld := range serviceAccountMap {
 		if !serviceAccountAllowedFields.Has(fld) {
-			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("forbidden ServiceAccount field %q present in password data entry in referenced secret %q", fld, secretKey)))
+			allErrors = append(allErrors, field.Invalid(fldPath, secretReferenceName, fmt.Sprintf("forbidden ServiceAccount field %q present in the password data entry in the referenced secret %q", fld, secretKey)))
 		}
 	}
 

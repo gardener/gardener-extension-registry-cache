@@ -26,8 +26,8 @@ var logger = log.Log.WithName("registry-cache-validator-webhook")
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Setting up webhook", "name", Name)
 
-	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 	apiReader := mgr.GetAPIReader()
+	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
 		Provider: constants.RegistryCacheExtensionType,

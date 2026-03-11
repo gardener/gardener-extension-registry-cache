@@ -7,16 +7,13 @@ package cache_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/pkg/apis/core"
-	mockclient "github.com/gardener/gardener/third_party/mock/controller-runtime/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"go.uber.org/mock/gomock"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -30,6 +27,7 @@ import (
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/cache"
 	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestRegistryCacheValidator(t *testing.T) {
@@ -44,9 +42,8 @@ var _ = Describe("Shoot validator", func() {
 			ctx  = context.Background()
 			size = resource.MustParse("20Gi")
 
+			decoder        runtime.Decoder
 			shootValidator extensionswebhook.Validator
-			ctrl           *gomock.Controller
-			apiReader      *mockclient.MockReader
 
 			shoot *core.Shoot
 		)
@@ -56,16 +53,14 @@ var _ = Describe("Shoot validator", func() {
 			Expect(registryapi.AddToScheme(scheme)).To(Succeed())
 			Expect(v1alpha3.AddToScheme(scheme)).To(Succeed())
 
-			decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
-			ctrl = gomock.NewController(GinkgoT())
-			apiReader = mockclient.NewMockReader(ctrl)
+			decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 
-			shootValidator = cache.NewShootValidator(apiReader, decoder)
+			shootValidator = cache.NewShootValidator(nil, decoder)
 
 			shoot = &core.Shoot{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "garden-tst",
-					Name:      "tst",
+					Name:      "crazy-botany",
+					Namespace: "garden-dev",
 				},
 				Spec: core.ShootSpec{
 					Extensions: []core.Extension{
@@ -264,16 +259,19 @@ var _ = Describe("Shoot validator", func() {
 
 		Context("Upstream credentials", func() {
 			var (
-				fakeErr error
-				secret  *corev1.Secret
+				fakeClient client.Client
+
+				secret *corev1.Secret
 			)
 
 			BeforeEach(func() {
-				fakeErr = fmt.Errorf("fake err")
+				fakeClient = fakeclient.NewClientBuilder().Build()
+				shootValidator = cache.NewShootValidator(fakeClient, decoder)
+
 				secret = &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "garden-tst",
-						Name:      "ro-docker-creds",
+						Name:      "docker-creds-v1",
+						Namespace: "garden-dev",
 					},
 					Immutable: ptr.To(true),
 					Data: map[string][]byte{
@@ -286,7 +284,7 @@ var _ = Describe("Shoot validator", func() {
 						Name: "docker-creds",
 						ResourceRef: autoscalingv1.CrossVersionObjectReference{
 							Kind: "Secret",
-							Name: "ro-docker-creds",
+							Name: "docker-creds-v1",
 						},
 					},
 				}
@@ -309,17 +307,12 @@ var _ = Describe("Shoot validator", func() {
 				}
 			})
 
-			It("should succeed for valid configuration", func() {
-				apiReader.EXPECT().Get(ctx, client.ObjectKey{Namespace: "garden-tst", Name: "ro-docker-creds"}, gomock.AssignableToTypeOf(&corev1.Secret{})).
-					DoAndReturn(func(_ context.Context, _ client.ObjectKey, obj *corev1.Secret, _ ...client.GetOption) error {
-						*obj = *secret
-						return nil
-					})
-
+			It("should succeed for valid secret reference", func() {
+				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 				Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
 			})
 
-			DescribeTable("reference to secret is incorrect it should fails",
+			DescribeTable("it should fail",
 				func(namedRefs []core.NamedResourceReference) {
 					shoot.Spec.Resources = namedRefs
 
@@ -337,41 +330,36 @@ var _ = Describe("Shoot validator", func() {
 						Name: "docker-creds",
 						ResourceRef: autoscalingv1.CrossVersionObjectReference{
 							Kind: "ConfigMap",
-							Name: "ro-docker-creds",
+							Name: "docker-creds-v1",
 						},
 					},
 				}),
 			)
 
 			It("should return err when failed to get secret ", func() {
-				apiReader.EXPECT().Get(ctx, client.ObjectKey{Namespace: "garden-tst", Name: "ro-docker-creds"}, gomock.AssignableToTypeOf(&corev1.Secret{})).Return(fakeErr)
-
-				Expect(shootValidator.Validate(ctx, shoot, nil)).To(MatchError(fakeErr))
+				Expect(shootValidator.Validate(ctx, shoot, nil)).To(MatchError(`failed to get secret garden-dev/docker-creds-v1 for secretReferenceName docker-creds: secrets "docker-creds-v1" not found`))
 			})
 
 			It("should return err when secret is invalid", func() {
 				secret.Immutable = ptr.To(false)
 				delete(secret.Data, "password")
-				apiReader.EXPECT().Get(ctx, client.ObjectKey{Namespace: "garden-tst", Name: "ro-docker-creds"}, gomock.AssignableToTypeOf(&corev1.Secret{})).
-					DoAndReturn(func(_ context.Context, _ client.ObjectKey, obj *corev1.Secret, _ ...client.GetOption) error {
-						*obj = *secret
-						return nil
-					})
+				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
+
 				Expect(shootValidator.Validate(ctx, shoot, nil)).To(ConsistOf(
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("spec.extensions[0].providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("referenced secret \"garden-tst/ro-docker-creds\" should be immutable"),
+						"Detail": ContainSubstring(`the referenced secret "garden-dev/docker-creds-v1" should be immutable`),
 					})),
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("spec.extensions[0].providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("referenced secret \"garden-tst/ro-docker-creds\" should have only two data entries"),
+						"Detail": ContainSubstring(`the referenced secret "garden-dev/docker-creds-v1" should have only two data entries`),
 					})),
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":   Equal(field.ErrorTypeInvalid),
 						"Field":  Equal("spec.extensions[0].providerConfig.caches[0].secretReferenceName"),
-						"Detail": ContainSubstring("missing \"password\" data entry in referenced secret \"garden-tst/ro-docker-creds\""),
+						"Detail": ContainSubstring(`missing "password" data entry in the referenced secret "garden-dev/docker-creds-v1"`),
 					})),
 				))
 			})

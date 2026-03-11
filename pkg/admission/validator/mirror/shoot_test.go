@@ -14,12 +14,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/admission/validator/mirror"
 	mirrorinstall "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/install"
@@ -39,6 +43,7 @@ var _ = Describe("Shoot validator", func() {
 		ctx  = context.Background()
 		size = resource.MustParse("20Gi")
 
+		decoder        runtime.Decoder
 		shootValidator extensionswebhook.Validator
 
 		shoot *core.Shoot
@@ -50,14 +55,14 @@ var _ = Describe("Shoot validator", func() {
 			mirrorinstall.Install(scheme)
 			registryinstall.Install(scheme)
 
-			decoder := serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
+			decoder = serializer.NewCodecFactory(scheme, serializer.EnableStrict).UniversalDecoder()
 
-			shootValidator = mirror.NewShootValidator(decoder)
+			shootValidator = mirror.NewShootValidator(nil, decoder)
 
 			shoot = &core.Shoot{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: "garden-tst",
-					Name:      "tst",
+					Name:      "crazy-botany",
+					Namespace: "garden-dev",
 				},
 				Spec: core.ShootSpec{
 					Extensions: []core.Extension{
@@ -215,6 +220,112 @@ var _ = Describe("Shoot validator", func() {
 
 		It("should succeed for valid Shoot", func() {
 			Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
+		})
+
+		Context("CA bundle secret reference", func() {
+			const caBundle = "-----BEGIN CERTIFICATE-----\nMIICRzCCAfGgAwIBAgIJALMb7ecMIk3MMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNV\nBAYTAkdCMQ8wDQYDVQQIDAZMb25kb24xDzANBgNVBAcMBkxvbmRvbjEYMBYGA1UE\nCgwPR2xvYmFsIFNlY3VyaXR5MRYwFAYDVQQLDA1JVCBEZXBhcnRtZW50MRswGQYD\nVQQDDBJ0ZXN0LWNlcnRpZmljYXRlLTAwIBcNMTcwNDI2MjMyNjUyWhgPMjExNzA0\nMDIyMzI2NTJaMH4xCzAJBgNVBAYTAkdCMQ8wDQYDVQQIDAZMb25kb24xDzANBgNV\nBAcMBkxvbmRvbjEYMBYGA1UECgwPR2xvYmFsIFNlY3VyaXR5MRYwFAYDVQQLDA1J\nVCBEZXBhcnRtZW50MRswGQYDVQQDDBJ0ZXN0LWNlcnRpZmljYXRlLTAwXDANBgkq\nhkiG9w0BAQEFAANLADBIAkEAtBMa7NWpv3BVlKTCPGO/LEsguKqWHBtKzweMY2CV\ntAL1rQm913huhxF9w+ai76KQ3MHK5IVnLJjYYA5MzP2H5QIDAQABo1AwTjAdBgNV\nHQ4EFgQU22iy8aWkNSxv0nBxFxerfsvnZVMwHwYDVR0jBBgwFoAU22iy8aWkNSxv\n0nBxFxerfsvnZVMwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAANBAEOefGbV\nNcHxklaW06w6OBYJPwpIhCVozC1qdxGX1dg8VkEKzjOzjgqVD30m59OFmSlBmHsl\nnkVA6wyOSDYBf3o=\n-----END CERTIFICATE-----"
+
+			var (
+				fakeClient client.Client
+
+				secret *corev1.Secret
+			)
+
+			BeforeEach(func() {
+				fakeClient = fakeclient.NewClientBuilder().Build()
+				shootValidator = mirror.NewShootValidator(fakeClient, decoder)
+
+				secret = &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ca-bundle-v1",
+						Namespace: "garden-dev",
+					},
+					Immutable: ptr.To(true),
+					Data: map[string][]byte{
+						"bundle.crt": []byte(caBundle),
+					},
+				}
+				shoot.Spec.Extensions[0].ProviderConfig = &runtime.RawExtension{
+					Raw: encode(&v1alpha1.MirrorConfig{
+						TypeMeta: metav1.TypeMeta{
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+							Kind:       "MirrorConfig",
+						},
+						Mirrors: []v1alpha1.MirrorConfiguration{
+							{
+								Upstream: "docker.io",
+								Hosts: []v1alpha1.MirrorHost{
+									{
+										Host:                        "https://private-mirror.internal",
+										CABundleSecretReferenceName: ptr.To("ca-bundle"),
+									},
+								},
+							},
+						},
+					}),
+				}
+				shoot.Spec.Resources = []core.NamedResourceReference{
+					{
+						Name: "ca-bundle",
+						ResourceRef: autoscalingv1.CrossVersionObjectReference{
+							Kind: "Secret",
+							Name: "ca-bundle-v1",
+						},
+					},
+				}
+			})
+
+			It("should succeed for valid secret reference", func() {
+				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
+				Expect(shootValidator.Validate(ctx, shoot, nil)).To(Succeed())
+			})
+
+			DescribeTable("it should fail",
+				func(namedRefs []core.NamedResourceReference) {
+					shoot.Spec.Resources = namedRefs
+
+					Expect(shootValidator.Validate(ctx, shoot, nil)).To(ConsistOf(
+						PointTo(MatchFields(IgnoreExtras, Fields{
+							"Type":   Equal(field.ErrorTypeInvalid),
+							"Field":  Equal("spec.extensions[0].providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+							"Detail": ContainSubstring("failed to find referenced resource with name ca-bundle and kind Secret"),
+						})),
+					))
+				},
+				Entry("when reference is missing", []core.NamedResourceReference{}),
+				Entry("when reference has wrong kind", []core.NamedResourceReference{
+					{
+						Name: "ca-bundle",
+						ResourceRef: autoscalingv1.CrossVersionObjectReference{
+							Kind: "ConfigMap",
+							Name: "ca-bundle-v1",
+						},
+					},
+				}),
+			)
+
+			It("should return err when failed to get secret ", func() {
+				Expect(shootValidator.Validate(ctx, shoot, nil)).To(MatchError(`failed to get secret garden-dev/ca-bundle-v1 for caBundleSecretReferenceName ca-bundle: secrets "ca-bundle-v1" not found`))
+			})
+
+			It("should return err when secret is invalid", func() {
+				secret.Immutable = ptr.To(false)
+				delete(secret.Data, "bundle.crt")
+				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
+
+				Expect(shootValidator.Validate(ctx, shoot, nil)).To(ConsistOf(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(field.ErrorTypeInvalid),
+						"Field":  Equal("spec.extensions[0].providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+						"Detail": ContainSubstring(`the referenced CA bundle secret "garden-dev/ca-bundle-v1" should be immutable`),
+					})),
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":   Equal(field.ErrorTypeInvalid),
+						"Field":  Equal("spec.extensions[0].providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+						"Detail": ContainSubstring(`missing "bundle.crt" data entry in the referenced CA bundle secret "garden-dev/ca-bundle-v1"`),
+					})),
+				))
+			})
 		})
 	})
 })
