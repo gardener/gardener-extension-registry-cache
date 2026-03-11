@@ -76,6 +76,11 @@ func (in *MirrorHost) DeepCopyInto(out *MirrorHost) {
 		*out = make([]MirrorHostCapability, len(*in))
 		copy(*out, *in)
 	}
+	if in.CABundleSecretReferenceName != nil {
+		in, out := &in.CABundleSecretReferenceName, &out.CABundleSecretReferenceName
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

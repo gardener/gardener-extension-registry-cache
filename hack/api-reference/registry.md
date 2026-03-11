@@ -231,7 +231,7 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>SecretReferenceName is the name of the reference for the Secret containing the upstream registry credentials.</p>
+<p>SecretReferenceName is the reference name for a Secret containing the upstream registry credentials.</p>
 </td>
 </tr>
 <tr>
