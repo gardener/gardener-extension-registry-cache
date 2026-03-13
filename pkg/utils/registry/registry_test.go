@@ -58,8 +58,8 @@ var _ = Describe("Registry utils", func() {
 	)
 
 	DescribeTable("#ComputeServiceName",
-		func(upsteam string, serviceNameSuffix *string, expected string) {
-			Expect(registryutils.ComputeServiceName(upsteam, serviceNameSuffix)).To(Equal(expected))
+		func(upstream string, serviceNameSuffix *string, expected string) {
+			Expect(registryutils.ComputeServiceName(upstream, serviceNameSuffix)).To(Equal(expected))
 		},
 		Entry("service name suffix is nil", "my-registry.io", nil, "registry-my-registry-io"),
 		Entry("service name suffix is set", "my-registry.io", ptr.To("static-name"), "registry-static-name"),
