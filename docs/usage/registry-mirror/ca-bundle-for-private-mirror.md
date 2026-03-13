@@ -16,7 +16,7 @@ A private mirror can use a self-signed certificate. In order to support such pri
    apiVersion: v1
    kind: Secret
    metadata:
-     name: ro-docker-secret-v1
+     name: private-mirror-ca-bundle-v1
      namespace: garden-dev
    type: Opaque
    immutable: true
