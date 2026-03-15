@@ -276,7 +276,6 @@ var _ = Describe("Ensurer", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: namespace},
 				Shoot:      &gardencorev1beta1.Shoot{},
 			}
-
 			extension = &extensionsv1alpha1.Extension{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "registry-cache",

@@ -21,10 +21,11 @@ const (
 
 var logger = log.Log.WithName("registry-mirror-validator-webhook")
 
-// New creates a new webhook that validates Shoot and CloudProfile resources.
+// New creates a new webhook that validates the Shoot resource.
 func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	logger.Info("Setting up webhook", "name", Name)
 
+	apiReader := mgr.GetAPIReader()
 	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
@@ -32,7 +33,7 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 		Name:     Name,
 		Path:     "/webhooks/registry-config",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
-			NewShootValidator(decoder): {{Obj: &core.Shoot{}}},
+			NewShootValidator(apiReader, decoder): {{Obj: &core.Shoot{}}},
 		},
 		Target: extensionswebhook.TargetSeed,
 		ObjectSelector: &metav1.LabelSelector{

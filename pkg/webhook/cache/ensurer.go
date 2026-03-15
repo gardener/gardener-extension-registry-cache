@@ -94,7 +94,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 	return nil
 }
 
-// EnsureAdditionalFiles ensures that the CA bundle is added to the <new> files.
+// EnsureAdditionalFiles ensures that the registry cache's CA bundle is added to the <new> files.
 func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx extensionscontextwebhook.GardenContext, newFiles, _ *[]extensionsv1alpha1.File) error {
 	cluster, err := gctx.GetCluster(ctx)
 	if err != nil {

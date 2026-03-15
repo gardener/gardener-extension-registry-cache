@@ -8,7 +8,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 
 	mirrorapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/validation"
@@ -231,6 +234,86 @@ var _ = Describe("Validation", func() {
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":  Equal(field.ErrorTypeDuplicate),
 					"Field": Equal("providerConfig.mirrors[1].upstream"),
+				})),
+			))
+		})
+	})
+
+	Describe("#ValidateMirrorHostCABundleSecret", func() {
+		const caBundle = "-----BEGIN CERTIFICATE-----\nMIICRzCCAfGgAwIBAgIJALMb7ecMIk3MMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNV\nBAYTAkdCMQ8wDQYDVQQIDAZMb25kb24xDzANBgNVBAcMBkxvbmRvbjEYMBYGA1UE\nCgwPR2xvYmFsIFNlY3VyaXR5MRYwFAYDVQQLDA1JVCBEZXBhcnRtZW50MRswGQYD\nVQQDDBJ0ZXN0LWNlcnRpZmljYXRlLTAwIBcNMTcwNDI2MjMyNjUyWhgPMjExNzA0\nMDIyMzI2NTJaMH4xCzAJBgNVBAYTAkdCMQ8wDQYDVQQIDAZMb25kb24xDzANBgNV\nBAcMBkxvbmRvbjEYMBYGA1UECgwPR2xvYmFsIFNlY3VyaXR5MRYwFAYDVQQLDA1J\nVCBEZXBhcnRtZW50MRswGQYDVQQDDBJ0ZXN0LWNlcnRpZmljYXRlLTAwXDANBgkq\nhkiG9w0BAQEFAANLADBIAkEAtBMa7NWpv3BVlKTCPGO/LEsguKqWHBtKzweMY2CV\ntAL1rQm913huhxF9w+ai76KQ3MHK5IVnLJjYYA5MzP2H5QIDAQABo1AwTjAdBgNV\nHQ4EFgQU22iy8aWkNSxv0nBxFxerfsvnZVMwHwYDVR0jBBgwFoAU22iy8aWkNSxv\n0nBxFxerfsvnZVMwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAANBAEOefGbV\nNcHxklaW06w6OBYJPwpIhCVozC1qdxGX1dg8VkEKzjOzjgqVD30m59OFmSlBmHsl\nnkVA6wyOSDYBf3o=\n-----END CERTIFICATE-----"
+
+		var secret *corev1.Secret
+
+		BeforeEach(func() {
+			fldPath = fldPath.Child("mirrors").Index(0).Child("hosts").Index(0).Child("caBundleSecretReferenceName")
+			secret = &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "foo",
+					Name:      "bar",
+				},
+				Immutable: ptr.To(true),
+				Data: map[string][]byte{
+					"bundle.crt": []byte(caBundle),
+				},
+			}
+		})
+
+		It("should allow valid CA bundle secret", func() {
+			Expect(ValidateMirrorHostCABundleSecret(secret, fldPath, "foo-secret-ref")).To(BeEmpty())
+		})
+
+		DescribeTable("should deny secrets which are not immutable",
+			func(isImmutable *bool) {
+				secret.Immutable = isImmutable
+
+				Expect(ValidateMirrorHostCABundleSecret(secret, fldPath, "foo-secret-ref")).To(ConsistOf(
+					PointTo(MatchFields(IgnoreExtras, Fields{
+						"Type":     Equal(field.ErrorTypeInvalid),
+						"Field":    Equal("providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+						"BadValue": Equal("foo-secret-ref"),
+						"Detail":   ContainSubstring(`the referenced CA bundle secret "foo/bar" should be immutable`),
+					})),
+				))
+			},
+			Entry("when immutable field is nil", nil),
+			Entry("when immutable field is false", ptr.To(false)),
+		)
+
+		It("should deny secret without 'bundle.crt' data entry", func() {
+			delete(secret.Data, "bundle.crt")
+
+			Expect(ValidateMirrorHostCABundleSecret(secret, fldPath, "foo-secret-ref")).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   Equal(`missing "bundle.crt" data entry in the referenced CA bundle secret "foo/bar"`),
+				})),
+			))
+		})
+
+		It("should only have a single data entry", func() {
+			secret.Data["foo"] = []byte("bar")
+
+			Expect(ValidateMirrorHostCABundleSecret(secret, fldPath, "foo-secret-ref")).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   ContainSubstring(`the referenced CA bundle secret "foo/bar" should only have a single data entry with key "bundle.crt"`),
+				})),
+			))
+		})
+
+		It("should deny secret with invalid CA bundle", func() {
+			secret.Data["bundle.crt"] = []byte("bar")
+
+			Expect(ValidateMirrorHostCABundleSecret(secret, fldPath, "foo-secret-ref")).To(ConsistOf(
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Type":     Equal(field.ErrorTypeInvalid),
+					"Field":    Equal("providerConfig.mirrors[0].hosts[0].caBundleSecretReferenceName"),
+					"BadValue": Equal("foo-secret-ref"),
+					"Detail":   ContainSubstring("the CA bundle is not a valid PEM-encoded certificate"),
 				})),
 			))
 		})

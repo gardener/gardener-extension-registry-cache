@@ -5,8 +5,13 @@
 package validation
 
 import (
+	"fmt"
+
+	"github.com/gardener/gardener/pkg/utils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	registryvalidation "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
@@ -84,6 +89,35 @@ func validateCapabilities(fldPath *field.Path, capabilities []mirror.MirrorHostC
 		} else {
 			capabilitiesFound.Insert(capabilityAsString)
 		}
+	}
+
+	return allErrs
+}
+
+// ValidateMirrorHostCABundleSecret checks whether the given Secret is immutable and contains a valid PEM-encoded certificate.
+func ValidateMirrorHostCABundleSecret(secret *corev1.Secret, fldPath *field.Path, caBundleSecretReferenceName string) field.ErrorList {
+	const caBundleKey = "bundle.crt"
+
+	var (
+		allErrs   field.ErrorList
+		secretKey = fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
+	)
+
+	if !ptr.Deref(secret.Immutable, false) {
+		allErrs = append(allErrs, field.Invalid(fldPath, caBundleSecretReferenceName, fmt.Sprintf("the referenced CA bundle secret %q should be immutable", secretKey)))
+	}
+
+	caBundle, ok := secret.Data[caBundleKey]
+	if !ok {
+		allErrs = append(allErrs, field.Invalid(fldPath, caBundleSecretReferenceName, fmt.Sprintf("missing %q data entry in the referenced CA bundle secret %q", caBundleKey, secretKey)))
+	} else {
+		if _, err := utils.DecodeCertificate(caBundle); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, caBundleSecretReferenceName, "the CA bundle is not a valid PEM-encoded certificate"))
+		}
+	}
+
+	if len(secret.Data) > 1 {
+		allErrs = append(allErrs, field.Invalid(fldPath, caBundleSecretReferenceName, fmt.Sprintf("the referenced CA bundle secret %q should only have a single data entry with key %q", secretKey, caBundleKey)))
 	}
 
 	return allErrs

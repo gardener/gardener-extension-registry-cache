@@ -9,9 +9,9 @@ In Kubernetes, to pull images from private container image registries you either
 The registry-cache extension is using the [Distribution project](https://github.com/distribution/distribution) as pull through cache implementation. The Distribution project does not use the provided credentials from the CRI implementation while fetching an image from the upstream. Hence, the above-described scenarios such as configuring image pull Secret for a Pod or configuring kubelet credential provider plugins don't work out of the box with the pull through cache provided by the registry-cache extension.
 Instead, the Distribution project supports configuring only one set of credentials for a given pull through cache instance (for a given upstream).
 
-This document describe how to supply credentials for the private upstream registry in order to pull private image with the registry cache.
+This document describes how to supply credentials for the private upstream registry in order to pull private image with the registry cache.
 
-## How to configure the registry cache to use upstream registry credentials?
+## Procedure
 
 1. Create an immutable Secret with the upstream registry credentials in the Garden cluster:
 

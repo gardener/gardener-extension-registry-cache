@@ -37,6 +37,11 @@ type MirrorHost struct {
 	// Defaults to ["pull"].
 	// +optional
 	Capabilities []MirrorHostCapability `json:"capabilities"`
+	// CABundleSecretReferenceName is the reference name for a Secret containing a PEM-encoded certificate authority bundle.
+	// The CA bundle is used to verify the TLS certificate of the mirror host.
+	// The referenced secret must be immutable and must have a data key `bundle.crt`.
+	// +optional
+	CABundleSecretReferenceName *string `json:"caBundleSecretReferenceName"`
 }
 
 // MirrorHostCapability represents a mirror host capability.

@@ -35,6 +35,10 @@ type MirrorHost struct {
 	// This also represents the set of operations for which the mirror host may be trusted to perform.
 	// The supported values are "pull" and "resolve".
 	Capabilities []MirrorHostCapability
+	// CABundleSecretReferenceName is the reference name for a Secret containing a PEM-encoded certificate authority bundle.
+	// The CA bundle is used to verify the TLS certificate of the mirror host.
+	// The referenced secret must be immutable and must have a data key `bundle.crt`.
+	CABundleSecretReferenceName *string
 }
 
 // MirrorHostCapability represents a mirror host capability.

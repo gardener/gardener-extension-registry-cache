@@ -465,11 +465,11 @@ var _ = Describe("Validation", func() {
 					Namespace: "foo",
 					Name:      "bar",
 				},
+				Immutable: ptr.To(true),
 				Data: map[string][]byte{
 					"username": []byte("john"),
 					"password": []byte("swordfish"),
 				},
-				Immutable: ptr.To(true),
 			}
 		})
 
@@ -477,7 +477,7 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateUpstreamRegistrySecret(secret, fldPath, "foo-secret-ref")).To(BeEmpty())
 		})
 
-		DescribeTable("should deny non immutable secrets",
+		DescribeTable("should deny secrets which are not immutable",
 			func(isImmutable *bool) {
 				secret.Immutable = isImmutable
 
@@ -486,7 +486,7 @@ var _ = Describe("Validation", func() {
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 						"BadValue": Equal("foo-secret-ref"),
-						"Detail":   ContainSubstring(`referenced secret "foo/bar" should be immutable`),
+						"Detail":   ContainSubstring(`the referenced secret "foo/bar" should be immutable`),
 					})),
 				))
 			},
@@ -503,7 +503,7 @@ var _ = Describe("Validation", func() {
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 						"BadValue": Equal("foo-secret-ref"),
-						"Detail":   ContainSubstring(`referenced secret "foo/bar" should have only two data entries`),
+						"Detail":   ContainSubstring(`the referenced secret "foo/bar" should have only two data entries`),
 					})),
 				))
 			},
@@ -523,7 +523,7 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 					"BadValue": Equal("foo-secret-ref"),
-					"Detail":   Equal(`missing "username" data entry in referenced secret "foo/bar"`),
+					"Detail":   Equal(`missing "username" data entry in the referenced secret "foo/bar"`),
 				})),
 			))
 		})
@@ -536,7 +536,7 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 					"BadValue": Equal("foo-secret-ref"),
-					"Detail":   Equal(`data entry "username" in referenced secret "foo/bar" is empty`),
+					"Detail":   Equal(`the data entry "username" in the referenced secret "foo/bar" is empty`),
 				})),
 			))
 		})
@@ -549,7 +549,7 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 					"BadValue": Equal("foo-secret-ref"),
-					"Detail":   Equal(`data entry "username" in referenced secret "foo/bar" contains whitespace`),
+					"Detail":   Equal(`the data entry "username" in the referenced secret "foo/bar" contains whitespace`),
 				})),
 			))
 		})
@@ -562,7 +562,7 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 					"BadValue": Equal("foo-secret-ref"),
-					"Detail":   Equal(`missing "password" data entry in referenced secret "foo/bar"`),
+					"Detail":   Equal(`missing "password" data entry in the referenced secret "foo/bar"`),
 				})),
 			))
 		})
@@ -575,7 +575,7 @@ var _ = Describe("Validation", func() {
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 					"BadValue": Equal("foo-secret-ref"),
-					"Detail":   Equal(`data entry "password" in referenced secret "foo/bar" is empty`),
+					"Detail":   Equal(`the data entry "password" in the referenced secret "foo/bar" is empty`),
 				})),
 			))
 		})
@@ -624,7 +624,7 @@ var _ = Describe("Validation", func() {
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 						"BadValue": Equal("foo-secret-ref"),
-						"Detail":   Equal(`failed to unmarshal ServiceAccount json from password data entry in referenced secret "foo/bar": invalid character '\n' in string literal`),
+						"Detail":   Equal(`failed to unmarshal ServiceAccount json from the password data entry in the referenced secret "foo/bar": invalid character '\n' in string literal`),
 					})),
 				))
 			})
@@ -643,13 +643,13 @@ var _ = Describe("Validation", func() {
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 						"BadValue": Equal("foo-secret-ref"),
-						"Detail":   Equal(`forbidden ServiceAccount field "auths" present in password data entry in referenced secret "foo/bar"`),
+						"Detail":   Equal(`forbidden ServiceAccount field "auths" present in the password data entry in the referenced secret "foo/bar"`),
 					})),
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 						"BadValue": Equal("foo-secret-ref"),
-						"Detail":   Equal(`forbidden ServiceAccount field "baz" present in password data entry in referenced secret "foo/bar"`),
+						"Detail":   Equal(`forbidden ServiceAccount field "baz" present in the password data entry in the referenced secret "foo/bar"`),
 					})),
 				))
 			})

@@ -127,6 +127,20 @@ The supported values are &ldquo;pull&rdquo; and &ldquo;resolve&rdquo;.
 Defaults to [&ldquo;pull&rdquo;].</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>caBundleSecretReferenceName</code></br>
+<em>
+string
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>CABundleSecretReferenceName is the reference name for a Secret containing a PEM-encoded certificate authority bundle.
+The CA bundle is used to verify the TLS certificate of the mirror host.
+The referenced secret must be immutable and must have a data key <code>bundle.crt</code>.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorHostCapability">MirrorHostCapability

@@ -42,8 +42,6 @@ linters:
           alias: fakeclient
         - pkg: sigs.k8s.io/controller-runtime/pkg/log
           alias: logf
-        - pkg: go.uber.org/mock/gomock
-          alias: gmock
         # Gardener extension package
         - pkg: github.com/gardener/gardener/extensions/.*/(\w+)/mock$
           alias: extensionsmock${1}
