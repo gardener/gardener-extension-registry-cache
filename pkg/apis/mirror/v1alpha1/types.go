@@ -42,6 +42,11 @@ type MirrorHost struct {
 	// The referenced secret must be immutable and must have a data key `bundle.crt`.
 	// +optional
 	CABundleSecretReferenceName *string `json:"caBundleSecretReferenceName"`
+	// OverridePath represents the `override_path` field in the [hosts.toml](https://github.com/containerd/containerd/blob/main/docs/hosts.md#override_path-field)
+	// file for containerd hosts configuration.
+	// Should be set to `true` only for non-compliant OCI registries which are missing the `/v2` prefix, and the API root endpoint is defined in the host URL path.
+	// +optional
+	OverridePath *bool `json:"overridePath,omitempty"`
 }
 
 // MirrorHostCapability represents a mirror host capability.

@@ -103,6 +103,7 @@ func autoConvert_v1alpha1_MirrorHost_To_mirror_MirrorHost(in *MirrorHost, out *m
 	out.Host = in.Host
 	out.Capabilities = *(*[]mirror.MirrorHostCapability)(unsafe.Pointer(&in.Capabilities))
 	out.CABundleSecretReferenceName = (*string)(unsafe.Pointer(in.CABundleSecretReferenceName))
+	out.OverridePath = (*bool)(unsafe.Pointer(in.OverridePath))
 	return nil
 }
 
@@ -115,6 +116,7 @@ func autoConvert_mirror_MirrorHost_To_v1alpha1_MirrorHost(in *mirror.MirrorHost,
 	out.Host = in.Host
 	out.Capabilities = *(*[]MirrorHostCapability)(unsafe.Pointer(&in.Capabilities))
 	out.CABundleSecretReferenceName = (*string)(unsafe.Pointer(in.CABundleSecretReferenceName))
+	out.OverridePath = (*bool)(unsafe.Pointer(in.OverridePath))
 	return nil
 }
 
