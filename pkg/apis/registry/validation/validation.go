@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	neturl "net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -101,7 +102,7 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 
 	allErrs = append(allErrs, ValidateUpstream(fldPath.Child("upstream"), cache.Upstream)...)
 	if cache.RemoteURL != nil {
-		allErrs = append(allErrs, ValidateURL(fldPath.Child("remoteURL"), *cache.RemoteURL)...)
+		allErrs = append(allErrs, ValidateURL(fldPath.Child("remoteURL"), *cache.RemoteURL, false)...)
 	}
 	if cache.Volume != nil {
 		if cache.Volume.Size != nil {
@@ -120,10 +121,10 @@ func validateRegistryCache(cache registry.RegistryCache, fldPath *field.Path) fi
 	}
 	if cache.Proxy != nil {
 		if cache.Proxy.HTTPProxy != nil {
-			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpProxy"), *cache.Proxy.HTTPProxy)...)
+			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpProxy"), *cache.Proxy.HTTPProxy, false)...)
 		}
 		if cache.Proxy.HTTPSProxy != nil {
-			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpsProxy"), *cache.Proxy.HTTPSProxy)...)
+			allErrs = append(allErrs, ValidateURL(fldPath.Child("proxy").Child("httpsProxy"), *cache.Proxy.HTTPSProxy, false)...)
 		}
 	}
 	if cache.ServiceNameSuffix != nil {
@@ -235,22 +236,33 @@ func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, 
 	return allErrors
 }
 
-// ValidateURL validates that URL format is `<scheme><host>[:<port>]` where `<scheme>` is 'https://' or 'http://',
-// `<host>` is valid DNS subdomain (RFC 1123) and optional `<port>` is in range [1,65535].
-func ValidateURL(fldPath *field.Path, url string) field.ErrorList {
+// ValidateURL validates that URL format is `<scheme><host>[:<port>][/<path>]` where `<scheme>` is 'https://' or 'http://',
+// `<host>` is valid DNS subdomain (RFC 1123), optional `<port>` is in range [1,65535] and optional `<path>` is allowed if `allowPath` is true.
+func ValidateURL(fldPath *field.Path, url string, allowPath bool) field.ErrorList {
 	var allErrs field.ErrorList
-	var scheme string
-	host := url
-	index := strings.Index(url, "://")
-	if index != -1 {
-		scheme = url[:index]
-		host = url[index+len("://"):]
+	u, err := neturl.Parse(url)
+	if err != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, fmt.Sprintf("failed to parse url: %v", err)))
+		return allErrs
 	}
-	if scheme != "https" && scheme != "http" {
+	if u.Scheme != "http" && u.Scheme != "https" {
 		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must start with 'http://' or 'https://' scheme"))
+		return allErrs
 	}
-	for _, msg := range validateHostPort(host) {
+	for _, msg := range validateHostPort(u.Host) {
 		allErrs = append(allErrs, field.Invalid(fldPath, url, msg))
+	}
+	if !allowPath && u.Path != "" && u.Path != "/" {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain a path"))
+	}
+	if u.User != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain user info"))
+	}
+	if u.RawQuery != "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain query parameters"))
+	}
+	if u.Fragment != "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain a fragment"))
 	}
 
 	return allErrs

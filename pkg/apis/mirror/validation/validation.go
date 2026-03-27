@@ -59,7 +59,7 @@ func validateMirrorConfiguration(mirror mirror.MirrorConfiguration, fldPath *fie
 	for i, host := range mirror.Hosts {
 		hostFldPath := fldPath.Child("hosts").Index(i)
 
-		allErrs = append(allErrs, registryvalidation.ValidateURL(hostFldPath.Child("host"), host.Host)...)
+		allErrs = append(allErrs, registryvalidation.ValidateURL(hostFldPath.Child("host"), host.Host, true)...)
 
 		if hosts.Has(host.Host) {
 			allErrs = append(allErrs, field.Duplicate(hostFldPath.Child("host"), host.Host))

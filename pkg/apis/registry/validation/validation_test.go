@@ -698,28 +698,38 @@ var _ = Describe("Validation", func() {
 		})
 
 		DescribeTable("should allow valid urls",
-			func(upstream string) {
-				Expect(ValidateURL(fldPath, upstream)).To(BeEmpty())
+			func(upstream string, allowPath bool) {
+				Expect(ValidateURL(fldPath, upstream, allowPath)).To(BeEmpty())
 			},
-			Entry("when url consists of valid scheme and host", "https://example.com"),
-			Entry("when url consists of valid scheme, host and port", "http://example.com:5000"),
+			Entry("when url consists of valid scheme and host", "https://example.com", false),
+			Entry("when url consists of valid scheme, host and port", "http://example.com:5000", false),
+			Entry("when url consists of valid scheme, host and path", "https://example.com/foo/bar/", true),
+			Entry("when url consists of valid scheme, host, port and path", "http://192.168.1.2:5000/v2/quay", true),
 		)
 
 		DescribeTable("should deny invalid urls",
-			func(upstream string) {
-				Expect(ValidateURL(fldPath, upstream)).To(ConsistOf(
+			func(upstream string, allowPath bool) {
+				Expect(ValidateURL(fldPath, upstream, allowPath)).To(ConsistOf(
 					PointTo(MatchFields(IgnoreExtras, Fields{
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"BadValue": Equal(upstream),
 					})),
 				))
 			},
-			Entry("when scheme is missing", "example.com"),
-			Entry("when scheme is not supported", "ftp://example.com"),
-			Entry("when port is invalid", "https://example.com:80443"),
-			Entry("when path is set", "https://example.com/myrepository"),
-			Entry("when query param is set", "https://example.com?foo=bar"),
-			Entry("when user is set", "https://foo:bar@example.com/myrepository"),
+			Entry("when scheme is missing", "example.com", false),
+			Entry("when scheme is not supported", "ftp://example.com", false),
+			Entry("when port is invalid", "https://example.com:80443", false),
+			Entry("when path is set", "https://example.com/myrepository", false),
+			Entry("when query param is set", "https://example.com?foo=bar", false),
+			Entry("when user is set", "https://foo:bar@example.com", false),
+			Entry("when fragment is set", "https://example.com#fragment", false),
+
+			Entry("when scheme is missing", "example.com", true),
+			Entry("when scheme is not supported", "ftp://example.com", true),
+			Entry("when port is invalid", "https://example.com:80443", true),
+			Entry("when query param is set", "https://example.com?foo=bar", true),
+			Entry("when user is set", "https://foo:bar@example.com", true),
+			Entry("when fragment is set", "https://example.com#fragment", true),
 		)
 	})
 })
