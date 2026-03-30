@@ -52,7 +52,7 @@ spec:
           caBundleSecretReferenceName: private-mirror-ca-bundle
       - upstream: registry.k8s.io
         hosts:
-        - "https://harbor.example.com/v2/k8s"
+        - host: "https://harbor.example.com/v2/k8s"
           capabilities: ["pull", "resolve"]
           overridePath: true
   # ...
