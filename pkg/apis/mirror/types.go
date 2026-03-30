@@ -42,6 +42,7 @@ type MirrorHost struct {
 	// OverridePath represents the `override_path` field in the [hosts.toml](https://github.com/containerd/containerd/blob/main/docs/hosts.md#override_path-field)
 	// file for containerd hosts configuration.
 	// Should be set to `true` only for non-compliant OCI registries which are missing the `/v2` prefix, and the API root endpoint is defined in the host URL path.
+	// If not set, the `override_path` field defaults to `false` in containerd hosts configuration.
 	OverridePath *bool
 }
 
