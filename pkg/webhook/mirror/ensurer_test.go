@@ -259,6 +259,50 @@ var _ = Describe("Ensurer", func() {
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
 			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
+
+		It("should propagate 'overridePath = true' in the containerd registry configs", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = &runtime.RawExtension{
+				Object: &v1alpha1.MirrorConfig{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						Kind:       "MirrorConfig",
+					},
+					Mirrors: []v1alpha1.MirrorConfiguration{
+						{
+							Upstream: "quay.io",
+							Hosts: []v1alpha1.MirrorHost{
+								{
+									Host:         "https://non-compliant-mirror.registry/v2/quay",
+									Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
+									OverridePath: ptr.To(true),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
+			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
+				Upstream: "quay.io",
+				Server:   ptr.To("https://quay.io"),
+				Hosts: []extensionsv1alpha1.RegistryHost{
+					{
+						URL:          "https://non-compliant-mirror.registry/v2/quay",
+						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
+						OverridePath: ptr.To(true),
+					},
+				},
+			})
+
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
+		})
 	})
 
 	Describe("#EnsureAdditionalFiles", func() {

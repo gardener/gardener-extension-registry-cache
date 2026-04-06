@@ -141,6 +141,21 @@ The CA bundle is used to verify the TLS certificate of the mirror host.
 The referenced secret must be immutable and must have a data key <code>bundle.crt</code>.</p>
 </td>
 </tr>
+<tr>
+<td>
+<code>overridePath</code></br>
+<em>
+bool
+</em>
+</td>
+<td>
+<em>(Optional)</em>
+<p>OverridePath represents the <code>override_path</code> field in the hosts.toml file for containerd registry configuration.
+See <a href="https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field">https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field</a>
+Should be set to <code>true</code> only for non-compliant OCI registries which are missing the <code>/v2</code> prefix, and the API root endpoint is defined in the host URL path.
+If not set, the <code>override_path</code> field defaults to <code>false</code> in containerd registry configuration.</p>
+</td>
+</tr>
 </tbody>
 </table>
 <h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorHostCapability">MirrorHostCapability

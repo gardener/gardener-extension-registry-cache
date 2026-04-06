@@ -87,6 +87,9 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 			if host.CABundleSecretReferenceName != nil {
 				registryHost.CACerts = []string{caBundlePath(mirror.Upstream, host.Host)}
 			}
+			if host.OverridePath != nil {
+				registryHost.OverridePath = host.OverridePath
+			}
 
 			cfg.Hosts = append(cfg.Hosts, registryHost)
 		}

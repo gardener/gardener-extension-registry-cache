@@ -39,6 +39,11 @@ type MirrorHost struct {
 	// The CA bundle is used to verify the TLS certificate of the mirror host.
 	// The referenced secret must be immutable and must have a data key `bundle.crt`.
 	CABundleSecretReferenceName *string
+	// OverridePath represents the `override_path` field in the hosts.toml file for containerd registry configuration.
+	// See https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field
+	// Should be set to `true` only for non-compliant OCI registries which are missing the `/v2` prefix, and the API root endpoint is defined in the host URL path.
+	// If not set, the `override_path` field defaults to `false` in containerd registry configuration.
+	OverridePath *bool
 }
 
 // MirrorHostCapability represents a mirror host capability.

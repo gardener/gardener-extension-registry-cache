@@ -45,6 +45,11 @@ var _ = Describe("Validation", func() {
 			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(BeEmpty())
 		})
 
+		It("should allow valid configuration that has a path in host URL", func() {
+			mirrorConfig.Mirrors[0].Hosts[0].Host = "https://mirror.gcr.io/v2/quay"
+			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(BeEmpty())
+		})
+
 		It("should deny configuration without a mirror", func() {
 			mirrorConfig = &mirrorapi.MirrorConfig{Mirrors: nil}
 			Expect(ValidateMirrorConfig(mirrorConfig, fldPath)).To(ConsistOf(

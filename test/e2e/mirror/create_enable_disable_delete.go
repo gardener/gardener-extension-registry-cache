@@ -11,6 +11,7 @@ import (
 	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
@@ -46,6 +47,7 @@ var _ = Describe("Registry Mirror Extension Tests", Label("mirror"), func() {
 					Hosts: []v1alpha1.MirrorHost{
 						{Host: "https://public-mirror.example.com"},
 						{Host: "https://private-mirror.internal", Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve}},
+						{Host: "https://harbor.example.com/v2/k8s", OverridePath: ptr.To(true)},
 					},
 				},
 			})
@@ -100,6 +102,10 @@ server = "https://public.ecr.aws"
 
 [host."https://private-mirror.internal"]
   capabilities = ["pull","resolve"]
+
+[host."https://harbor.example.com/v2/k8s"]
+  capabilities = ["pull"]
+  override_path = true
 
 `
 )

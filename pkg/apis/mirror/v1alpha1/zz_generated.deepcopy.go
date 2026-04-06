@@ -81,6 +81,11 @@ func (in *MirrorHost) DeepCopyInto(out *MirrorHost) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.OverridePath != nil {
+		in, out := &in.OverridePath, &out.OverridePath
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
