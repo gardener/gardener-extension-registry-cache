@@ -238,31 +238,31 @@ func ValidateUpstreamRegistrySecret(secret *corev1.Secret, fldPath *field.Path, 
 
 // ValidateURL validates that URL format is `<scheme><host>[:<port>][/<path>]` where `<scheme>` is 'https://' or 'http://',
 // `<host>` is valid DNS subdomain (RFC 1123), optional `<port>` is in range [1,65535] and optional `<path>` is allowed if `allowPath` is true.
-func ValidateURL(fldPath *field.Path, url string, allowPath bool) field.ErrorList {
+func ValidateURL(fldPath *field.Path, rawURL string, allowPath bool) field.ErrorList {
 	var allErrs field.ErrorList
-	u, err := neturl.Parse(url)
+	url, err := neturl.Parse(rawURL)
 	if err != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, fmt.Sprintf("failed to parse url: %v", err)))
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, fmt.Sprintf("failed to parse url: %v", err)))
 		return allErrs
 	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must start with 'http://' or 'https://' scheme"))
+	if url.Scheme != "http" && url.Scheme != "https" {
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must start with 'http://' or 'https://' scheme"))
 		return allErrs
 	}
-	for _, msg := range validateHostPort(u.Host) {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, msg))
+	for _, msg := range validateHostPort(url.Host) {
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, msg))
 	}
-	if !allowPath && u.Path != "" && u.Path != "/" {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain a path"))
+	if !allowPath && url.Path != "" && url.Path != "/" {
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must not contain a path"))
 	}
-	if u.User != nil {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain user info"))
+	if url.User != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must not contain user info"))
 	}
-	if u.RawQuery != "" {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain query parameters"))
+	if url.RawQuery != "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must not contain query parameters"))
 	}
-	if u.Fragment != "" {
-		allErrs = append(allErrs, field.Invalid(fldPath, url, "url must not contain a fragment"))
+	if url.Fragment != "" {
+		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must not contain a fragment"))
 	}
 
 	return allErrs

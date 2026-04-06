@@ -150,10 +150,10 @@ bool
 </td>
 <td>
 <em>(Optional)</em>
-<p>OverridePath represents the <code>override_path</code> field in the <a href="https://github.com/containerd/containerd/blob/main/docs/hosts.md#override_path-field">hosts.toml</a>
-file for containerd hosts configuration.
+<p>OverridePath represents the <code>override_path</code> field in the hosts.toml file for containerd registry configuration.
+See <a href="https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field">https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field</a>
 Should be set to <code>true</code> only for non-compliant OCI registries which are missing the <code>/v2</code> prefix, and the API root endpoint is defined in the host URL path.
-If not set, the <code>override_path</code> field defaults to <code>false</code> in containerd hosts configuration.</p>
+If not set, the <code>override_path</code> field defaults to <code>false</code> in containerd registry configuration.</p>
 </td>
 </tr>
 </tbody>
