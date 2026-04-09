@@ -222,7 +222,7 @@ var _ = Describe("RegistryCaches", func() {
 			}
 
 			configYAMLFor = func(upstreamURL string, ttl string, username, password string, tlsEnabled bool) string {
-				config := `# Maintain this file with the default config file (/etc/distribution/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.0.0).
+				config := `# Maintain this file with the default config file (/etc/distribution/config.yml) from the registry image (europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.1.0).
 version: 0.1
 log:
   fields:
