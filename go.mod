@@ -4,9 +4,9 @@ go 1.25.6
 
 require (
 	github.com/elastic/crd-ref-docs v0.3.0
-	github.com/gardener/gardener v1.140.0
-	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260410141430-041161966da3
-	github.com/gardener/gardener/pkg/apis v1.140.0
+	github.com/gardener/gardener v1.140.1
+	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260414163424-ff4a38f837d4
+	github.com/gardener/gardener/pkg/apis v1.140.1
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
@@ -72,7 +72,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/gardener/cert-management v0.19.0 // indirect
-	github.com/gardener/etcd-druid/api v0.36.1 // indirect
+	github.com/gardener/etcd-druid/api v0.36.2 // indirect
 	github.com/gardener/machine-controller-manager v0.61.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
