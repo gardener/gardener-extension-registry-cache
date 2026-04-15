@@ -7,7 +7,7 @@
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:openapi-gen=true
 
-//go:generate gen-crd-api-reference-docs -api-dir github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3 -config ../../../../hack/api-reference/registry.json -template-dir "$GARDENER_HACK_DIR/api-reference/template" -out-file ../../../../hack/api-reference/registry.md
+//go:generate crd-ref-docs --source-path=. --config=../../../../hack/api-reference/registry.yaml --renderer=markdown --templates-dir=$GARDENER_HACK_DIR/api-reference/template --log-level=ERROR --output-path=../../../../hack/api-reference/registry.md
 
 // Package v1alpha3 is a version of the API.
 // +groupName=registry.extensions.gardener.cloud
