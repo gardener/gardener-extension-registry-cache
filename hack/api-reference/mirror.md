@@ -4,17 +4,20 @@
 <a href="#mirror.extensions.gardener.cloud%2fv1alpha1">mirror.extensions.gardener.cloud/v1alpha1</a>
 </li>
 </ul>
+
 <h2 id="mirror.extensions.gardener.cloud/v1alpha1">mirror.extensions.gardener.cloud/v1alpha1</h2>
 <p>
-<p>Package v1alpha1 is a version of the API.</p>
+
 </p>
-Resource Types:
-<ul></ul>
-<h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorConfig">MirrorConfig
+
+<h3 id="mirrorconfig">MirrorConfig
 </h3>
+
+
 <p>
-<p>MirrorConfig contains information about registry mirrors to configure.</p>
+MirrorConfig contains information about registry mirrors to configure.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -23,30 +26,35 @@ Resource Types:
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>mirrors</code></br>
 <em>
-<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorConfiguration">
-[]MirrorConfiguration
-</a>
+<a href="#mirrorconfiguration">MirrorConfiguration</a> array
 </em>
 </td>
 <td>
 <p>Mirrors is a slice of registry mirrors to configure.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorConfiguration">MirrorConfiguration
+
+
+<h3 id="mirrorconfiguration">MirrorConfiguration
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorConfig">MirrorConfig</a>)
+(<em>Appears on:</em><a href="#mirrorconfig">MirrorConfig</a>)
 </p>
+
 <p>
-<p>MirrorConfiguration represents a registry mirror.</p>
+MirrorConfiguration represents a registry mirror.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -55,6 +63,7 @@ Resource Types:
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>upstream</code></br>
@@ -63,34 +72,37 @@ string
 </em>
 </td>
 <td>
-<p>Upstream is the remote registry host to mirror.
-The value must be a valid DNS subdomain (RFC 1123) and optionally a port.</p>
+<p>Upstream is the remote registry host to mirror.<br />The value must be a valid DNS subdomain (RFC 1123) and optionally a port.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>hosts</code></br>
 <em>
-<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorHost">
-[]MirrorHost
-</a>
+<a href="#mirrorhost">MirrorHost</a> array
 </em>
 </td>
 <td>
 <p>Hosts are the mirror hosts to be used for the upstream.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorHost">MirrorHost
+
+
+<h3 id="mirrorhost">MirrorHost
 </h3>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorConfiguration">MirrorConfiguration</a>)
+(<em>Appears on:</em><a href="#mirrorconfiguration">MirrorConfiguration</a>)
 </p>
+
 <p>
-<p>MirrorHost represents a mirror host.</p>
+MirrorHost represents a mirror host.
 </p>
+
 <table>
 <thead>
 <tr>
@@ -99,6 +111,7 @@ The value must be a valid DNS subdomain (RFC 1123) and optionally a port.</p>
 </tr>
 </thead>
 <tbody>
+
 <tr>
 <td>
 <code>host</code></br>
@@ -114,17 +127,12 @@ string
 <td>
 <code>capabilities</code></br>
 <em>
-<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorHostCapability">
-[]MirrorHostCapability
-</a>
+<a href="#mirrorhostcapability">MirrorHostCapability</a> array
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>Capabilities are the operations a host is capable of performing.
-This also represents the set of operations for which the mirror host may be trusted to perform.
-The supported values are &ldquo;pull&rdquo; and &ldquo;resolve&rdquo;.
-Defaults to [&ldquo;pull&rdquo;].</p>
+<p>Capabilities are the operations a host is capable of performing.<br />This also represents the set of operations for which the mirror host may be trusted to perform.<br />The supported values are "pull" and "resolve".<br />Defaults to ["pull"].</p>
 </td>
 </tr>
 <tr>
@@ -136,38 +144,37 @@ string
 </td>
 <td>
 <em>(Optional)</em>
-<p>CABundleSecretReferenceName is the reference name for a Secret containing a PEM-encoded certificate authority bundle.
-The CA bundle is used to verify the TLS certificate of the mirror host.
-The referenced secret must be immutable and must have a data key <code>bundle.crt</code>.</p>
+<p>CABundleSecretReferenceName is the reference name for a Secret containing a PEM-encoded certificate authority bundle.<br />The CA bundle is used to verify the TLS certificate of the mirror host.<br />The referenced secret must be immutable and must have a data key `bundle.crt`.</p>
 </td>
 </tr>
 <tr>
 <td>
 <code>overridePath</code></br>
 <em>
-bool
+boolean
 </em>
 </td>
 <td>
 <em>(Optional)</em>
-<p>OverridePath represents the <code>override_path</code> field in the hosts.toml file for containerd registry configuration.
-See <a href="https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field">https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field</a>
-Should be set to <code>true</code> only for non-compliant OCI registries which are missing the <code>/v2</code> prefix, and the API root endpoint is defined in the host URL path.
-If not set, the <code>override_path</code> field defaults to <code>false</code> in containerd registry configuration.</p>
+<p>OverridePath represents the `override_path` field in the hosts.toml file for containerd registry configuration.<br />See https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field<br />Should be set to `true` only for non-compliant OCI registries which are missing the `/v2` prefix, and the API root endpoint is defined in the host URL path.<br />If not set, the `override_path` field defaults to `false` in containerd registry configuration.</p>
 </td>
 </tr>
+
 </tbody>
 </table>
-<h3 id="mirror.extensions.gardener.cloud/v1alpha1.MirrorHostCapability">MirrorHostCapability
-(<code>string</code> alias)</p></h3>
+
+
+<h3 id="mirrorhostcapability">MirrorHostCapability
+</h3>
+<p><em>Underlying type: string</em></p>
+
+
 <p>
-(<em>Appears on:</em>
-<a href="#mirror.extensions.gardener.cloud/v1alpha1.MirrorHost">MirrorHost</a>)
+(<em>Appears on:</em><a href="#mirrorhost">MirrorHost</a>)
 </p>
+
 <p>
-<p>MirrorHostCapability represents a mirror host capability.</p>
+MirrorHostCapability represents a mirror host capability.
 </p>
-<hr/>
-<p><em>
-Generated with <a href="https://github.com/ahmetb/gen-crd-api-reference-docs">gen-crd-api-reference-docs</a>
-</em></p>
+
+
