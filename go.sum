@@ -160,8 +160,8 @@ github.com/gardener/etcd-druid/api v0.36.1 h1:vO4WISqEW7T/s9vgrbVkfdyEfvQ9fiZgQO
 github.com/gardener/etcd-druid/api v0.36.1/go.mod h1:RwZzKp8K415AS0zg8VoODjBxYepCAUYyLgXnZc1bmbo=
 github.com/gardener/gardener v1.140.0 h1:quO5AxGak2x6dQiJwUzVAs5hTxOk8RidhawNxqhp010=
 github.com/gardener/gardener v1.140.0/go.mod h1:jSxqFkWIM3ygVZPsQ7B3S82LsFCDz268menXnhCSY/g=
-github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260327184121-7e67b14c2b2c h1:zi2AA7JgVKKxETRECWP7B+GEzS/AG7Qs1hFKdWbL3eQ=
-github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260327184121-7e67b14c2b2c/go.mod h1:04M/IIwsAOVeNzzBUkDGBvxPM/Ny2bTJcbji1O7SFYo=
+github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260410141430-041161966da3 h1:uO7GP/b/pFN24qyg/mesCVkwdH6RxArR2F2Fd4iSdeM=
+github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260410141430-041161966da3/go.mod h1:04M/IIwsAOVeNzzBUkDGBvxPM/Ny2bTJcbji1O7SFYo=
 github.com/gardener/gardener/pkg/apis v1.140.0 h1:xAoxwwEMi8YpGfLNcO0qkCfuZ6jjy81NX9tuvWvkUEY=
 github.com/gardener/gardener/pkg/apis v1.140.0/go.mod h1:3Tbqw9dx7KaJ7Fikkna+WVGjRCyTTdlZEAy0GV6u4Gc=
 github.com/gardener/machine-controller-manager v0.61.3 h1:w0JuHCKLmcK7B8E7mx3TvE3e0hSYwikchsMSiMhocqw=
