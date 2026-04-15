@@ -26,7 +26,9 @@ const (
 
 var _ = Describe("Shoot registry cache testing", func() {
 	var (
-		f = framework.NewShootFramework(nil)
+		f = framework.NewShootFramework(&framework.ShootConfig{
+			SkipSeedInitialization: true,
+		})
 
 		isVerticalPodAutoscalerDisabled bool
 		isShootHibernated               bool

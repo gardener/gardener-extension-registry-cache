@@ -27,7 +27,9 @@ const (
 
 var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 	var (
-		f = framework.NewShootFramework(nil)
+		f = framework.NewShootFramework(&framework.ShootConfig{
+			SkipSeedInitialization: true,
+		})
 
 		isVerticalPodAutoscalerDisabled bool
 	)
