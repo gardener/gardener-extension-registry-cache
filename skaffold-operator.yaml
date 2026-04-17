@@ -93,8 +93,9 @@ build:
   insecureRegistries:
     - registry.local.gardener.cloud:5001
 manifests:
-  rawYaml:
-    - local-setup/operator-extension-resource.yaml
+  kustomize:
+    paths:
+      - local-setup/operator-extension/local
 deploy:
   kubectl: {}
 resourceSelector:
@@ -104,3 +105,9 @@ resourceSelector:
         - .spec.deployment.extension.helm.ociRepository.ref
         - .spec.deployment.admission.runtimeCluster.helm.ociRepository.ref
         - .spec.deployment.admission.virtualCluster.helm.ociRepository.ref
+profiles:
+  - name: remote
+    manifests:
+      kustomize:
+        paths:
+          - local-setup/operator-extension/remote

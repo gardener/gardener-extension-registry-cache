@@ -16,12 +16,8 @@ IMAGE_TAG                   := $(EFFECTIVE_VERSION)
 LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-ld-flags.sh k8s.io/component-base $(REPO_ROOT)/VERSION $(NAME))"
 PARALLEL_E2E_TESTS          := 3
 GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
-SEED_NAME                   := provider-extensions
-SEED_KUBECONFIG             := $(GARDENER_REPO_ROOT)/example/provider-extensions/seed/kubeconfig
+RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
 
-ifneq ($(SEED_NAME),provider-extensions)
-	SEED_KUBECONFIG := $(GARDENER_REPO_ROOT)/example/provider-extensions/seed/kubeconfig-$(SEED_NAME)
-endif
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
 endif
@@ -151,20 +147,16 @@ extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(KUBECTL) delete validatingwebhookconfiguration gardener-extension-registry-cache-admission --ignore-not-found
 
 remote-extension-up remote-extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-remote
+extension-operator-up extension-operator-down remote-extension-up remote-extension-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
 
 remote-extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
-	@LD_FLAGS=$(LD_FLAGS) ./hack/remote-extension-up.sh --path-seed-kubeconfig $(SEED_KUBECONFIG)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) ./hack/remote-extension-up.sh --path-runtime-kubeconfig $(RUNTIME_KUBECONFIG)
 
 remote-extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
-	$(SKAFFOLD) delete
-	@# The validating webhook is not part of the chart but it is created on admission Pod startup.
-	@# The approach with the owner Namespace ("--webhook-config-owner-namespace") cannot be used here as the extension is not managed via the operator in this setup.
-	@# Hence, we have to delete the webhook explicitly.
-	$(KUBECTL) delete validatingwebhookconfiguration gardener-extension-registry-cache-admission --ignore-not-found
+	$(SKAFFOLD) delete -p remote --kubeconfig=$(RUNTIME_KUBECONFIG)
 
-extension-operator-up extension-operator-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
 extension-operator-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
-	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(SKAFFOLD) run
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(SKAFFOLD) run --kubeconfig=$(RUNTIME_KUBECONFIG)
 
 extension-operator-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
-	$(SKAFFOLD) delete
+	$(SKAFFOLD) delete --kubeconfig=$(RUNTIME_KUBECONFIG)
