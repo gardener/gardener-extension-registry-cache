@@ -279,15 +279,7 @@ proxy:
 				return config
 			}
 
-			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, additionalEnvs []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
-				env := []corev1.EnvVar{
-					{
-						Name:  "OTEL_TRACES_EXPORTER",
-						Value: "none",
-					},
-				}
-				env = append(env, additionalEnvs...)
-
+			statefulSetFor = func(name, upstream, size, configSecretName string, tlsEnabled bool, tlsSecretName string, storageClassName *string, env []corev1.EnvVar, haEnabled bool) *appsv1.StatefulSet {
 				statefulSet := &appsv1.StatefulSet{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
@@ -654,7 +646,7 @@ source /entrypoint.sh /etc/distribution/config.yml
 
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResource), managedResource)).To(Succeed())
 
-				additionalEnvs := []corev1.EnvVar{
+				env := []corev1.EnvVar{
 					{
 						Name:  "HTTP_PROXY",
 						Value: "http://127.0.0.1",
@@ -676,10 +668,10 @@ source /entrypoint.sh /etc/distribution/config.yml
 					networkPolicy,
 					dockerConfigSecret,
 					dockerTLSSecret,
-					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, additionalEnvs, false),
+					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, env, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), additionalEnvs, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), env, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})

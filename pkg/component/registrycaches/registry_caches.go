@@ -410,13 +410,6 @@ source /entrypoint.sh /etc/distribution/config.yml
 									Name:          "debug",
 								},
 							},
-							Env: []corev1.EnvVar{
-								// Mitigation for https://github.com/distribution/distribution/issues/4270.
-								{
-									Name:  "OTEL_TRACES_EXPORTER",
-									Value: "none",
-								},
-							},
 							SecurityContext: &corev1.SecurityContext{
 								AllowPrivilegeEscalation: ptr.To(false),
 								RunAsNonRoot:             ptr.To(true),
