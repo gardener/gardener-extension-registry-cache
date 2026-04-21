@@ -288,8 +288,6 @@ proxy:
 							"app":           name,
 							"upstream-host": upstream,
 						},
-						// TODO(dimitar-kostadinov): Remove the `DeleteOnInvalidUpdate` annotation in the v0.21.0 release.
-						Annotations: map[string]string{resourcesv1alpha1.DeleteOnInvalidUpdate: "true"},
 					},
 					Spec: appsv1.StatefulSetSpec{
 						Selector: &metav1.LabelSelector{
