@@ -329,28 +329,6 @@ proxy:
 												corev1.ResourceMemory: resource.MustParse("50Mi"),
 											},
 										},
-										Command: []string{"/bin/sh", "-c", `REPO_ROOT=/var/lib/registry
-SCHEDULER_STATE_FILE="${REPO_ROOT}/scheduler-state.json"
-
-if [ -f "${SCHEDULER_STATE_FILE}" ]; then
-    if [ -s "${SCHEDULER_STATE_FILE}" ]; then
-        echo "The scheduler-state.json file exists and it is not empty. Won't clean up anything..."
-    else
-        echo "Detected a corrupted scheduler-state.json file"
-
-        echo "Cleaning up the scheduler-state.json file"
-        rm -f "${SCHEDULER_STATE_FILE}"
-
-        echo "Cleaning up the docker directory"
-        rm -rf "${REPO_ROOT}/docker"
-    fi
-else
-    echo "The scheduler-state.json file is not created yet. Won't clean up anything..."
-fi
-
-echo "Starting..."
-source /entrypoint.sh /etc/distribution/config.yml
-`},
 										Ports: []corev1.ContainerPort{
 											{
 												ContainerPort: 5000,
