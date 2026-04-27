@@ -7,21 +7,19 @@ description: Learn how to set up a remote development environment using an exist
 
 ## Prerequisites
 
-- Make sure that you have a running Gardener remote setup. The steps to complete this can be found in the [Deploying Gardener Remotely](https://github.com/gardener/gardener/blob/v1.140.0/docs/deployment/getting_started_remotely.md) guide.
+- Make sure that you have a running Gardener remote setup. The steps to complete this can be found in the [Deploying Gardener Remotely](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_remotely.md) guide.
 
 > [!TIP]
 > Ensure that the locally used Gardener version matches the version specified by the `github.com/gardener/gardener` dependency.
 > The extension’s remote setup must run successfully against a Gardener remote setup at the version referenced by this dependency.
 
+> [!NOTE]
+> The location of the Gardener project is expected to be under the same root (e.g. `~/go/src/github.com/gardener/`). If this is not the case, the location of Gardener project should be specified in `GARDENER_REPO_ROOT` environment variable:
+> ```bash
+> export GARDENER_REPO_ROOT="<path_to_gardener_project>"
+> ```
+
 ## Setting up the Registry Cache Extension
-
-The location of the Gardener project from the Gardener setup step is expected to be under the same root (e.g. `~/go/src/github.com/gardener/`). If this is not the case, the location of Gardener project should be specified in `GARDENER_REPO_ROOT` environment variable:
-
-```bash
-export GARDENER_REPO_ROOT="<path_to_gardener_project>"
-```
-
-Then you can run:
 
 ```bash
 make remote-extension-up

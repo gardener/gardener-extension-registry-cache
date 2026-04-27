@@ -32,7 +32,7 @@ if kubectl get configmaps -n kube-system shoot-info --kubeconfig "$PATH_RUNTIME_
     echo "Getting registry domain from shoot"
     registry_domain=reg.$(yq -e '.data.domain' "$temp_shoot_info")
 else
-  echo "Please enter domain name for registry on the seed"
+  echo "Please enter domain name for the registry domain on the runtime cluster"
   echo "Registry domain:"
   read -er registry_domain
 fi
