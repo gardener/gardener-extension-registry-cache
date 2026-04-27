@@ -13,9 +13,13 @@ description: Learn how to set up a local development environment
 > Ensure that the locally used Gardener version matches the version specified by the `github.com/gardener/gardener` dependency.
 > The extension’s local setup must run successfully against a local Gardener setup at the version referenced by this dependency, as verified by end-to-end tests.
 
-## Setting up the Registry Cache Extension
+> [!NOTE]
+> The location of the Gardener project is expected to be under the same root (e.g. `~/go/src/github.com/gardener/`). If this is not the case, the location of Gardener project should be specified in `GARDENER_REPO_ROOT` environment variable:
+> ```bash
+> export GARDENER_REPO_ROOT="<path_to_gardener_project>"
+> ```
 
-Make sure that your `KUBECONFIG` environment variable is targeting the local Gardener cluster. When this is ensured, run:
+## Setting up the Registry Cache Extension
 
 ```bash
 make extension-up
@@ -26,6 +30,9 @@ The corresponding make target will build the extension image, load it into the k
 The make target will then deploy the registry-cache admission component. It will build the admission image, load it into the kind cluster Nodes, and finally install the admission component charts to the kind cluster.
 
 ## Creating a Shoot Cluster
+
+> [!NOTE]
+> Make sure that your `KUBECONFIG` environment variable is targeting the local Gardener cluster (i.e. `<path_to_gardener_project>/example/gardener-local/kind/local/kubeconfig`).
 
 Once the above step is completed, you can create a Shoot cluster.
 
@@ -51,7 +58,17 @@ The make target will delete the ControllerDeployment and ControllerRegistration 
 
 ## Alternative Setup Using the `gardener-operator` Local Setup
 
-Alternatively, you can deploy the registry-cache extension in the `gardener-operator` local setup. To do this, make sure you are have a running local setup based on [Alternative Way to Set Up Garden and Seed Leveraging `gardener-operator`](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator). The `KUBECONFIG` environment variable should target the operator local KinD cluster (i.e. `<path_to_gardener_project>/dev-setup/kubeconfigs/runtime/kubeconfig`).
+Alternatively, you can deploy the registry-cache extension in the `gardener-operator` local setup. To do this, make sure you have a running local setup based on [Alternative Way to Set Up Garden and Seed Leveraging `gardener-operator`](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator).
+
+> [!TIP]
+> Ensure that the locally used Gardener version matches the version specified by the `github.com/gardener/gardener` dependency.
+> The extension’s operator setup must run successfully against a Gardener operator setup at the version referenced by this dependency.
+
+> [!NOTE]
+> The location of the Gardener project is expected to be under the same root (e.g. `~/go/src/github.com/gardener/`). If this is not the case, the location of Gardener project should be specified in `GARDENER_REPO_ROOT` environment variable:
+> ```bash
+> export GARDENER_REPO_ROOT="<path_to_gardener_project>"
+> ```
 
 #### Creating the registry-cache `Extension.operator.gardener.cloud` resource:
 
@@ -63,14 +80,18 @@ The corresponding make target will build the registry-cache admission and extens
 
 #### Creating a Shoot Cluster
 
-To create a Shoot cluster the `KUBECONFIG` environment variable should target virtual garden cluster (i.e. `<path_to_gardener_project>/dev-setup/kubeconfigs/virtual-garden/kubeconfig`) and then execute:
+> [!NOTE]
+> Make sure that your `KUBECONFIG` environment variable is targeting the virtual Garden cluster (i.e. `<path_to_gardener_project>/dev-setup/kubeconfigs/virtual-garden/kubeconfig`).
+
+To create a Shoot cluster execute:
 ```bash
 kubectl create -f example/shoot-registry-cache.yaml
 ```
 
 #### Delete the registry-cache `Extension.operator.gardener.cloud` resource
 
-Make sure the environment variable `KUBECONFIG` points to the operator's local KinD cluster and then run:
+To tear down the development environment, delete the Shoot cluster or disable the `registry-cache` extension in the Shoot's specification. When the extension is not used by the Shoot anymore, you can run:
+
 ```bash
 make extension-operator-down
 ```

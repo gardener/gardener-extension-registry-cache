@@ -112,10 +112,3 @@ deploy:
           image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
           image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
         wait: true
-profiles:
-  - name: remote-extensions
-    patches:
-      - op: add
-        path: /deploy/helm/releases/1/setValues
-        value:
-          vpa.enabled: false

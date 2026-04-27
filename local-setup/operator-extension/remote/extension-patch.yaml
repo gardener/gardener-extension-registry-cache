@@ -1,0 +1,22 @@
+apiVersion: operator.gardener.cloud/v1alpha1
+kind: Extension
+metadata:
+  name: extension-registry-cache
+spec:
+  deployment:
+    extension:
+      helm:
+        ociRepository:
+          pullSecretRef:
+            name: gardener-images
+    admission:
+      runtimeCluster:
+        helm:
+          ociRepository:
+            pullSecretRef:
+              name: gardener-images
+      virtualCluster:
+        helm:
+          ociRepository:
+            pullSecretRef:
+              name: gardener-images
