@@ -7,11 +7,9 @@ package mirror
 import (
 	extensionswebhook "github.com/gardener/gardener/extensions/pkg/webhook"
 	"github.com/gardener/gardener/extensions/pkg/webhook/controlplane/genericmutator"
-	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/original/components/kubelet"
 	oscutils "github.com/gardener/gardener/pkg/component/extensions/operatingsystemconfig/utils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -50,15 +48,14 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	}
 
 	webhook := &extensionswebhook.Webhook{
-		Name:     Name,
-		Provider: "",
-		Types:    types,
-		Target:   extensionswebhook.TargetSeed,
-		Path:     "/webhooks/registry-mirror",
-		Webhook:  &admission.Webhook{Handler: handler},
-		NamespaceSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{v1beta1constants.LabelExtensionPrefix + "registry-mirror": "true"},
-		},
+		Name:    Name,
+		Types:   types,
+		Target:  extensionswebhook.TargetSeed,
+		Path:    "/webhooks/registry-mirror",
+		Webhook: &admission.Webhook{Handler: handler},
+		NamespaceSelector: extensionswebhook.BuildExtensionTypeNamespaceSelector("registry-mirror", []extensionsv1alpha1.ExtensionClass{
+			extensionsv1alpha1.ExtensionClassShoot,
+		}),
 	}
 
 	return webhook, nil
