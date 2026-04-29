@@ -212,8 +212,8 @@ var _ = Describe("RegistryCaches", func() {
 					Immutable: ptr.To(true),
 					Type:      corev1.SecretTypeOpaque,
 					Data: map[string][]byte{
-						"ca.crt": crt,
-						"ca.key": key,
+						"tls.crt": crt,
+						"tls.key": key,
 					},
 				}
 				utilruntime.Must(kubernetesutils.MakeUnique(tlsSecret))
@@ -562,7 +562,7 @@ proxy:
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
-				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["tls.crt"], dockerSecretsManagerSecret.Data["tls.key"])
 
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
@@ -592,7 +592,7 @@ proxy:
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
-				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["tls.crt"], dockerSecretsManagerSecret.Data["tls.key"])
 
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
@@ -638,7 +638,7 @@ proxy:
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
-				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["tls.crt"], dockerSecretsManagerSecret.Data["tls.key"])
 
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
@@ -669,7 +669,7 @@ proxy:
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
-				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["tls.crt"], dockerSecretsManagerSecret.Data["tls.key"])
 
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
@@ -740,7 +740,7 @@ proxy:
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
-				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["tls.crt"], dockerSecretsManagerSecret.Data["tls.key"])
 
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
@@ -809,7 +809,7 @@ proxy:
 
 				dockerSecretsManagerSecret, ok := secretsManager.Get("registry-docker-io-tls")
 				Expect(ok).To(BeTrue())
-				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["ca.crt"], dockerSecretsManagerSecret.Data["ca.key"])
+				dockerTLSSecret := tlsSecretFor("registry-docker-io", "docker.io", dockerSecretsManagerSecret.Data["tls.crt"], dockerSecretsManagerSecret.Data["tls.key"])
 
 				Expect(managedResource).To(consistOf(
 					networkPolicy,
