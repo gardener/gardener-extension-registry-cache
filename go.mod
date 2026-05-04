@@ -225,3 +225,11 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+// Temporary downgrade the golang.org/x/tools version for the logcheck build:
+// Error: build linters: unable to load custom analyzer "logcheck": <path>/gardener-extension-registry-cache/hack/tools/bin/linux-amd64/logcheck.so,
+// plugin.Open("<path>/gardener-extension-registry-cache/hack/tools/bin/linux-amd64/logcheck"): plugin was built with a different version of package golang.org/x/tools/go/analysis
+//
+// TODO (dimitar-kostadinov) remove the replace once the golang.org/x/tools version in
+// https://github.com/gardener/gardener/blob/master/hack/tools/logcheck/go.mod#L12 is updated.
+replace golang.org/x/tools v0.44.0 => golang.org/x/tools v0.43.0
