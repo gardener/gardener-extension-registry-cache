@@ -10,8 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
 )
 
 const (
@@ -29,9 +27,8 @@ func New(mgr manager.Manager) (*extensionswebhook.Webhook, error) {
 	decoder := serializer.NewCodecFactory(mgr.GetScheme(), serializer.EnableStrict).UniversalDecoder()
 
 	return extensionswebhook.New(mgr, extensionswebhook.Args{
-		Provider: constants.RegistryCacheExtensionType,
-		Name:     Name,
-		Path:     "/webhooks/registry-config",
+		Name: Name,
+		Path: "/webhooks/registry-config",
 		Validators: map[extensionswebhook.Validator][]extensionswebhook.Type{
 			NewShootValidator(apiReader, decoder): {{Obj: &core.Shoot{}}},
 		},
