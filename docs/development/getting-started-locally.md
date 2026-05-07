@@ -60,16 +60,6 @@ The make target will delete the ControllerDeployment and ControllerRegistration 
 
 Alternatively, you can deploy the registry-cache extension in the `gardener-operator` local setup. To do this, make sure you have a running local setup based on [Alternative Way to Set Up Garden and Seed Leveraging `gardener-operator`](https://github.com/gardener/gardener/blob/master/docs/deployment/getting_started_locally.md#alternative-way-to-set-up-garden-and-seed-leveraging-gardener-operator).
 
-> [!TIP]
-> Ensure that the locally used Gardener version matches the version specified by the `github.com/gardener/gardener` dependency.
-> The extension’s operator setup must run successfully against a Gardener operator setup at the version referenced by this dependency.
-
-> [!NOTE]
-> The location of the Gardener project is expected to be under the same root (e.g. `~/go/src/github.com/gardener/`). If this is not the case, the location of Gardener project should be specified in `GARDENER_REPO_ROOT` environment variable:
-> ```bash
-> export GARDENER_REPO_ROOT="<path_to_gardener_project>"
-> ```
-
 #### Creating the registry-cache `Extension.operator.gardener.cloud` resource:
 
 ```bash
