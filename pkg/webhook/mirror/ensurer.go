@@ -19,6 +19,7 @@ import (
 	v1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/utils"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -205,6 +206,14 @@ func sanitizeHost(host string) string {
 	sanitizedHost := strings.TrimPrefix(host, "https://")
 	sanitizedHost = strings.TrimPrefix(sanitizedHost, "http://")
 	sanitizedHost = strings.ReplaceAll(sanitizedHost, ":", "-")
+	sanitizedHost = strings.ReplaceAll(sanitizedHost, "/", "-")
+
+	const fileNameLengthLimit = 255 - len("-ca-bundle.pem")
+	if len(sanitizedHost) > fileNameLengthLimit {
+		hash := utils.ComputeSHA256Hex([]byte(host))[:5]
+		limit := fileNameLengthLimit - len(hash) - 1
+		sanitizedHost = fmt.Sprintf("%s-%s", sanitizedHost[:limit], hash)
+	}
 
 	return sanitizedHost
 }

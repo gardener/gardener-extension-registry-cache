@@ -730,6 +730,9 @@ var _ = Describe("Validation", func() {
 			Entry("when query param is set", "https://example.com?foo=bar", true),
 			Entry("when user is set", "https://foo:bar@example.com", true),
 			Entry("when fragment is set", "https://example.com#fragment", true),
+			Entry("when path contains '../'", "https://example.com/foo/../bar", true),
+			Entry("when path is path traversal", "https://example.com/../../foo/bar", true),
+			Entry("when path is escaped path traversal", "https://example.com/..%2F..%2Ffoo%2Fbar", true),
 		)
 	})
 })
