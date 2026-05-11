@@ -1,7 +1,7 @@
 apiVersion: skaffold/v4beta12
 kind: Config
 metadata:
-  name: extension
+  name: operator
 build:
   artifacts:
     - image: local-skaffold/gardener-extension-registry-cache
@@ -38,36 +38,6 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache
-  insecureRegistries:
-    - registry.local.gardener.cloud:5001
-manifests:
-  kustomize:
-    paths:
-      - local-setup
-deploy:
-  # --server-side apply is a workaround for https://github.com/gardener/gardener/issues/10267.
-  # kubectl apply attempts a strategic merge patch which fails for a ControllerDeployment.
-  # For more details, see https://github.com/gardener/gardener/issues/10267.
-  #
-  # TODO: Switch back to "kubectl: {}" when the above issue is resolved.
-  kubectl:
-    flags:
-      apply:
-        - --server-side
-        - --force-conflicts
-resourceSelector:
-  # instruct skaffold to inject the built image reference into the image field in our ControllerDeployment
-  allow:
-    - groupKind: ControllerDeployment.core.gardener.cloud
-      image:
-        - .helm.values.image.ref
----
-apiVersion: skaffold/v4beta12
-kind: Config
-metadata:
-  name: admission
-build:
-  artifacts:
     - image: local-skaffold/gardener-extension-registry-cache-admission
       ko:
         dependencies:
@@ -93,22 +63,51 @@ build:
         ldflags:
           - '{{.LD_FLAGS}}'
         main: ./cmd/gardener-extension-registry-cache-admission
+    - image: local-skaffold/gardener-extension-registry-cache-admission/charts/application
+      custom:
+        buildCommand: |
+          bash "$GARDENER_REPO_ROOT/dev-setup/push-helm.sh" ./charts/admission/charts/application .image.ref
+        dependencies:
+          paths:
+            - charts/admission/charts/application
+    - image: local-skaffold/gardener-extension-registry-cache-admission/charts/runtime
+      custom:
+        buildCommand: |
+          bash "$GARDENER_REPO_ROOT/dev-setup/push-helm.sh" ./charts/admission/charts/runtime .image.ref
+        dependencies:
+          paths:
+            - charts/admission/charts/runtime
+      requires:
+        - image: local-skaffold/gardener-extension-registry-cache-admission
+          alias: IMG
+    - image: local-skaffold/gardener-extension-registry-cache/charts/extension
+      custom:
+        buildCommand: |
+          bash "$GARDENER_REPO_ROOT/dev-setup/push-helm.sh" ./charts/gardener-extension-registry-cache .image.ref
+        dependencies:
+          paths:
+            - charts/gardener-extension-registry-cache
+      requires:
+        - image: local-skaffold/gardener-extension-registry-cache
+          alias: IMG
   insecureRegistries:
     - registry.local.gardener.cloud:5001
+manifests:
+  kustomize:
+    paths:
+      - dev-setup/local
 deploy:
-  helm:
-    releases:
-      - name: gardener-extension-registry-cache-admission-appl # gardener-extension-registry-cache-admission-application would be too long as release name
-        chartPath: charts/admission/charts/application
-        namespace: garden
-        setValueTemplates:
-          gardener.virtualCluster.enabled: "false"
-        wait: true
-      - name: gardener-extension-registry-cache-admission-runtime
-        chartPath: charts/admission/charts/runtime
-        namespace: garden
-        setValueTemplates:
-          gardener.virtualCluster.enabled: "false"
-          image.repository: '{{.IMAGE_REPO_local_skaffold_gardener_extension_registry_cache_admission}}'
-          image.tag: '{{.IMAGE_TAG_local_skaffold_gardener_extension_registry_cache_admission}}@{{.IMAGE_DIGEST_local_skaffold_gardener_extension_registry_cache_admission}}'
-        wait: true
+  kubectl: {}
+resourceSelector:
+  allow:
+    - groupKind: Extension.operator.gardener.cloud
+      image:
+        - .spec.deployment.extension.helm.ociRepository.ref
+        - .spec.deployment.admission.runtimeCluster.helm.ociRepository.ref
+        - .spec.deployment.admission.virtualCluster.helm.ociRepository.ref
+profiles:
+  - name: remote
+    manifests:
+      kustomize:
+        paths:
+          - dev-setup/remote
