@@ -4,6 +4,7 @@
 
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+GARDENER_DEV_SETUP_DIR      := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/dev-setup
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
 ADMISSION_NAME              := $(NAME)-admission
@@ -134,11 +135,11 @@ export SKAFFOLD_PUSH = true
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
-extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
-	@LD_FLAGS=$(LD_FLAGS) GARDENER_REPO_ROOT=$(GARDENER_REPO_ROOT) $(SKAFFOLD) run --kubeconfig=$(RUNTIME_KUBECONFIG)
+extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_DEV_SETUP_DIR=$(GARDENER_DEV_SETUP_DIR) $(SKAFFOLD) run --kubeconfig=$(RUNTIME_KUBECONFIG)
 
-extension-dev: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
-	@LD_FLAGS=$(LD_FLAGS) GARDENER_REPO_ROOT=$(GARDENER_REPO_ROOT) $(SKAFFOLD) dev --cleanup=false --trigger=manual --kubeconfig=$(RUNTIME_KUBECONFIG)
+extension-dev: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_DEV_SETUP_DIR=$(GARDENER_DEV_SETUP_DIR) $(SKAFFOLD) dev --cleanup=false --trigger=manual --kubeconfig=$(RUNTIME_KUBECONFIG)
 
 extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) delete --kubeconfig=$(RUNTIME_KUBECONFIG)
@@ -146,7 +147,7 @@ extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 remote-extension-up remote-extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-remote
 
 remote-extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
-	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) ./hack/remote-extension-up.sh --path-runtime-kubeconfig $(RUNTIME_KUBECONFIG)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_DEV_SETUP_DIR=$(GARDENER_DEV_SETUP_DIR) ./hack/remote-extension-up.sh --path-runtime-kubeconfig $(RUNTIME_KUBECONFIG)
 
 remote-extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) delete -p remote --kubeconfig=$(RUNTIME_KUBECONFIG)
