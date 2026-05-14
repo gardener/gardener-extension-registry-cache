@@ -27,7 +27,6 @@ fi
 clamp_mss_to_pmtu
 
 make -C "$REPO_ROOT/gardener" kind-up
-export KUBECONFIG=$REPO_ROOT/gardener/example/gardener-local/kind/local/kubeconfig
 export GARDENER_REPO_ROOT=$REPO_ROOT/gardener
 
 trap '{

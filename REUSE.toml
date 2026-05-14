@@ -18,10 +18,9 @@ path = [
     "go.mod",
     "go.sum",
     "hack/api-reference/**.json",
-    "local-setup/**",
+    "dev-setup/**",
     "pkg/component/registrycaches/monitoring/dashboard.json",
     "pkg/component/registrycaches/templates/config.yml.tpl",
-    "skaffold-operator.yaml",
     "skaffold.yaml"
 ]
 precedence = "aggregate"

@@ -4,6 +4,7 @@
 
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
+GARDENER_DEV_SETUP_DIR      := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/dev-setup
 EXTENSION_PREFIX            := gardener-extension
 NAME                        := registry-cache
 ADMISSION_NAME              := $(NAME)-admission
@@ -17,7 +18,7 @@ LD_FLAGS                    := "-w $(shell bash $(GARDENER_HACK_DIR)/get-build-l
 PARALLEL_E2E_TESTS          := 3
 GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
 RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
-LOCAL_KIND_KUBECONFIG       := $(GARDENER_REPO_ROOT)/example/gardener-local/kind/local/kubeconfig
+VIRTUAL_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -120,7 +121,7 @@ verify: check format test sast
 verify-extended: check-generate check format test-cov test-clean sast-report
 
 test-e2e-local: $(GINKGO)
-	./hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) ./test/e2e/...
+	KUBECONFIG=$(VIRTUAL_KUBECONFIG) ./hack/test-e2e-local.sh --procs=$(PARALLEL_E2E_TESTS) ./test/e2e/...
 
 ci-e2e-kind:
 	./hack/ci-e2e-kind.sh
@@ -134,30 +135,19 @@ export SKAFFOLD_PUSH = true
 # use static label for skaffold to prevent rolling all gardener components on every `skaffold` invocation
 export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-local
 
-extension-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
-	@LD_FLAGS=$(LD_FLAGS) $(SKAFFOLD) run --kubeconfig=$(LOCAL_KIND_KUBECONFIG)
+extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_DEV_SETUP_DIR=$(GARDENER_DEV_SETUP_DIR) $(SKAFFOLD) run --kubeconfig=$(RUNTIME_KUBECONFIG)
 
 extension-dev: $(SKAFFOLD) $(HELM) $(KUBECTL)
-	$(SKAFFOLD) dev --cleanup=false --trigger=manual --kubeconfig=$(LOCAL_KIND_KUBECONFIG)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_DEV_SETUP_DIR=$(GARDENER_DEV_SETUP_DIR) $(SKAFFOLD) dev --cleanup=false --trigger=manual --kubeconfig=$(RUNTIME_KUBECONFIG)
 
 extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
-	$(SKAFFOLD) delete --kubeconfig=$(LOCAL_KIND_KUBECONFIG)
-	@# The validating webhook is not part of the chart but it is created on admission Pod startup.
-	@# The approach with the owner Namespace ("--webhook-config-owner-namespace") cannot be used here as the extension is not managed via the operator in this setup.
-	@# Hence, we have to delete the webhook explicitly.
-	$(KUBECTL) delete validatingwebhookconfiguration gardener-extension-registry-cache-admission --ignore-not-found --kubeconfig=$(LOCAL_KIND_KUBECONFIG)
+	$(SKAFFOLD) delete --kubeconfig=$(RUNTIME_KUBECONFIG)
 
 remote-extension-up remote-extension-down: export SKAFFOLD_LABEL = skaffold.dev/run-id=extension-remote
-extension-operator-up extension-operator-down remote-extension-up remote-extension-down: export SKAFFOLD_FILENAME = skaffold-operator.yaml
 
 remote-extension-up: $(SKAFFOLD) $(HELM) $(KUBECTL) $(YQ)
-	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) ./hack/remote-extension-up.sh --path-runtime-kubeconfig $(RUNTIME_KUBECONFIG)
+	@LD_FLAGS=$(LD_FLAGS) GARDENER_DEV_SETUP_DIR=$(GARDENER_DEV_SETUP_DIR) ./hack/remote-extension-up.sh --path-runtime-kubeconfig $(RUNTIME_KUBECONFIG)
 
 remote-extension-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
 	$(SKAFFOLD) delete -p remote --kubeconfig=$(RUNTIME_KUBECONFIG)
-
-extension-operator-up: $(SKAFFOLD) $(KIND) $(HELM) $(KUBECTL)
-	@LD_FLAGS=$(LD_FLAGS) GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) $(SKAFFOLD) run --kubeconfig=$(RUNTIME_KUBECONFIG)
-
-extension-operator-down: $(SKAFFOLD) $(HELM) $(KUBECTL)
-	$(SKAFFOLD) delete --kubeconfig=$(RUNTIME_KUBECONFIG)

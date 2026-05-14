@@ -43,4 +43,4 @@ SKAFFOLD_DEFAULT_REPO=$registry_domain \
   SKAFFOLD_PLATFORM="linux/amd64" \
   SKAFFOLD_DISABLE_MULTI_PLATFORM_BUILD="false" \
   SKAFFOLD_PUSH=true \
-  skaffold run -m operator -p remote --kubeconfig "$PATH_RUNTIME_KUBECONFIG"
+  skaffold run -p remote --kubeconfig "$PATH_RUNTIME_KUBECONFIG"
