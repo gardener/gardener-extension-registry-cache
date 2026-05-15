@@ -21,9 +21,7 @@ spec:
       labels:
         networking.gardener.cloud/to-dns: allowed
         networking.gardener.cloud/to-runtime-apiserver: allowed
-        {{- if .Values.gardener.virtualCluster.enabled }}
         networking.resources.gardener.cloud/to-virtual-garden-kube-apiserver-tcp-443: allowed
-        {{- end }}
 {{ include "labels" . | indent 8 }}
     spec:
       {{- if .Values.gardener.runtimeCluster.priorityClassName }}
@@ -40,12 +38,8 @@ spec:
         args:
         - --webhook-config-server-port={{ .Values.webhookConfig.serverPort }}
         - --webhook-config-service-port={{ .Values.webhookConfig.servicePort }}
-        {{- if .Values.gardener.virtualCluster.enabled }}
         - --webhook-config-mode=url
         - --webhook-config-url={{ printf "%s.%s" (include "name" .) (.Release.Namespace) }}
-        {{- else }}
-        - --webhook-config-mode=service
-        {{- end}}
         - --webhook-config-namespace={{ .Release.Namespace }}
         {{- if .Values.gardener.virtualCluster.namespace }}
         - --webhook-config-owner-namespace={{ .Values.gardener.virtualCluster.namespace }}
@@ -61,11 +55,9 @@ spec:
         {{- end }}
         - --health-bind-address=:{{ .Values.healthPort }}
         - --leader-election-id={{ include "leaderelectionid" . }}
-        {{- if .Values.gardener.virtualCluster.enabled }}
         env:
         - name: SOURCE_CLUSTER
           value: enabled
-        {{- end }}
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true

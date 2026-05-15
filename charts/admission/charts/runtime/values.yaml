@@ -30,7 +30,7 @@ service:
     enabled: false
 
 gardener:
-  virtualCluster:
-    enabled: true
+  virtualCluster: {}
+#   namespace: extension-extension-registry-cache
   runtimeCluster: {}
 #   priorityClassName: gardener-garden-system-400
