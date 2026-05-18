@@ -55,9 +55,6 @@ spec:
         {{- end }}
         - --health-bind-address=:{{ .Values.healthPort }}
         - --leader-election-id={{ include "leaderelectionid" . }}
-        env:
-        - name: SOURCE_CLUSTER
-          value: enabled
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
