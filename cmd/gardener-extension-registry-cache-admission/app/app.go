@@ -15,7 +15,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	gardenerhealthz "github.com/gardener/gardener/pkg/healthz"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 	"k8s.io/component-base/version"
 	"k8s.io/component-base/version/verflag"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -88,11 +88,11 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 			managerOptions := mgrOpts.Completed().Options()
 
 			log.Info("Configuring source cluster option")
-			sourceClusterConfig, err := clientcmd.BuildConfigFromFlags("", "")
+			inClusterConfig, err := rest.InClusterConfig()
 			if err != nil {
-				return err
+				return fmt.Errorf("could not get in-cluster config: %w", err)
 			}
-			managerOptions.LeaderElectionConfig = sourceClusterConfig
+			managerOptions.LeaderElectionConfig = inClusterConfig
 
 			mgr, err := manager.New(restOpts.Completed().Config, managerOptions)
 			if err != nil {
@@ -103,7 +103,7 @@ func NewAdmissionCommand(ctx context.Context) *cobra.Command {
 			registryinstall.Install(mgr.GetScheme())
 			mirrorinstall.Install(mgr.GetScheme())
 
-			sourceCluster, err := cluster.New(sourceClusterConfig, func(opts *cluster.Options) {
+			sourceCluster, err := cluster.New(inClusterConfig, func(opts *cluster.Options) {
 				opts.Logger = log
 				opts.Cache.DefaultNamespaces = map[string]cache.Config{v1beta1constants.GardenNamespace: {}}
 			})
