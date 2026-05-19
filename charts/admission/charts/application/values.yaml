@@ -1,6 +1,5 @@
 gardener:
   virtualCluster:
-    enabled: true
     serviceAccount: {}
 #     name: gardener-extension-registry-cache-admission
 #     namespace: kube-system
