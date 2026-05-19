@@ -256,8 +256,14 @@ func ValidateURL(fldPath *field.Path, rawURL string, allowPath bool) field.Error
 	if !allowPath && url.Path != "" && url.Path != "/" {
 		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must not contain a path"))
 	}
-	if allowPath && slices.Contains(strings.Split(url.Path, "/"), "..") {
-		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url path must not contain '..'"))
+	if allowPath {
+		pathSegments := strings.Split(url.Path, "/")
+		if slices.Contains(pathSegments, "..") {
+			allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url path must not contain '..'"))
+		}
+		if slices.Contains(pathSegments, ".") {
+			allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url path must not contain '.'"))
+		}
 	}
 	if url.User != nil {
 		allErrs = append(allErrs, field.Invalid(fldPath, rawURL, "url must not contain user info"))

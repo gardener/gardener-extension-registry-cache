@@ -37,10 +37,7 @@ func TestRegistryMirrorWebhook(t *testing.T) {
 }
 
 var _ = Describe("Ensurer", func() {
-	const (
-		namespace    = "shoot--foo--bar"
-		caSecretName = "ca-bundle-v1"
-	)
+	const namespace = "shoot--foo--bar"
 
 	var (
 		logger = logr.Discard()
@@ -251,18 +248,7 @@ var _ = Describe("Ensurer", func() {
 					},
 				},
 			}
-			caBundleSecret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "ref-" + caSecretName,
-					Namespace: namespace,
-				},
-				Immutable: ptr.To(true),
-				Data: map[string][]byte{
-					"bundle.crt": []byte("bar"),
-				},
-			}
 
-			Expect(fakeClient.Create(ctx, caBundleSecret)).To(Succeed())
 			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
 
 			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
@@ -364,6 +350,8 @@ var _ = Describe("Ensurer", func() {
 	})
 
 	Describe("#EnsureAdditionalFiles", func() {
+		const caSecretName = "ca-bundle-v1"
+
 		var (
 			cluster        *extensions.Cluster
 			extension      *extensionsv1alpha1.Extension

@@ -733,6 +733,11 @@ var _ = Describe("Validation", func() {
 			Entry("when path contains '../'", "https://example.com/foo/../bar", true),
 			Entry("when path is path traversal", "https://example.com/../../foo/bar", true),
 			Entry("when path is escaped path traversal", "https://example.com/..%2F..%2Ffoo%2Fbar", true),
+			Entry("when path has escaped '..'", "https://example.com/%2E%2E/foo/bar", true),
+			Entry("when path has escaped dot after a dot literal", "https://example.com/foo/.%2E/bar", true),
+			Entry("when path contains './'", "https://example.com/foo/./bar", true),
+			Entry("when path starts with '.'", "https://example.com/./foo/bar", true),
+			Entry("when path has escaped '.'", "https://example.com/%2E/foo/bar", true),
 		)
 	})
 })
