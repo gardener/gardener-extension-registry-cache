@@ -7,6 +7,7 @@ package mirror_test
 import (
 	"context"
 	"encoding/base64"
+	"strings"
 	"testing"
 
 	extensionscontextwebhook "github.com/gardener/gardener/extensions/pkg/webhook/context"
@@ -222,6 +223,49 @@ var _ = Describe("Ensurer", func() {
 					},
 				},
 			})
+			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
+			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
+		})
+
+		It("should add additional registry config to the current containerd registry configs when host URL path is very long", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = &runtime.RawExtension{
+				Object: &v1alpha1.MirrorConfig{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						Kind:       "MirrorConfig",
+					},
+					Mirrors: []v1alpha1.MirrorConfiguration{
+						{
+							Upstream: "docker.io",
+							Hosts: []v1alpha1.MirrorHost{
+								{
+									Host:                        "https://private-mirror.internal/v2/docker/" + strings.Repeat("n", 208),
+									CABundleSecretReferenceName: ptr.To("ca-bundle"),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+
+			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
+			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
+				Upstream: "docker.io",
+				Server:   ptr.To("https://registry-1.docker.io"),
+				Hosts: []extensionsv1alpha1.RegistryHost{
+					{
+						URL:          "https://private-mirror.internal/v2/docker/" + strings.Repeat("n", 208),
+						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability},
+						CACerts:      []string{"/etc/containerd/certs.d/docker.io/private-mirror.internal-v2-docker-" + strings.Repeat("n", 201) + "-89994-ca-bundle.pem"},
+					},
+				},
+			})
+
 			Expect(ensurer.EnsureCRIConfig(ctx, gctx, &criConfig, nil)).To(Succeed())
 			Expect(criConfig.Containerd.Registries).To(ConsistOf(expectedRegistries))
 		})
@@ -503,6 +547,51 @@ var _ = Describe("Ensurer", func() {
 			expectedNewFiles = append(expectedNewFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
+					Permissions: ptr.To[uint32](0644),
+					Content: extensionsv1alpha1.FileContent{
+						Inline: &extensionsv1alpha1.FileContentInline{
+							Encoding: "b64",
+							Data:     base64.StdEncoding.EncodeToString([]byte("bar")),
+						},
+					},
+				},
+			)
+
+			Expect(ensurer.EnsureAdditionalFiles(ctx, gctx, &newFiles, nil)).To(Succeed())
+			Expect(newFiles).To(ConsistOf(expectedNewFiles))
+		})
+
+		It("should add additional file to the current files when host URL path is very long", func() {
+			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
+			extension.Spec.ProviderConfig = &runtime.RawExtension{
+				Object: &v1alpha1.MirrorConfig{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						Kind:       "MirrorConfig",
+					},
+					Mirrors: []v1alpha1.MirrorConfiguration{
+						{
+							Upstream: "docker.io",
+							Hosts: []v1alpha1.MirrorHost{
+								{
+									Host:                        "https://private-mirror.internal/v2/docker/" + strings.Repeat("n", 208),
+									CABundleSecretReferenceName: ptr.To("ca-bundle"),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			Expect(fakeClient.Create(ctx, caBundleSecret)).To(Succeed())
+			Expect(fakeClient.Create(ctx, extension)).To(Succeed())
+
+			ensurer := mirror.NewEnsurer(fakeClient, decoder, logger)
+			expectedNewFiles := make([]extensionsv1alpha1.File, len(newFiles))
+			copy(expectedNewFiles, newFiles)
+			expectedNewFiles = append(expectedNewFiles,
+				extensionsv1alpha1.File{
+					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-v2-docker-" + strings.Repeat("n", 201) + "-89994-ca-bundle.pem",
 					Permissions: ptr.To[uint32](0644),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{

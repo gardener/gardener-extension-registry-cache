@@ -19,6 +19,7 @@ import (
 	v1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
+	"github.com/gardener/gardener/pkg/utils"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -188,23 +189,38 @@ func (e *ensurer) getProviderConfig(ctx context.Context, cluster *extensionscont
 	return mirrorConfig, nil
 }
 
+const caBundleFileNameSuffix = "-ca-bundle.pem"
+
 func caBundlePath(upstream, host string) string {
 	const baseDir = "/etc/containerd/certs.d"
 
 	sanitizedUpstream := sanitizeUpstream(upstream)
 	sanitizedHost := sanitizeHost(host)
 
-	return path.Join(baseDir, sanitizedUpstream, sanitizedHost+"-ca-bundle.pem")
+	return path.Join(baseDir, sanitizedUpstream, sanitizedHost+caBundleFileNameSuffix)
 }
 
 func sanitizeUpstream(upstream string) string {
 	return strings.ReplaceAll(upstream, ":", "-")
 }
 
+// maxFileNameLength is the Linux NAME_MAX limit (in bytes) for a single path component.
+const maxFileNameLength = 255
+
 func sanitizeHost(host string) string {
 	sanitizedHost := strings.TrimPrefix(host, "https://")
 	sanitizedHost = strings.TrimPrefix(sanitizedHost, "http://")
 	sanitizedHost = strings.ReplaceAll(sanitizedHost, ":", "-")
+	sanitizedHost = strings.ReplaceAll(sanitizedHost, "/", "-")
+
+	const fileNameLengthLimit = maxFileNameLength - len(caBundleFileNameSuffix)
+	if len(sanitizedHost) > fileNameLengthLimit {
+		// Hash the original host (not the sanitized form) so that two hosts differing only
+		// in their scheme (http:// vs https://) still produce distinct file names
+		hash := utils.ComputeSHA256Hex([]byte(host))[:5]
+		limit := fileNameLengthLimit - len(hash) - 1
+		sanitizedHost = fmt.Sprintf("%s-%s", sanitizedHost[:limit], hash)
+	}
 
 	return sanitizedHost
 }
