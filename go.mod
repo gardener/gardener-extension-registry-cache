@@ -5,7 +5,7 @@ go 1.25.9
 require (
 	github.com/elastic/crd-ref-docs v0.3.0
 	github.com/gardener/gardener v1.143.0
-	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260521175212-e62347347cad
+	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260524093848-94a9a9b336f8
 	github.com/gardener/gardener/pkg/apis v1.143.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.29.0
@@ -229,5 +229,6 @@ require (
 // Error: build linters: unable to load custom analyzer "logcheck": <path>/gardener-extension-registry-cache/hack/tools/bin/linux-amd64/logcheck.so,
 // plugin.Open("<path>/gardener-extension-registry-cache/hack/tools/bin/linux-amd64/logcheck"): plugin was built with a different version of package golang.org/x/tools/go/analysis
 //
-// TODO(dimitar-kostadinov): Remove the replace when the github.com/gardener/gardener module version is updated to v1.143.0.
-replace golang.org/x/tools v0.44.0 => golang.org/x/tools v0.43.0
+// TODO(dimitar-kostadinov): Remove the replace when the golang.org/x/tools version in the github.com/gardener/gardener/hack/tools/logcheck module
+// is the same with the one in the github.com/gardener/gardener module.
+replace golang.org/x/tools v0.45.0 => golang.org/x/tools v0.44.0
