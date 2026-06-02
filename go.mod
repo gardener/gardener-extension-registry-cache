@@ -4,16 +4,16 @@ go 1.25.9
 
 require (
 	github.com/elastic/crd-ref-docs v0.3.0
-	github.com/gardener/gardener v1.143.0
-	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260524093848-94a9a9b336f8
-	github.com/gardener/gardener/pkg/apis v1.143.0
+	github.com/gardener/gardener v1.143.1
+	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260602035837-b4cfd1ea1857
+	github.com/gardener/gardener/pkg/apis v1.143.1
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.29.0
 	github.com/onsi/gomega v1.41.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.91.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
-	golang.org/x/crypto v0.51.0
+	golang.org/x/crypto v0.52.0
 	golang.org/x/tools v0.45.0
 	k8s.io/api v0.35.5
 	k8s.io/apimachinery v0.35.5
@@ -189,7 +189,7 @@ require (
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260508192327-42602be52be6 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
