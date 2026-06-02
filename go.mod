@@ -5,7 +5,7 @@ go 1.25.9
 require (
 	github.com/elastic/crd-ref-docs v0.3.0
 	github.com/gardener/gardener v1.143.1
-	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260524093848-94a9a9b336f8
+	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260602035837-b4cfd1ea1857
 	github.com/gardener/gardener/pkg/apis v1.143.1
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.29.0
