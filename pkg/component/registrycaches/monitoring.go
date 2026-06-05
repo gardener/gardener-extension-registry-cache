@@ -110,17 +110,17 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "component", "registry-cache")
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "prometheus", "shoot")
 		scrapeConfig.Spec = monitoringv1alpha1.ScrapeConfigSpec{
-			HonorLabels:   ptr.To(false),
+			HonorLabels:   new(false),
 			ScrapeTimeout: ptr.To(monitoringv1.Duration("10s")),
 			Scheme:        ptr.To(monitoringv1.SchemeHTTPS),
 			// This is needed because the kubelets' certificates are not are generated for a specific pod IP
-			TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)},
+			TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: new(true)},
 			Authorization: &monitoringv1.SafeAuthorization{Credentials: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: "shoot-access-prometheus-shoot"},
 				Key:                  "token",
 			}},
 			KubernetesSDConfigs: []monitoringv1alpha1.KubernetesSDConfig{{
-				APIServer:  ptr.To("https://" + v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
+				APIServer:  new("https://" + v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
 				Role:       "Endpoints",
 				Namespaces: &monitoringv1alpha1.NamespaceDiscovery{Names: []string{metav1.NamespaceSystem}},
 				Authorization: &monitoringv1.SafeAuthorization{Credentials: &corev1.SecretKeySelector{
@@ -128,13 +128,13 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 					Key:                  "token",
 				}},
 				// This is needed because we do not fetch the correct cluster CA bundle right now
-				TLSConfig:       &monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)},
-				FollowRedirects: ptr.To(true),
+				TLSConfig:       &monitoringv1.SafeTLSConfig{InsecureSkipVerify: new(true)},
+				FollowRedirects: new(true),
 			}},
 			RelabelConfigs: []monitoringv1.RelabelConfig{
 				{
 					Action:      "replace",
-					Replacement: ptr.To("registry-cache-metrics"),
+					Replacement: new("registry-cache-metrics"),
 					TargetLabel: "job",
 				},
 				{
@@ -149,14 +149,14 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 				{
 					TargetLabel: "__address__",
 					Action:      "replace",
-					Replacement: ptr.To(v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
+					Replacement: new(v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
 				},
 				{
 					SourceLabels: []monitoringv1.LabelName{"__meta_kubernetes_pod_name", "__meta_kubernetes_pod_container_port_number"},
 					Action:       "replace",
 					TargetLabel:  "__metrics_path__",
 					Regex:        `(.+);(.+)`,
-					Replacement:  ptr.To("/api/v1/namespaces/kube-system/pods/${1}:${2}/proxy/metrics"),
+					Replacement:  new("/api/v1/namespaces/kube-system/pods/${1}:${2}/proxy/metrics"),
 				},
 			},
 			MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("registry_proxy_.+"),

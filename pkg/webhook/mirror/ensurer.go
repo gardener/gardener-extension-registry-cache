@@ -71,7 +71,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 	for _, mirror := range mirrorConfig.Mirrors {
 		cfg := extensionsv1alpha1.RegistryConfig{
 			Upstream: mirror.Upstream,
-			Server:   ptr.To(registryutils.GetUpstreamURL(mirror.Upstream)),
+			Server:   new(registryutils.GetUpstreamURL(mirror.Upstream)),
 		}
 		for _, host := range mirror.Hosts {
 			registryHost := extensionsv1alpha1.RegistryHost{

@@ -44,13 +44,13 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			CloudProfile: &gardencorev1beta1.CloudProfileReference{
 				Name: "local",
 			},
-			CredentialsBindingName: ptr.To("local"),
+			CredentialsBindingName: new("local"),
 			Region:                 "local",
 			Purpose:                ptr.To(gardencorev1beta1.ShootPurposeTesting),
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.35.4",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
-					SerializeImagePulls: ptr.To(false),
+					SerializeImagePulls: new(false),
 					RegistryPullQPS:     ptr.To[int32](10),
 					RegistryBurst:       ptr.To[int32](20),
 				},
@@ -59,9 +59,9 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 				},
 			},
 			Networking: &gardencorev1beta1.Networking{
-				Type: ptr.To("calico"),
+				Type: new("calico"),
 				// Must be within 10.0.0.0/16 (subnet of kind pod CIDR 10.0.0.0/15, but disjoint with seed pod CIDR 10.1.0.0/16).
-				Nodes: ptr.To("10.0.0.0/16"),
+				Nodes: new("10.0.0.0/16"),
 			},
 			Provider: gardencorev1beta1.Provider{
 				Type: "local",

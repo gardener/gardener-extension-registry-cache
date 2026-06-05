@@ -69,12 +69,12 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 	for _, cache := range registryStatus.Caches {
 		cfg := extensionsv1alpha1.RegistryConfig{
 			Upstream: cache.Upstream,
-			Server:   ptr.To(cache.RemoteURL),
+			Server:   new(cache.RemoteURL),
 			Hosts: []extensionsv1alpha1.RegistryHost{{
 				URL:          cache.Endpoint,
 				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
 			}},
-			ReadinessProbe: ptr.To(true),
+			ReadinessProbe: new(true),
 		}
 
 		if strings.HasPrefix(cache.Endpoint, "https://") {

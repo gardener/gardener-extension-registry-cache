@@ -110,7 +110,7 @@ var _ = Describe("Ensurer", func() {
 					Registries: []extensionsv1alpha1.RegistryConfig{
 						{
 							Upstream: "foo.io",
-							Server:   ptr.To("https://foo.io"),
+							Server:   new("https://foo.io"),
 							Hosts: []extensionsv1alpha1.RegistryHost{
 								{
 									URL:          "https://bar.io",
@@ -152,7 +152,7 @@ var _ = Describe("Ensurer", func() {
 		})
 
 		It("should do nothing if hibernation is enabled for Shoot", func() {
-			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -347,7 +347,7 @@ var _ = Describe("Ensurer", func() {
 		})
 
 		It("should do nothing if hibernation is enabled for Shoot", func() {
-			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -513,7 +513,7 @@ var _ = Describe("Ensurer", func() {
 func createRegistryConfig(upstream, server, host string, caCerts []string) extensionsv1alpha1.RegistryConfig {
 	return extensionsv1alpha1.RegistryConfig{
 		Upstream: upstream,
-		Server:   ptr.To(server),
+		Server:   new(server),
 		Hosts: []extensionsv1alpha1.RegistryHost{
 			{
 				URL:          host,
@@ -521,6 +521,6 @@ func createRegistryConfig(upstream, server, host string, caCerts []string) exten
 				CACerts:      caCerts,
 			},
 		},
-		ReadinessProbe: ptr.To(true),
+		ReadinessProbe: new(true),
 	}
 }

@@ -9,7 +9,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 
 	registryutils "github.com/gardener/gardener-extension-registry-cache/pkg/utils/registry"
 )
@@ -62,6 +61,6 @@ var _ = Describe("Registry utils", func() {
 			Expect(registryutils.ComputeServiceName(upstream, serviceNameSuffix)).To(Equal(expected))
 		},
 		Entry("service name suffix is nil", "my-registry.io", nil, "registry-my-registry-io"),
-		Entry("service name suffix is set", "my-registry.io", ptr.To("static-name"), "registry-static-name"),
+		Entry("service name suffix is set", "my-registry.io", new("static-name"), "registry-static-name"),
 	)
 })

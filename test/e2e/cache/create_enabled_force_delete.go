@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
@@ -28,7 +27,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 		{
 			Upstream:          "gardener-extension-registry-cache-tests.common.repositories.cloud.sap",
 			Volume:            &v1alpha3.Volume{Size: &size},
-			ServiceNameSuffix: ptr.To("gardener-extension-registry-cache-tests"),
+			ServiceNameSuffix: new("gardener-extension-registry-cache-tests"),
 		},
 	})
 	f.Shoot = shoot

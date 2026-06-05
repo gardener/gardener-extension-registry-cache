@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 
 	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/validation"
@@ -48,23 +47,23 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should allow valid remoteURLs", func() {
-			registryConfig.Caches[0].RemoteURL = ptr.To("https://registry-1.docker.io")
+			registryConfig.Caches[0].RemoteURL = new("https://registry-1.docker.io")
 			registryConfig.Caches = append(registryConfig.Caches,
 				registryapi.RegistryCache{
 					Upstream:  "my-registry.io",
-					RemoteURL: ptr.To("https://my-registry.io"),
+					RemoteURL: new("https://my-registry.io"),
 				},
 				registryapi.RegistryCache{
 					Upstream:  "my-registry.io:5000",
-					RemoteURL: ptr.To("http://my-registry.io:5000"),
+					RemoteURL: new("http://my-registry.io:5000"),
 					Proxy: &registryapi.Proxy{
-						HTTPProxy:  ptr.To("http://127.0.0.1"),
-						HTTPSProxy: ptr.To("https://127.0.0.1:1234"),
+						HTTPProxy:  new("http://127.0.0.1"),
+						HTTPSProxy: new("https://127.0.0.1:1234"),
 					},
 				},
 				registryapi.RegistryCache{
 					Upstream:  "quay.io",
-					RemoteURL: ptr.To("https://mirror-host.io:8443"),
+					RemoteURL: new("https://mirror-host.io:8443"),
 				},
 			)
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(BeEmpty())
@@ -168,13 +167,13 @@ var _ = Describe("Validation", func() {
 			cache := registryapi.RegistryCache{
 				Upstream: "myproj-releases.common.repositories.cloud.com",
 				Volume: &registryapi.Volume{
-					StorageClassName: ptr.To("invalid/name"),
+					StorageClassName: new("invalid/name"),
 				},
 			}
 			registryConfig.Caches = append(registryConfig.Caches, cache)
 
 			tooLongStorageClassName := strings.Repeat("n", 254)
-			registryConfig.Caches[0].Volume.StorageClassName = ptr.To(tooLongStorageClassName)
+			registryConfig.Caches[0].Volume.StorageClassName = new(tooLongStorageClassName)
 
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
@@ -218,19 +217,19 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should allow valid service name suffixes", func() {
-			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("docker-io")
+			registryConfig.Caches[0].ServiceNameSuffix = new("docker-io")
 			registryConfig.Caches = append(registryConfig.Caches,
 				registryapi.RegistryCache{
 					Upstream:          "quay.io",
-					ServiceNameSuffix: ptr.To("quay-io"),
+					ServiceNameSuffix: new("quay-io"),
 				},
 				registryapi.RegistryCache{
 					Upstream:          "upstream-1.io",
-					ServiceNameSuffix: ptr.To("cache-1"),
+					ServiceNameSuffix: new("cache-1"),
 				},
 				registryapi.RegistryCache{
 					Upstream:          "upstream-2.io",
-					ServiceNameSuffix: ptr.To("cache-2"),
+					ServiceNameSuffix: new("cache-2"),
 				},
 			)
 
@@ -238,11 +237,11 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny invalid service name suffixes", func() {
-			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("foo.io")
+			registryConfig.Caches[0].ServiceNameSuffix = new("foo.io")
 			registryConfig.Caches = append(registryConfig.Caches,
 				registryapi.RegistryCache{
 					Upstream:          "quay.io",
-					ServiceNameSuffix: ptr.To(strings.Repeat("n", 55)),
+					ServiceNameSuffix: new(strings.Repeat("n", 55)),
 				},
 			)
 
@@ -263,11 +262,11 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny duplicate service name suffixes", func() {
-			registryConfig.Caches[0].ServiceNameSuffix = ptr.To("foo")
+			registryConfig.Caches[0].ServiceNameSuffix = new("foo")
 			registryConfig.Caches = append(registryConfig.Caches,
 				registryapi.RegistryCache{
 					Upstream:          "quay.io",
-					ServiceNameSuffix: ptr.To("foo"),
+					ServiceNameSuffix: new("foo"),
 				},
 			)
 
@@ -284,11 +283,11 @@ var _ = Describe("Validation", func() {
 			registryConfig.Caches = append(registryConfig.Caches,
 				registryapi.RegistryCache{
 					Upstream:          "quay.io",
-					ServiceNameSuffix: ptr.To("docker-io"),
+					ServiceNameSuffix: new("docker-io"),
 				},
 				registryapi.RegistryCache{
 					Upstream:          "ghcr.com",
-					ServiceNameSuffix: ptr.To("myproj-releases-common-repositories-c-3f834"),
+					ServiceNameSuffix: new("myproj-releases-common-repositories-c-3f834"),
 				},
 				registryapi.RegistryCache{
 					Upstream: "myproj-releases.common.repositories.cloud.com",
@@ -312,19 +311,19 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny invalid remoteURLs", func() {
-			registryConfig.Caches[0].RemoteURL = ptr.To("ftp://docker.io")
+			registryConfig.Caches[0].RemoteURL = new("ftp://docker.io")
 			registryConfig.Caches = append(registryConfig.Caches,
 				registryapi.RegistryCache{
 					Upstream:  "my-registry.io:5000",
-					RemoteURL: ptr.To("http://my-registry.io:5000/repository"),
+					RemoteURL: new("http://my-registry.io:5000/repository"),
 				},
 				registryapi.RegistryCache{
 					Upstream:  "my-registry.io:8443",
-					RemoteURL: ptr.To("https://my-registry.io:8443/repository"),
+					RemoteURL: new("https://my-registry.io:8443/repository"),
 				},
 				registryapi.RegistryCache{
 					Upstream:  "quay.io",
-					RemoteURL: ptr.To("mirror-host.io:8443"),
+					RemoteURL: new("mirror-host.io:8443"),
 				},
 			)
 			Expect(ValidateRegistryConfig(registryConfig, fldPath)).To(ConsistOf(
@@ -353,7 +352,7 @@ var _ = Describe("Validation", func() {
 
 		It("should deny invalid proxy config", func() {
 			registryConfig.Caches[0].Proxy = &registryapi.Proxy{
-				HTTPProxy:  ptr.To("10.10.10.10"),
+				HTTPProxy:  new("10.10.10.10"),
 				HTTPSProxy: nil,
 			}
 			registryConfig.Caches = append(registryConfig.Caches,
@@ -361,7 +360,7 @@ var _ = Describe("Validation", func() {
 					Upstream: "my-registry.io",
 					Proxy: &registryapi.Proxy{
 						HTTPProxy:  nil,
-						HTTPSProxy: ptr.To("http://foo!bar"),
+						HTTPSProxy: new("http://foo!bar"),
 					},
 				},
 				registryapi.RegistryCache{
@@ -425,13 +424,13 @@ var _ = Describe("Validation", func() {
 		})
 
 		It("should deny cache volume storageClassName update", func() {
-			registryConfig.Caches[0].Volume.StorageClassName = ptr.To("foo")
+			registryConfig.Caches[0].Volume.StorageClassName = new("foo")
 
 			Expect(ValidateRegistryConfigUpdate(oldRegistryConfig, registryConfig, fldPath)).To(ConsistOf(
 				PointTo(MatchFields(IgnoreExtras, Fields{
 					"Type":     Equal(field.ErrorTypeInvalid),
 					"Field":    Equal("providerConfig.caches[0].volume.storageClassName"),
-					"BadValue": Equal(ptr.To("foo")),
+					"BadValue": Equal(new("foo")),
 					"Detail":   Equal("field is immutable"),
 				})),
 			))
@@ -465,7 +464,7 @@ var _ = Describe("Validation", func() {
 					Namespace: "foo",
 					Name:      "bar",
 				},
-				Immutable: ptr.To(true),
+				Immutable: new(true),
 				Data: map[string][]byte{
 					"username": []byte("john"),
 					"password": []byte("swordfish"),
@@ -491,7 +490,7 @@ var _ = Describe("Validation", func() {
 				))
 			},
 			Entry("when immutable field is nil", nil),
-			Entry("when immutable field is false", ptr.To(false)),
+			Entry("when immutable field is false", new(false)),
 		)
 
 		DescribeTable("should have only two data entries",

@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -273,7 +272,7 @@ var _ = Describe("Shoot validator", func() {
 						Name:      "docker-creds-v1",
 						Namespace: "garden-dev",
 					},
-					Immutable: ptr.To(true),
+					Immutable: new(true),
 					Data: map[string][]byte{
 						"username": []byte("john"),
 						"password": []byte("swordfish"),
@@ -300,7 +299,7 @@ var _ = Describe("Shoot validator", func() {
 								Volume: &v1alpha3.Volume{
 									Size: &size,
 								},
-								SecretReferenceName: ptr.To("docker-creds"),
+								SecretReferenceName: new("docker-creds"),
 							},
 						},
 					}),
@@ -341,7 +340,7 @@ var _ = Describe("Shoot validator", func() {
 			})
 
 			It("should return err when secret is invalid", func() {
-				secret.Immutable = ptr.To(false)
+				secret.Immutable = new(false)
 				delete(secret.Data, "password")
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 

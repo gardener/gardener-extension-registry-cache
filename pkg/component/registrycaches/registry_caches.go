@@ -251,8 +251,8 @@ func networkPolicy() *networkingv1.NetworkPolicy {
 			Ingress: []networkingv1.NetworkPolicyIngressRule{
 				{
 					Ports: []networkingv1.NetworkPolicyPort{
-						{Port: ptr.To(intstr.FromInt32(constants.RegistryCacheServerPort)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
-						{Port: ptr.To(intstr.FromInt32(constants.RegistryCacheDebugPort)), Protocol: ptr.To(corev1.ProtocolTCP)},  // Registry cache's debug port (metrics and health endpoints)
+						{Port: new(intstr.FromInt32(constants.RegistryCacheServerPort)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
+						{Port: new(intstr.FromInt32(constants.RegistryCacheDebugPort)), Protocol: ptr.To(corev1.ProtocolTCP)},  // Registry cache's debug port (metrics and health endpoints)
 
 					},
 				},
@@ -350,10 +350,10 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 					}),
 				},
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: ptr.To(false),
+					AutomountServiceAccountToken: new(false),
 					PriorityClassName:            "system-cluster-critical",
 					SecurityContext: &corev1.PodSecurityContext{
-						FSGroup:             ptr.To(int64(65532)),
+						FSGroup:             new(int64(65532)),
 						FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
@@ -381,10 +381,10 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: ptr.To(false),
-								RunAsNonRoot:             ptr.To(true),
-								RunAsUser:                ptr.To(int64(65532)),
-								RunAsGroup:               ptr.To(int64(65532)),
+								AllowPrivilegeEscalation: new(false),
+								RunAsNonRoot:             new(true),
+								RunAsUser:                new(int64(65532)),
+								RunAsGroup:               new(int64(65532)),
 								Capabilities: &corev1.Capabilities{
 									Drop: []corev1.Capability{
 										"ALL",
@@ -516,7 +516,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 				Labels:    registryutils.GetLabels(name, upstreamLabel),
 			},
 			Spec: policyv1.PodDisruptionBudgetSpec{
-				MaxUnavailable:             ptr.To(intstr.FromInt32(1)),
+				MaxUnavailable:             new(intstr.FromInt32(1)),
 				Selector:                   statefulSet.Spec.Selector,
 				UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
 			},

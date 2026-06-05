@@ -105,7 +105,7 @@ var _ = Describe("Ensurer", func() {
 					Registries: []extensionsv1alpha1.RegistryConfig{
 						{
 							Upstream: "foo.io",
-							Server:   ptr.To("https://foo.io"),
+							Server:   new("https://foo.io"),
 							Hosts: []extensionsv1alpha1.RegistryHost{
 								{
 									URL:          "https://mirror.foo.io",
@@ -192,7 +192,7 @@ var _ = Describe("Ensurer", func() {
 
 			expectedRegistries := []extensionsv1alpha1.RegistryConfig{{
 				Upstream: "docker.io",
-				Server:   ptr.To("https://registry-1.docker.io"),
+				Server:   new("https://registry-1.docker.io"),
 				Hosts: []extensionsv1alpha1.RegistryHost{
 					{
 						URL:          "https://mirror.gcr.io",
@@ -215,7 +215,7 @@ var _ = Describe("Ensurer", func() {
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
 				Upstream: "docker.io",
-				Server:   ptr.To("https://registry-1.docker.io"),
+				Server:   new("https://registry-1.docker.io"),
 				Hosts: []extensionsv1alpha1.RegistryHost{
 					{
 						URL:          "https://mirror.gcr.io",
@@ -241,7 +241,7 @@ var _ = Describe("Ensurer", func() {
 							Hosts: []v1alpha1.MirrorHost{
 								{
 									Host:                        "https://private-mirror.internal/v2/docker/" + strings.Repeat("n", 208),
-									CABundleSecretReferenceName: ptr.To("ca-bundle"),
+									CABundleSecretReferenceName: new("ca-bundle"),
 								},
 							},
 						},
@@ -256,7 +256,7 @@ var _ = Describe("Ensurer", func() {
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
 				Upstream: "docker.io",
-				Server:   ptr.To("https://registry-1.docker.io"),
+				Server:   new("https://registry-1.docker.io"),
 				Hosts: []extensionsv1alpha1.RegistryHost{
 					{
 						URL:          "https://private-mirror.internal/v2/docker/" + strings.Repeat("n", 208),
@@ -280,7 +280,7 @@ var _ = Describe("Ensurer", func() {
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
 				Upstream: "docker.io",
-				Server:   ptr.To("https://registry-1.docker.io"),
+				Server:   new("https://registry-1.docker.io"),
 				Hosts: []extensionsv1alpha1.RegistryHost{
 					{
 						URL:          "https://mirror.gcr.io",
@@ -291,7 +291,7 @@ var _ = Describe("Ensurer", func() {
 
 			criConfig.Containerd.Registries = append(criConfig.Containerd.Registries, extensionsv1alpha1.RegistryConfig{
 				Upstream: "docker.io",
-				Server:   ptr.To("foo"),
+				Server:   new("foo"),
 				Hosts: []extensionsv1alpha1.RegistryHost{
 					{
 						URL:          "bar",
@@ -319,7 +319,7 @@ var _ = Describe("Ensurer", func() {
 								{
 									Host:         "https://non-compliant-mirror.registry/v2/quay",
 									Capabilities: []v1alpha1.MirrorHostCapability{v1alpha1.MirrorHostCapabilityPull, v1alpha1.MirrorHostCapabilityResolve},
-									OverridePath: ptr.To(true),
+									OverridePath: new(true),
 								},
 							},
 						},
@@ -334,12 +334,12 @@ var _ = Describe("Ensurer", func() {
 			expectedRegistries := criConfig.Containerd.DeepCopy().Registries
 			expectedRegistries = append(expectedRegistries, extensionsv1alpha1.RegistryConfig{
 				Upstream: "quay.io",
-				Server:   ptr.To("https://quay.io"),
+				Server:   new("https://quay.io"),
 				Hosts: []extensionsv1alpha1.RegistryHost{
 					{
 						URL:          "https://non-compliant-mirror.registry/v2/quay",
 						Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
-						OverridePath: ptr.To(true),
+						OverridePath: new(true),
 					},
 				},
 			})
@@ -396,7 +396,7 @@ var _ = Describe("Ensurer", func() {
 										Hosts: []v1alpha1.MirrorHost{
 											{
 												Host:                        "https://private-mirror.internal",
-												CABundleSecretReferenceName: ptr.To("ca-bundle"),
+												CABundleSecretReferenceName: new("ca-bundle"),
 											},
 										},
 									},
@@ -411,7 +411,7 @@ var _ = Describe("Ensurer", func() {
 					Name:      "ref-" + caSecretName,
 					Namespace: namespace,
 				},
-				Immutable: ptr.To(true),
+				Immutable: new(true),
 				Data: map[string][]byte{
 					"bundle.crt": []byte("bar"),
 				},
@@ -575,7 +575,7 @@ var _ = Describe("Ensurer", func() {
 							Hosts: []v1alpha1.MirrorHost{
 								{
 									Host:                        "https://private-mirror.internal/v2/docker/" + strings.Repeat("n", 208),
-									CABundleSecretReferenceName: ptr.To("ca-bundle"),
+									CABundleSecretReferenceName: new("ca-bundle"),
 								},
 							},
 						},

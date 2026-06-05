@@ -11,7 +11,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 
 	mirrorapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
 	. "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/validation"
@@ -256,7 +255,7 @@ var _ = Describe("Validation", func() {
 					Namespace: "foo",
 					Name:      "bar",
 				},
-				Immutable: ptr.To(true),
+				Immutable: new(true),
 				Data: map[string][]byte{
 					"bundle.crt": []byte(caBundle),
 				},
@@ -281,7 +280,7 @@ var _ = Describe("Validation", func() {
 				))
 			},
 			Entry("when immutable field is nil", nil),
-			Entry("when immutable field is false", ptr.To(false)),
+			Entry("when immutable field is false", new(false)),
 		)
 
 		It("should deny secret without 'bundle.crt' data entry", func() {

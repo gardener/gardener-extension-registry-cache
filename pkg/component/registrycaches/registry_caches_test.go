@@ -117,7 +117,7 @@ var _ = Describe("RegistryCaches", func() {
 					Upstream: "europe-docker.pkg.dev",
 					Volume: &registryapi.Volume{
 						Size:             &arSize,
-						StorageClassName: ptr.To("premium"),
+						StorageClassName: new("premium"),
 					},
 					GarbageCollection: &registryapi.GarbageCollection{
 						TTL: metav1.Duration{Duration: 0},
@@ -168,8 +168,8 @@ var _ = Describe("RegistryCaches", func() {
 					Ingress: []networkingv1.NetworkPolicyIngressRule{
 						{
 							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: ptr.To(intstr.FromInt32(5000)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
-								{Port: ptr.To(intstr.FromInt32(5001)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's debug port (metrics and health endpoints)
+								{Port: new(intstr.FromInt32(5000)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
+								{Port: new(intstr.FromInt32(5001)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's debug port (metrics and health endpoints)
 							},
 						},
 					},
@@ -188,7 +188,7 @@ var _ = Describe("RegistryCaches", func() {
 							"resources.gardener.cloud/garbage-collectable-reference": "true",
 						},
 					},
-					Immutable: ptr.To(true),
+					Immutable: new(true),
 					Data: map[string][]byte{
 						"config.yml": []byte(configYAML),
 					},
@@ -209,7 +209,7 @@ var _ = Describe("RegistryCaches", func() {
 							"resources.gardener.cloud/garbage-collectable-reference": "true",
 						},
 					},
-					Immutable: ptr.To(true),
+					Immutable: new(true),
 					Type:      corev1.SecretTypeOpaque,
 					Data: map[string][]byte{
 						"tls.crt": crt,
@@ -309,10 +309,10 @@ proxy:
 								},
 							},
 							Spec: corev1.PodSpec{
-								AutomountServiceAccountToken: ptr.To(false),
+								AutomountServiceAccountToken: new(false),
 								PriorityClassName:            "system-cluster-critical",
 								SecurityContext: &corev1.PodSecurityContext{
-									FSGroup:             ptr.To(int64(65532)),
+									FSGroup:             new(int64(65532)),
 									FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
 									SeccompProfile: &corev1.SeccompProfile{
 										Type: corev1.SeccompProfileTypeRuntimeDefault,
@@ -341,10 +341,10 @@ proxy:
 										},
 										Env: env,
 										SecurityContext: &corev1.SecurityContext{
-											AllowPrivilegeEscalation: ptr.To(false),
-											RunAsNonRoot:             ptr.To(true),
-											RunAsUser:                ptr.To(int64(65532)),
-											RunAsGroup:               ptr.To(int64(65532)),
+											AllowPrivilegeEscalation: new(false),
+											RunAsNonRoot:             new(true),
+											RunAsUser:                new(int64(65532)),
+											RunAsGroup:               new(int64(65532)),
 											Capabilities: &corev1.Capabilities{
 												Drop: []corev1.Capability{
 													"ALL",
@@ -457,7 +457,7 @@ proxy:
 						},
 					},
 					Spec: policyv1.PodDisruptionBudgetSpec{
-						MaxUnavailable: ptr.To(intstr.FromInt32(1)),
+						MaxUnavailable: new(intstr.FromInt32(1)),
 						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"app":           name,
@@ -540,12 +540,12 @@ proxy:
 						Labels:          map[string]string{"origin": "registry-cache"},
 					},
 					Spec: resourcesv1alpha1.ManagedResourceSpec{
-						DeletePersistentVolumeClaims: ptr.To(true),
+						DeletePersistentVolumeClaims: new(true),
 						InjectLabels:                 map[string]string{"shoot.gardener.cloud/no-cleanup": "true"},
 						SecretRefs: []corev1.LocalObjectReference{{
 							Name: managedResource.Spec.SecretRefs[0].Name,
 						}},
-						KeepObjects: ptr.To(false),
+						KeepObjects: new(false),
 					},
 				}
 				utilruntime.Must(references.InjectAnnotations(expectedMr))
@@ -554,7 +554,7 @@ proxy:
 				managedResourceSecret.Name = managedResource.Spec.SecretRefs[0].Name
 				Expect(c.Get(ctx, client.ObjectKeyFromObject(managedResourceSecret), managedResourceSecret)).To(Succeed())
 				Expect(managedResourceSecret.Type).To(Equal(corev1.SecretTypeOpaque))
-				Expect(managedResourceSecret.Immutable).To(Equal(ptr.To(true)))
+				Expect(managedResourceSecret.Immutable).To(Equal(new(true)))
 				Expect(managedResourceSecret.Labels["resources.gardener.cloud/garbage-collectable-reference"]).To(Equal("true"))
 
 				dockerConfigSecret := configSecretFor("registry-docker-io", "docker.io", configYAMLFor("https://registry-1.docker.io", "336h0m0s", "", "", true))
@@ -571,7 +571,7 @@ proxy:
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -600,7 +600,7 @@ proxy:
 					dockerTLSSecret,
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), nil, false),
 				))
 			})
 		})
@@ -608,12 +608,12 @@ proxy:
 		Context("when a proxy is set", func() {
 			BeforeEach(func() {
 				values.Caches[0].Proxy = &registryapi.Proxy{
-					HTTPProxy:  ptr.To("http://127.0.0.1"),
-					HTTPSProxy: ptr.To("http://127.0.0.1"),
+					HTTPProxy:  new("http://127.0.0.1"),
+					HTTPSProxy: new("http://127.0.0.1"),
 				}
 				values.Caches[1].Proxy = &registryapi.Proxy{
-					HTTPProxy:  ptr.To("http://127.0.0.1"),
-					HTTPSProxy: ptr.To("http://127.0.0.1"),
+					HTTPProxy:  new("http://127.0.0.1"),
+					HTTPSProxy: new("http://127.0.0.1"),
 				}
 			})
 
@@ -647,7 +647,7 @@ proxy:
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, env, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), env, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), env, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -679,7 +679,7 @@ proxy:
 					podDisruptionBudget("registry-docker-io", "docker.io"),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, true),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), nil, true),
 					podDisruptionBudget("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev"),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
@@ -718,7 +718,7 @@ proxy:
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, false, "", nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -726,8 +726,8 @@ proxy:
 
 		Context("when service name suffix is set", func() {
 			BeforeEach(func() {
-				values.Caches[0].ServiceNameSuffix = ptr.To("static-name1")
-				values.Caches[1].ServiceNameSuffix = ptr.To("static-name2")
+				values.Caches[0].ServiceNameSuffix = new("static-name1")
+				values.Caches[1].ServiceNameSuffix = new("static-name2")
 			})
 
 			It("should successfully deploy the resources", func() {
@@ -749,7 +749,7 @@ proxy:
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -786,8 +786,8 @@ proxy:
 					{Name: "docker-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "docker-creds", Kind: "Secret"}},
 					{Name: "ar-ref", ResourceRef: autoscalingv1.CrossVersionObjectReference{Name: "ar-creds", Kind: "Secret"}},
 				}
-				values.Caches[0].SecretReferenceName = ptr.To("docker-ref")
-				values.Caches[1].SecretReferenceName = ptr.To("ar-ref")
+				values.Caches[0].SecretReferenceName = new("docker-ref")
+				values.Caches[1].SecretReferenceName = new("ar-ref")
 			})
 
 			JustBeforeEach(func() {
@@ -818,7 +818,7 @@ proxy:
 					statefulSetFor("registry-docker-io", "docker.io", "10Gi", dockerConfigSecret.Name, true, dockerTLSSecret.Name, nil, nil, false),
 					vpaFor("registry-docker-io"),
 					arConfigSecret,
-					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", ptr.To("premium"), nil, false),
+					statefulSetFor("registry-europe-docker-pkg-dev", "europe-docker.pkg.dev", "20Gi", arConfigSecret.Name, false, "", new("premium"), nil, false),
 					vpaFor("registry-europe-docker-pkg-dev"),
 				))
 			})
@@ -887,7 +887,7 @@ proxy:
 			Expect(scrapeConfig.Labels).To(HaveKeyWithValue("prometheus", "shoot"))
 			Expect(scrapeConfig.Labels).To(HaveKeyWithValue("component", "registry-cache"))
 			Expect(scrapeConfig.Spec.Authorization.Credentials.LocalObjectReference.Name).To(Equal("shoot-access-prometheus-shoot"))
-			Expect(scrapeConfig.Spec.KubernetesSDConfigs[0].APIServer).To(Equal(ptr.To("https://kube-apiserver:443")))
+			Expect(scrapeConfig.Spec.KubernetesSDConfigs[0].APIServer).To(Equal(new("https://kube-apiserver:443")))
 			Expect(scrapeConfig.Spec.RelabelConfigs).To(HaveLen(5))
 			Expect(scrapeConfig.Spec.MetricRelabelConfigs).To(HaveLen(1))
 			Expect(scrapeConfig.Spec.MetricRelabelConfigs[0].Regex).To(Equal("^(registry_proxy_.+)$"))
