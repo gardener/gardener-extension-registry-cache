@@ -11,7 +11,6 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/test/framework"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 )
 
 const (
@@ -46,13 +45,13 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			},
 			CredentialsBindingName: new("local"),
 			Region:                 "local",
-			Purpose:                ptr.To(gardencorev1beta1.ShootPurposeTesting),
+			Purpose:                new(gardencorev1beta1.ShootPurposeTesting),
 			Kubernetes: gardencorev1beta1.Kubernetes{
 				Version: "1.35.4",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
 					SerializeImagePulls: new(false),
-					RegistryPullQPS:     ptr.To[int32](10),
-					RegistryBurst:       ptr.To[int32](20),
+					RegistryPullQPS:     new(int32(10)),
+					RegistryBurst:       new(int32(20)),
 				},
 				VerticalPodAutoscaler: &gardencorev1beta1.VerticalPodAutoscaler{
 					Enabled: false,

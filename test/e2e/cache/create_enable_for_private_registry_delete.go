@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
@@ -221,7 +220,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 					"app": "test-registry",
 				},
 			},
-			Replicas: ptr.To[int32](1),
+			Replicas: new(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -314,7 +313,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{"app": "test-registry"}},
 			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{{
-				Ports: []networkingv1.NetworkPolicyPort{{Protocol: ptr.To(corev1.ProtocolTCP), Port: new(intstr.FromInt32(5000))}},
+				Ports: []networkingv1.NetworkPolicyPort{{Protocol: new(corev1.ProtocolTCP), Port: new(intstr.FromInt32(5000))}},
 			}},
 		},
 	}

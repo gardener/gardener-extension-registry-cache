@@ -22,7 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -547,7 +546,7 @@ var _ = Describe("Ensurer", func() {
 			expectedNewFiles = append(expectedNewFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
-					Permissions: ptr.To[uint32](0644),
+					Permissions: new(uint32(0644)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -592,7 +591,7 @@ var _ = Describe("Ensurer", func() {
 			expectedNewFiles = append(expectedNewFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-v2-docker-" + strings.Repeat("n", 201) + "-89994-ca-bundle.pem",
-					Permissions: ptr.To[uint32](0644),
+					Permissions: new(uint32(0644)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -617,7 +616,7 @@ var _ = Describe("Ensurer", func() {
 			newFiles = append(newFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
-					Permissions: ptr.To[uint32](0642),
+					Permissions: new(uint32(0642)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -630,7 +629,7 @@ var _ = Describe("Ensurer", func() {
 			copy(expectedNewFiles, newFiles)
 			expectedNewFiles[1] = extensionsv1alpha1.File{
 				Path:        "/etc/containerd/certs.d/docker.io/private-mirror.internal-ca-bundle.pem",
-				Permissions: ptr.To[uint32](0644),
+				Permissions: new(uint32(0644)),
 				Content: extensionsv1alpha1.FileContent{
 					Inline: &extensionsv1alpha1.FileContentInline{
 						Encoding: "b64",

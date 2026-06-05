@@ -19,7 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 )
 
 var (
@@ -53,7 +52,7 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
    /
  kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
 ) < 5`),
-						For: ptr.To(monitoringv1.Duration("1h")),
+						For: new(monitoringv1.Duration("1h")),
 						Labels: map[string]string{
 							"service":    "registry-cache-extension",
 							"severity":   "warning",
@@ -74,7 +73,7 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 ) < 15
 and
 predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}[30m], 4 * 24 * 3600) <= 0`),
-						For: ptr.To(monitoringv1.Duration("1h")),
+						For: new(monitoringv1.Duration("1h")),
 						Labels: map[string]string{
 							"service":    "registry-cache-extension",
 							"severity":   "warning",
@@ -111,8 +110,8 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "prometheus", "shoot")
 		scrapeConfig.Spec = monitoringv1alpha1.ScrapeConfigSpec{
 			HonorLabels:   new(false),
-			ScrapeTimeout: ptr.To(monitoringv1.Duration("10s")),
-			Scheme:        ptr.To(monitoringv1.SchemeHTTPS),
+			ScrapeTimeout: new(monitoringv1.Duration("10s")),
+			Scheme:        new(monitoringv1.SchemeHTTPS),
 			// This is needed because the kubelets' certificates are not are generated for a specific pod IP
 			TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: new(true)},
 			Authorization: &monitoringv1.SafeAuthorization{Credentials: &corev1.SecretKeySelector{

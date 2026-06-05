@@ -38,7 +38,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	vpaautoscalingv1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -168,8 +167,8 @@ var _ = Describe("RegistryCaches", func() {
 					Ingress: []networkingv1.NetworkPolicyIngressRule{
 						{
 							Ports: []networkingv1.NetworkPolicyPort{
-								{Port: new(intstr.FromInt32(5000)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
-								{Port: new(intstr.FromInt32(5001)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's debug port (metrics and health endpoints)
+								{Port: new(intstr.FromInt32(5000)), Protocol: new(corev1.ProtocolTCP)}, // Registry cache's server port
+								{Port: new(intstr.FromInt32(5001)), Protocol: new(corev1.ProtocolTCP)}, // Registry cache's debug port (metrics and health endpoints)
 							},
 						},
 					},
@@ -296,8 +295,8 @@ proxy:
 								"upstream-host": upstream,
 							},
 						},
-						RevisionHistoryLimit: ptr.To[int32](2),
-						Replicas:             ptr.To[int32](1),
+						RevisionHistoryLimit: new(int32(2)),
+						Replicas:             new(int32(1)),
 						Template: corev1.PodTemplateSpec{
 							ObjectMeta: metav1.ObjectMeta{
 								Labels: map[string]string{
@@ -313,7 +312,7 @@ proxy:
 								PriorityClassName:            "system-cluster-critical",
 								SecurityContext: &corev1.PodSecurityContext{
 									FSGroup:             new(int64(65532)),
-									FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
+									FSGroupChangePolicy: new(corev1.FSGroupChangeOnRootMismatch),
 									SeccompProfile: &corev1.SeccompProfile{
 										Type: corev1.SeccompProfileTypeRuntimeDefault,
 									},
@@ -427,7 +426,7 @@ proxy:
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
 								SecretName:  tlsSecretName,
-								DefaultMode: ptr.To[int32](0640),
+								DefaultMode: new(int32(0640)),
 							},
 						},
 					})
@@ -464,7 +463,7 @@ proxy:
 								"upstream-host": upstream,
 							},
 						},
-						UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+						UnhealthyPodEvictionPolicy: new(policyv1.AlwaysAllow),
 					},
 				}
 			}
@@ -482,20 +481,20 @@ proxy:
 							Name:       name,
 						},
 						UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
-							UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeRecreate),
+							UpdateMode: new(vpaautoscalingv1.UpdateModeRecreate),
 						},
 						ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
 							ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
 								{
 									ContainerName:    "registry-cache",
-									ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
+									ControlledValues: new(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
 									MinAllowed: corev1.ResourceList{
 										corev1.ResourceMemory: resource.MustParse("20Mi"),
 									},
 								},
 								{
 									ContainerName: "*",
-									Mode:          ptr.To(vpaautoscalingv1.ContainerScalingModeOff),
+									Mode:          new(vpaautoscalingv1.ContainerScalingModeOff),
 								},
 							},
 						},
