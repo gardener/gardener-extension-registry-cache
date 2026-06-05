@@ -278,7 +278,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
-		configValues  = map[string]interface{}{
+		configValues  = map[string]any{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCacheServerPort),
 			"http_debug_addr": fmt.Sprintf(":%d", constants.RegistryCacheDebugPort),
 			"proxy_remoteurl": remoteURL,

@@ -273,7 +273,7 @@ proxy:
 				}
 
 				// Verify that the config is a valid YAML
-				Expect(yaml.Unmarshal([]byte(config), &map[string]interface{}{})).To(Succeed())
+				Expect(yaml.Unmarshal([]byte(config), &map[string]any{})).To(Succeed())
 
 				return config
 			}
