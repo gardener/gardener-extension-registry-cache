@@ -20,7 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -110,7 +109,7 @@ var _ = Describe("Ensurer", func() {
 					Registries: []extensionsv1alpha1.RegistryConfig{
 						{
 							Upstream: "foo.io",
-							Server:   ptr.To("https://foo.io"),
+							Server:   new("https://foo.io"),
 							Hosts: []extensionsv1alpha1.RegistryHost{
 								{
 									URL:          "https://bar.io",
@@ -152,7 +151,7 @@ var _ = Describe("Ensurer", func() {
 		})
 
 		It("should do nothing if hibernation is enabled for Shoot", func() {
-			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -289,7 +288,7 @@ var _ = Describe("Ensurer", func() {
 									APIVersion: v1alpha3.SchemeGroupVersion.String(),
 									Kind:       "RegistryStatus",
 								},
-								CASecretName: ptr.To(caSecretName),
+								CASecretName: new(caSecretName),
 							},
 						},
 					},
@@ -347,7 +346,7 @@ var _ = Describe("Ensurer", func() {
 		})
 
 		It("should do nothing if hibernation is enabled for Shoot", func() {
-			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: ptr.To(true)}
+			cluster.Shoot.Spec.Hibernation = &gardencorev1beta1.Hibernation{Enabled: new(true)}
 
 			gctx := extensionscontextwebhook.NewInternalGardenContext(cluster)
 
@@ -457,7 +456,7 @@ var _ = Describe("Ensurer", func() {
 			expectedNewFiles = append(expectedNewFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/ca-bundle.pem",
-					Permissions: ptr.To[uint32](0644),
+					Permissions: new(uint32(0644)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -482,7 +481,7 @@ var _ = Describe("Ensurer", func() {
 			newFiles = append(newFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/ca-bundle.pem",
-					Permissions: ptr.To[uint32](0642),
+					Permissions: new(uint32(0642)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -495,7 +494,7 @@ var _ = Describe("Ensurer", func() {
 			copy(expectedNewFiles, newFiles)
 			expectedNewFiles[1] = extensionsv1alpha1.File{
 				Path:        "/etc/containerd/certs.d/ca-bundle.pem",
-				Permissions: ptr.To[uint32](0644),
+				Permissions: new(uint32(0644)),
 				Content: extensionsv1alpha1.FileContent{
 					Inline: &extensionsv1alpha1.FileContentInline{
 						Encoding: "b64",
@@ -513,7 +512,7 @@ var _ = Describe("Ensurer", func() {
 func createRegistryConfig(upstream, server, host string, caCerts []string) extensionsv1alpha1.RegistryConfig {
 	return extensionsv1alpha1.RegistryConfig{
 		Upstream: upstream,
-		Server:   ptr.To(server),
+		Server:   new(server),
 		Hosts: []extensionsv1alpha1.RegistryHost{
 			{
 				URL:          host,
@@ -521,6 +520,6 @@ func createRegistryConfig(upstream, server, host string, caCerts []string) exten
 				CACerts:      caCerts,
 			},
 		},
-		ReadinessProbe: ptr.To(true),
+		ReadinessProbe: new(true),
 	}
 }

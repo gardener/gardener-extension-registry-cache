@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -109,7 +108,7 @@ var _ = Describe("RegistryCacheServices", func() {
 					HTTP: &registryapi.HTTP{
 						TLS: false,
 					},
-					ServiceNameSuffix: ptr.To("static-name"),
+					ServiceNameSuffix: new("static-name"),
 				},
 			},
 		}
@@ -150,7 +149,7 @@ var _ = Describe("RegistryCacheServices", func() {
 					SecretRefs: []corev1.LocalObjectReference{{
 						Name: managedResource.Spec.SecretRefs[0].Name,
 					}},
-					KeepObjects: ptr.To(false),
+					KeepObjects: new(false),
 				},
 			}
 			utilruntime.Must(references.InjectAnnotations(expectedMr))

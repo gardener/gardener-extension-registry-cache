@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
@@ -81,7 +80,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 				Name:      "ro-upstream-secret",
 				Namespace: f.ProjectNamespace,
 			},
-			Immutable: ptr.To(true),
+			Immutable: new(true),
 			Type:      corev1.SecretTypeOpaque,
 			Data: map[string][]byte{
 				"username": []byte("admin"),
@@ -125,9 +124,9 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 			common.AddOrUpdateRegistryCacheExtension(shoot, []v1alpha3.RegistryCache{
 				{
 					Upstream:            upstreamHostPort,
-					RemoteURL:           ptr.To("http://" + upstreamHostPort),
+					RemoteURL:           new("http://" + upstreamHostPort),
 					Volume:              &v1alpha3.Volume{Size: &size},
-					SecretReferenceName: ptr.To("upstream-secret"),
+					SecretReferenceName: new("upstream-secret"),
 				},
 			})
 
@@ -221,7 +220,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 					"app": "test-registry",
 				},
 			},
-			Replicas: ptr.To[int32](1),
+			Replicas: new(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -229,7 +228,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 					},
 				},
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: ptr.To(false),
+					AutomountServiceAccountToken: new(false),
 					PriorityClassName:            "system-cluster-critical",
 					SecurityContext: &corev1.PodSecurityContext{
 						SeccompProfile: &corev1.SeccompProfile{
@@ -314,7 +313,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{"app": "test-registry"}},
 			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{{
-				Ports: []networkingv1.NetworkPolicyPort{{Protocol: ptr.To(corev1.ProtocolTCP), Port: ptr.To(intstr.FromInt32(5000))}},
+				Ports: []networkingv1.NetworkPolicyPort{{Protocol: new(corev1.ProtocolTCP), Port: new(intstr.FromInt32(5000))}},
 			}},
 		},
 	}
@@ -325,7 +324,7 @@ func deployUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFrame
 
 // pushImageToUpstreamRegistry pushes the alpine:3.18.8 image to the upstream registry.
 func pushImageToUpstreamRegistry(ctx context.Context, f *framework.ShootCreationFramework, upstreamHostPort, password string) {
-	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, ptr.To("local"))
+	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, f.ShootFramework.ShootClient, new("local"))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, nodeList.Items).ToNot(BeEmpty(), "Expected to find at least one Node in the cluster")
 

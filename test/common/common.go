@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mirrorv1alpha1 "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror/v1alpha1"
@@ -192,7 +191,7 @@ func AlpinePodMutateFn(pod *corev1.Pod) *corev1.Pod {
 	pod.Spec.Containers[0].Args = []string{"infinity"}
 	// "sleep infinity" runs as pid 1, pid 1 does not handle SIGTERM.
 	// Use terminationGracePeriodSeconds=0 to do not wait 30 seconds (default) for container to be terminated.
-	pod.Spec.TerminationGracePeriodSeconds = ptr.To[int64](0)
+	pod.Spec.TerminationGracePeriodSeconds = new(int64(0))
 
 	return pod
 }

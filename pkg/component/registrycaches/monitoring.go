@@ -19,7 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 )
 
 var (
@@ -53,7 +52,7 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
    /
  kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}
 ) < 5`),
-						For: ptr.To(monitoringv1.Duration("1h")),
+						For: new(monitoringv1.Duration("1h")),
 						Labels: map[string]string{
 							"service":    "registry-cache-extension",
 							"severity":   "warning",
@@ -74,7 +73,7 @@ func (r *registryCaches) deployMonitoringConfig(ctx context.Context) error {
 ) < 15
 and
 predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cache-volume-registry-.+$"}[30m], 4 * 24 * 3600) <= 0`),
-						For: ptr.To(monitoringv1.Duration("1h")),
+						For: new(monitoringv1.Duration("1h")),
 						Labels: map[string]string{
 							"service":    "registry-cache-extension",
 							"severity":   "warning",
@@ -110,17 +109,17 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "component", "registry-cache")
 		metav1.SetMetaDataLabel(&scrapeConfig.ObjectMeta, "prometheus", "shoot")
 		scrapeConfig.Spec = monitoringv1alpha1.ScrapeConfigSpec{
-			HonorLabels:   ptr.To(false),
-			ScrapeTimeout: ptr.To(monitoringv1.Duration("10s")),
-			Scheme:        ptr.To(monitoringv1.SchemeHTTPS),
+			HonorLabels:   new(false),
+			ScrapeTimeout: new(monitoringv1.Duration("10s")),
+			Scheme:        new(monitoringv1.SchemeHTTPS),
 			// This is needed because the kubelets' certificates are not are generated for a specific pod IP
-			TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)},
+			TLSConfig: &monitoringv1.SafeTLSConfig{InsecureSkipVerify: new(true)},
 			Authorization: &monitoringv1.SafeAuthorization{Credentials: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: "shoot-access-prometheus-shoot"},
 				Key:                  "token",
 			}},
 			KubernetesSDConfigs: []monitoringv1alpha1.KubernetesSDConfig{{
-				APIServer:  ptr.To("https://" + v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
+				APIServer:  new("https://" + v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
 				Role:       "Endpoints",
 				Namespaces: &monitoringv1alpha1.NamespaceDiscovery{Names: []string{metav1.NamespaceSystem}},
 				Authorization: &monitoringv1.SafeAuthorization{Credentials: &corev1.SecretKeySelector{
@@ -128,13 +127,13 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 					Key:                  "token",
 				}},
 				// This is needed because we do not fetch the correct cluster CA bundle right now
-				TLSConfig:       &monitoringv1.SafeTLSConfig{InsecureSkipVerify: ptr.To(true)},
-				FollowRedirects: ptr.To(true),
+				TLSConfig:       &monitoringv1.SafeTLSConfig{InsecureSkipVerify: new(true)},
+				FollowRedirects: new(true),
 			}},
 			RelabelConfigs: []monitoringv1.RelabelConfig{
 				{
 					Action:      "replace",
-					Replacement: ptr.To("registry-cache-metrics"),
+					Replacement: new("registry-cache-metrics"),
 					TargetLabel: "job",
 				},
 				{
@@ -149,14 +148,14 @@ predict_linear(kubelet_volume_stats_available_bytes{persistentvolumeclaim=~"^cac
 				{
 					TargetLabel: "__address__",
 					Action:      "replace",
-					Replacement: ptr.To(v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
+					Replacement: new(v1beta1constants.DeploymentNameKubeAPIServer + ":" + strconv.Itoa(kubeapiserverconstants.Port)),
 				},
 				{
 					SourceLabels: []monitoringv1.LabelName{"__meta_kubernetes_pod_name", "__meta_kubernetes_pod_container_port_number"},
 					Action:       "replace",
 					TargetLabel:  "__metrics_path__",
 					Regex:        `(.+);(.+)`,
-					Replacement:  ptr.To("/api/v1/namespaces/kube-system/pods/${1}:${2}/proxy/metrics"),
+					Replacement:  new("/api/v1/namespaces/kube-system/pods/${1}:${2}/proxy/metrics"),
 				},
 			},
 			MetricRelabelConfigs: monitoringutils.StandardMetricRelabelConfig("registry_proxy_.+"),

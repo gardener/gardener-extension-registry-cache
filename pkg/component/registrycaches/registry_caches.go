@@ -251,8 +251,8 @@ func networkPolicy() *networkingv1.NetworkPolicy {
 			Ingress: []networkingv1.NetworkPolicyIngressRule{
 				{
 					Ports: []networkingv1.NetworkPolicyPort{
-						{Port: ptr.To(intstr.FromInt32(constants.RegistryCacheServerPort)), Protocol: ptr.To(corev1.ProtocolTCP)}, // Registry cache's server port
-						{Port: ptr.To(intstr.FromInt32(constants.RegistryCacheDebugPort)), Protocol: ptr.To(corev1.ProtocolTCP)},  // Registry cache's debug port (metrics and health endpoints)
+						{Port: new(intstr.FromInt32(constants.RegistryCacheServerPort)), Protocol: new(corev1.ProtocolTCP)}, // Registry cache's server port
+						{Port: new(intstr.FromInt32(constants.RegistryCacheDebugPort)), Protocol: new(corev1.ProtocolTCP)},  // Registry cache's debug port (metrics and health endpoints)
 
 					},
 				},
@@ -278,7 +278,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 		upstreamLabel = registryutils.ComputeUpstreamLabelValue(cache.Upstream)
 		name          = registryutils.ComputeKubernetesResourceName(cache.Upstream)
 		remoteURL     = ptr.Deref(cache.RemoteURL, registryutils.GetUpstreamURL(cache.Upstream))
-		configValues  = map[string]interface{}{
+		configValues  = map[string]any{
 			"http_addr":       fmt.Sprintf(":%d", constants.RegistryCacheServerPort),
 			"http_debug_addr": fmt.Sprintf(":%d", constants.RegistryCacheDebugPort),
 			"proxy_remoteurl": remoteURL,
@@ -339,8 +339,8 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 			Selector: &metav1.LabelSelector{
 				MatchLabels: registryutils.GetLabels(name, upstreamLabel),
 			},
-			RevisionHistoryLimit: ptr.To[int32](2),
-			Replicas:             ptr.To[int32](1),
+			RevisionHistoryLimit: new(int32(2)),
+			Replicas:             new(int32(1)),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: utils.MergeStringMaps(registryutils.GetLabels(name, upstreamLabel), map[string]string{
@@ -350,11 +350,11 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 					}),
 				},
 				Spec: corev1.PodSpec{
-					AutomountServiceAccountToken: ptr.To(false),
+					AutomountServiceAccountToken: new(false),
 					PriorityClassName:            "system-cluster-critical",
 					SecurityContext: &corev1.PodSecurityContext{
-						FSGroup:             ptr.To(int64(65532)),
-						FSGroupChangePolicy: ptr.To(corev1.FSGroupChangeOnRootMismatch),
+						FSGroup:             new(int64(65532)),
+						FSGroupChangePolicy: new(corev1.FSGroupChangeOnRootMismatch),
 						SeccompProfile: &corev1.SeccompProfile{
 							Type: corev1.SeccompProfileTypeRuntimeDefault,
 						},
@@ -381,10 +381,10 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
-								AllowPrivilegeEscalation: ptr.To(false),
-								RunAsNonRoot:             ptr.To(true),
-								RunAsUser:                ptr.To(int64(65532)),
-								RunAsGroup:               ptr.To(int64(65532)),
+								AllowPrivilegeEscalation: new(false),
+								RunAsNonRoot:             new(true),
+								RunAsUser:                new(int64(65532)),
+								RunAsGroup:               new(int64(65532)),
 								Capabilities: &corev1.Capabilities{
 									Drop: []corev1.Capability{
 										"ALL",
@@ -491,7 +491,7 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName:  tlsSecret.Name,
-					DefaultMode: ptr.To[int32](0640),
+					DefaultMode: new(int32(0640)),
 				},
 			},
 		})
@@ -516,9 +516,9 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 				Labels:    registryutils.GetLabels(name, upstreamLabel),
 			},
 			Spec: policyv1.PodDisruptionBudgetSpec{
-				MaxUnavailable:             ptr.To(intstr.FromInt32(1)),
+				MaxUnavailable:             new(intstr.FromInt32(1)),
 				Selector:                   statefulSet.Spec.Selector,
-				UnhealthyPodEvictionPolicy: ptr.To(policyv1.AlwaysAllow),
+				UnhealthyPodEvictionPolicy: new(policyv1.AlwaysAllow),
 			},
 		}
 	}
@@ -537,20 +537,20 @@ func (r *registryCaches) registryCacheObjects(ctx context.Context, cache *regist
 					Name:       name,
 				},
 				UpdatePolicy: &vpaautoscalingv1.PodUpdatePolicy{
-					UpdateMode: ptr.To(vpaautoscalingv1.UpdateModeRecreate),
+					UpdateMode: new(vpaautoscalingv1.UpdateModeRecreate),
 				},
 				ResourcePolicy: &vpaautoscalingv1.PodResourcePolicy{
 					ContainerPolicies: []vpaautoscalingv1.ContainerResourcePolicy{
 						{
 							ContainerName:    containerName,
-							ControlledValues: ptr.To(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
+							ControlledValues: new(vpaautoscalingv1.ContainerControlledValuesRequestsOnly),
 							MinAllowed: corev1.ResourceList{
 								corev1.ResourceMemory: resource.MustParse("20Mi"),
 							},
 						},
 						{
 							ContainerName: vpaautoscalingv1.DefaultContainerResourcePolicy,
-							Mode:          ptr.To(vpaautoscalingv1.ContainerScalingModeOff),
+							Mode:          new(vpaautoscalingv1.ContainerScalingModeOff),
 						},
 					},
 				},

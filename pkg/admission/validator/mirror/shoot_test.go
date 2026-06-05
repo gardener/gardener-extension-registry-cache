@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -240,7 +239,7 @@ var _ = Describe("Shoot validator", func() {
 						Name:      "ca-bundle-v1",
 						Namespace: "garden-dev",
 					},
-					Immutable: ptr.To(true),
+					Immutable: new(true),
 					Data: map[string][]byte{
 						"bundle.crt": []byte(caBundle),
 					},
@@ -257,7 +256,7 @@ var _ = Describe("Shoot validator", func() {
 								Hosts: []v1alpha1.MirrorHost{
 									{
 										Host:                        "https://private-mirror.internal",
-										CABundleSecretReferenceName: ptr.To("ca-bundle"),
+										CABundleSecretReferenceName: new("ca-bundle"),
 									},
 								},
 							},
@@ -309,7 +308,7 @@ var _ = Describe("Shoot validator", func() {
 			})
 
 			It("should return err when secret is invalid", func() {
-				secret.Immutable = ptr.To(false)
+				secret.Immutable = new(false)
 				delete(secret.Data, "bundle.crt")
 				Expect(fakeClient.Create(ctx, secret)).To(Succeed())
 

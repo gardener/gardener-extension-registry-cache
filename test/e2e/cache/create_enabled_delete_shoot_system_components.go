@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/test/common"
@@ -61,7 +60,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), func() {
 })
 
 func verifyNoTimeoutLogsInContainerd(ctx context.Context, logger logr.Logger, shootClient kubernetes.Interface) {
-	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, shootClient, ptr.To("local"))
+	nodeList, err := framework.GetAllNodesInWorkerPool(ctx, shootClient, new("local"))
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	ExpectWithOffset(1, nodeList.Items).ToNot(BeEmpty(), "Expected to find at least one Node in the cluster")
 

@@ -21,7 +21,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	registryapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
@@ -69,12 +68,12 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 	for _, cache := range registryStatus.Caches {
 		cfg := extensionsv1alpha1.RegistryConfig{
 			Upstream: cache.Upstream,
-			Server:   ptr.To(cache.RemoteURL),
+			Server:   new(cache.RemoteURL),
 			Hosts: []extensionsv1alpha1.RegistryHost{{
 				URL:          cache.Endpoint,
 				Capabilities: []extensionsv1alpha1.RegistryCapability{extensionsv1alpha1.PullCapability, extensionsv1alpha1.ResolveCapability},
 			}},
-			ReadinessProbe: ptr.To(true),
+			ReadinessProbe: new(true),
 		}
 
 		if strings.HasPrefix(cache.Endpoint, "https://") {
@@ -132,7 +131,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx extensionscont
 
 	*newFiles = extensionswebhook.EnsureFileWithPath(*newFiles, extensionsv1alpha1.File{
 		Path:        caBundlePath,
-		Permissions: ptr.To[uint32](0644),
+		Permissions: new(uint32(0644)),
 		Content: extensionsv1alpha1.FileContent{
 			Inline: &extensionsv1alpha1.FileContentInline{
 				Encoding: "b64",

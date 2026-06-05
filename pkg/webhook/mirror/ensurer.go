@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	mirrorapi "github.com/gardener/gardener-extension-registry-cache/pkg/apis/mirror"
@@ -71,7 +70,7 @@ func (e *ensurer) EnsureCRIConfig(ctx context.Context, gctx extensionscontextweb
 	for _, mirror := range mirrorConfig.Mirrors {
 		cfg := extensionsv1alpha1.RegistryConfig{
 			Upstream: mirror.Upstream,
-			Server:   ptr.To(registryutils.GetUpstreamURL(mirror.Upstream)),
+			Server:   new(registryutils.GetUpstreamURL(mirror.Upstream)),
 		}
 		for _, host := range mirror.Hosts {
 			registryHost := extensionsv1alpha1.RegistryHost{
@@ -143,7 +142,7 @@ func (e *ensurer) EnsureAdditionalFiles(ctx context.Context, gctx extensionscont
 
 				*newFiles = extensionswebhook.EnsureFileWithPath(*newFiles, extensionsv1alpha1.File{
 					Path:        caBundlePath(mirror.Upstream, host.Host),
-					Permissions: ptr.To[uint32](0644),
+					Permissions: new(uint32(0644)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
