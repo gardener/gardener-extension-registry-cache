@@ -78,6 +78,8 @@ type Values struct {
 	Image string
 	// VPAEnabled marks whether VerticalPodAutoscaler is enabled for the shoot.
 	VPAEnabled bool
+	// MonitoringEnabled marks whether the shoot monitoring stack is available and monitoring resources should be deployed.
+	MonitoringEnabled bool
 	// Services are the registry cache services used for certificate generation.
 	Services []corev1.Service
 	// Caches are the registry caches to deploy.
@@ -155,8 +157,14 @@ func (r *registryCaches) Deploy(ctx context.Context) error {
 		return fmt.Errorf("failed to create or update managed resource: %w", err)
 	}
 
-	if err := r.deployMonitoringConfig(ctx); err != nil {
-		return fmt.Errorf("failed to deploy monitoring config: %w", err)
+	if r.values.MonitoringEnabled {
+		if err := r.deployMonitoringConfig(ctx); err != nil {
+			return fmt.Errorf("failed to deploy monitoring config: %w", err)
+		}
+	} else {
+		if err := r.destroyMonitoringConfig(ctx); err != nil {
+			return fmt.Errorf("failed to destroy monitoring config: %w", err)
+		}
 	}
 
 	return nil

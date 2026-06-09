@@ -72,8 +72,9 @@ var _ = Describe("RegistryCaches", func() {
 		c = fakeclient.NewClientBuilder().WithScheme(kubernetes.SeedScheme).Build()
 		secretsManager = fakesecretsmanager.New(c, namespace)
 		values = Values{
-			Image:      image,
-			VPAEnabled: true,
+			Image:             image,
+			VPAEnabled:        true,
+			MonitoringEnabled: true,
 			Services: []corev1.Service{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -844,6 +845,51 @@ proxy:
 					})
 				})
 			})
+		})
+
+		It("should not deploy monitoring objects when MonitoringEnabled is false", func() {
+			values.MonitoringEnabled = false
+			registryCaches = New(c, namespace, secretsManager, values)
+
+			Expect(registryCaches.Deploy(ctx)).To(Succeed())
+
+			dashboardsConfigMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "registry-cache-dashboards", Namespace: namespace},
+			}
+			prometheusRule := &monitoringv1.PrometheusRule{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot-registry-cache", Namespace: namespace},
+			}
+			scrapeConfig := &monitoringv1alpha1.ScrapeConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot-registry-cache", Namespace: namespace},
+			}
+
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(dashboardsConfigMap), dashboardsConfigMap)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "configmaps"}, dashboardsConfigMap.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(prometheusRule), prometheusRule)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "prometheusrules"}, prometheusRule.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(scrapeConfig), scrapeConfig)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "scrapeconfigs"}, scrapeConfig.Name)))
+		})
+
+		It("should delete existing monitoring objects when MonitoringEnabled is false", func() {
+			dashboardsConfigMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{Name: "registry-cache-dashboards", Namespace: namespace},
+			}
+			prometheusRule := &monitoringv1.PrometheusRule{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot-registry-cache", Namespace: namespace},
+			}
+			scrapeConfig := &monitoringv1alpha1.ScrapeConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: "shoot-registry-cache", Namespace: namespace},
+			}
+			Expect(c.Create(ctx, dashboardsConfigMap)).To(Succeed())
+			Expect(c.Create(ctx, prometheusRule)).To(Succeed())
+			Expect(c.Create(ctx, scrapeConfig)).To(Succeed())
+
+			values.MonitoringEnabled = false
+			registryCaches = New(c, namespace, secretsManager, values)
+
+			Expect(registryCaches.Deploy(ctx)).To(Succeed())
+
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(dashboardsConfigMap), dashboardsConfigMap)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "configmaps"}, dashboardsConfigMap.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(prometheusRule), prometheusRule)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "prometheusrules"}, prometheusRule.Name)))
+			Expect(c.Get(ctx, client.ObjectKeyFromObject(scrapeConfig), scrapeConfig)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "scrapeconfigs"}, scrapeConfig.Name)))
 		})
 
 		It("should deploy a monitoring objects", func() {
