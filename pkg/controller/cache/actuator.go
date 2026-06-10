@@ -7,6 +7,7 @@ package extension
 import (
 	"context"
 	"fmt"
+	"net"
 
 	extensionsconfigv1alpha1 "github.com/gardener/gardener/extensions/pkg/apis/config/v1alpha1"
 	extensionscontroller "github.com/gardener/gardener/extensions/pkg/controller"
@@ -237,7 +238,7 @@ func computeProviderStatus(services []corev1.Service, caSecretName *string) *v1a
 	for _, service := range services {
 		caches = append(caches, v1alpha3.RegistryCacheStatus{
 			Upstream:  service.Annotations[constants.UpstreamAnnotation],
-			Endpoint:  fmt.Sprintf("%s://%s:%d", service.Annotations[constants.SchemeAnnotation], service.Spec.ClusterIP, constants.RegistryCacheServerPort),
+			Endpoint:  fmt.Sprintf("%s://%s", service.Annotations[constants.SchemeAnnotation], net.JoinHostPort(service.Spec.ClusterIP, fmt.Sprintf("%d", constants.RegistryCacheServerPort))),
 			RemoteURL: service.Annotations[constants.RemoteURLAnnotation],
 		})
 	}
