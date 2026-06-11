@@ -344,7 +344,7 @@ string
 </em>
 </td>
 <td>
-<p>Endpoint is the registry cache endpoint.<br />Examples: "https://10.4.246.205:5000", "http://10.4.26.127:5000"</p>
+<p>Endpoint is the registry cache endpoint.<br />Examples: "https://10.4.246.205:5000", "http://10.4.26.127:5000", "https://[2a05:d018:197f:7e06::1]:5000"</p>
 </td>
 </tr>
 <tr>
