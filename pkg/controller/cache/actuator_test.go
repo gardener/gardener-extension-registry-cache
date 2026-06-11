@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry/v1alpha3"
 	"github.com/gardener/gardener-extension-registry-cache/pkg/constants"
@@ -35,7 +36,7 @@ var _ = Describe("Actuator", func() {
 
 			status := computeProviderStatus(nil, &caSecretName)
 
-			Expect(status.CASecretName).To(Equal(new("ca-extension-registry-cache-1234")))
+			Expect(status.CASecretName).To(Equal(ptr.To("ca-extension-registry-cache-1234")))
 		})
 
 		It("should compute the status for multiple services with mixed IP families", func() {
@@ -52,7 +53,7 @@ var _ = Describe("Actuator", func() {
 					APIVersion: v1alpha3.SchemeGroupVersion.String(),
 					Kind:       "RegistryStatus",
 				},
-				CASecretName: new("ca-extension-registry-cache-1234"),
+				CASecretName: ptr.To("ca-extension-registry-cache-1234"),
 				Caches: []v1alpha3.RegistryCacheStatus{
 					{
 						Upstream:  "docker.io",
