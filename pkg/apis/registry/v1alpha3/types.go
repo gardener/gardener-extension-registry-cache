@@ -127,7 +127,7 @@ type RegistryCacheStatus struct {
 	// Upstream is the remote registry host (and optionally port).
 	Upstream string `json:"upstream"`
 	// Endpoint is the registry cache endpoint.
-	// Examples: "https://10.4.246.205:5000", "http://10.4.26.127:5000"
+	// Examples: "https://10.4.246.205:5000", "http://10.4.26.127:5000", "https://[2a05:d018:197f:7e06::1]:5000"
 	Endpoint string `json:"endpoint"`
 	// RemoteURL is the remote registry URL.
 	RemoteURL string `json:"remoteURL"`
