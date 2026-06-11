@@ -40,8 +40,8 @@ var _ = Describe("Actuator", func() {
 
 		It("should compute the status for multiple services with mixed IP families", func() {
 			services := []corev1.Service{
-				newService("10.4.246.205", "http", "docker.io", "https://registry-1.docker.io"),
-				newService("2a05:d018:197f:7e06::1", "https", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
+				serviceFor("10.4.246.205", "http", "docker.io", "https://registry-1.docker.io"),
+				serviceFor("2a05:d018:197f:7e06::1", "https", "europe-docker.pkg.dev", "https://europe-docker.pkg.dev"),
 			}
 			caSecretName := "ca-extension-registry-cache-1234"
 
@@ -70,7 +70,7 @@ var _ = Describe("Actuator", func() {
 	})
 })
 
-func newService(clusterIP, scheme, upstream, remoteURL string) corev1.Service {
+func serviceFor(clusterIP, scheme, upstream, remoteURL string) corev1.Service {
 	return corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
