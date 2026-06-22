@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/elastic/crd-ref-docs v0.3.0
 	github.com/gardener/gardener v1.145.0
-	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260618071302-c4521180a208
+	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260619125006-1cccf4563118
 	github.com/gardener/gardener/pkg/apis v1.145.0
 	github.com/go-logr/logr v1.4.3
 	github.com/onsi/ginkgo/v2 v2.31.0
@@ -208,4 +208,4 @@ require (
 //
 // TODO(dimitar-kostadinov): Remove the replace when the golang.org/x/tools version in the github.com/gardener/gardener/hack/tools/logcheck module
 // is the same with the one in the github.com/gardener/gardener module.
-replace golang.org/x/tools v0.45.0 => golang.org/x/tools v0.44.0
+replace golang.org/x/tools v0.46.0 => golang.org/x/tools v0.44.0
