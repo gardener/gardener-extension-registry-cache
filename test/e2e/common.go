@@ -47,7 +47,7 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 			Region:                 "local",
 			Purpose:                new(gardencorev1beta1.ShootPurposeTesting),
 			Kubernetes: gardencorev1beta1.Kubernetes{
-				Version: "1.35.4",
+				Version: "1.36.0",
 				Kubelet: &gardencorev1beta1.KubeletConfig{
 					SerializeImagePulls: new(false),
 					RegistryPullQPS:     new(int32(10)),
