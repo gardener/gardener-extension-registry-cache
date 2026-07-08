@@ -70,8 +70,8 @@ This document describes how to supply credentials for the private upstream regis
 
 To rotate registry credentials perform the following steps:
 1. Generate a new pair of credentials in the cloud provider account. Do not invalidate the old ones.
-1. Create a new Secret (e.g., `ro-docker-secret-v2`) with the newly generated credentials as described in step 1. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
-1. Update the Shoot spec with newly created Secret as described in step 2. in [How to configure the registry cache to use upstream registry credentials?](#how-to-configure-the-registry-cache-to-use-upstream-registry-credentials).
+1. Create a new Secret (e.g., `ro-docker-secret-v2`) with the newly generated credentials as described in step 1. in [Procedure](#procedure).
+1. Update the Shoot spec with newly created Secret as described in step 2. in [Procedure](#procedure).
 1. The above step will trigger a Shoot reconciliation. Wait for it to complete.
 1. Make sure that the old Secret is no longer referenced by any Shoot cluster. Finally, delete the Secret containing the old credentials (e.g., `ro-docker-secret-v1`).
 1. Delete the corresponding old credentials from the cloud provider account.
