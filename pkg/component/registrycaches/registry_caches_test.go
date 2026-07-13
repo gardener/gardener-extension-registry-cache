@@ -860,7 +860,7 @@ proxy:
 
 			dashboardsConfigMap, prometheusRule, scrapeConfig := monitoringObjects(namespace)
 
-			expectMonitoringObjectsNotFound(c, ctx, dashboardsConfigMap, prometheusRule, scrapeConfig)
+			expectMonitoringObjectsNotFound(ctx, c, dashboardsConfigMap, prometheusRule, scrapeConfig)
 		})
 
 		It("should delete existing monitoring objects when MonitoringEnabled is false", func() {
@@ -874,7 +874,7 @@ proxy:
 
 			Expect(registryCaches.Deploy(ctx)).To(Succeed())
 
-			expectMonitoringObjectsNotFound(c, ctx, dashboardsConfigMap, prometheusRule, scrapeConfig)
+			expectMonitoringObjectsNotFound(ctx, c, dashboardsConfigMap, prometheusRule, scrapeConfig)
 		})
 
 		It("should deploy a monitoring objects", func() {
@@ -1040,7 +1040,7 @@ func monitoringObjects(namespace string) (*corev1.ConfigMap, *monitoringv1.Prome
 		}
 }
 
-func expectMonitoringObjectsNotFound(c client.Client, ctx context.Context, dashboardsConfigMap *corev1.ConfigMap, prometheusRule *monitoringv1.PrometheusRule, scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
+func expectMonitoringObjectsNotFound(ctx context.Context, c client.Client, dashboardsConfigMap *corev1.ConfigMap, prometheusRule *monitoringv1.PrometheusRule, scrapeConfig *monitoringv1alpha1.ScrapeConfig) {
 	Expect(c.Get(ctx, client.ObjectKeyFromObject(dashboardsConfigMap), dashboardsConfigMap)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: corev1.SchemeGroupVersion.Group, Resource: "configmaps"}, dashboardsConfigMap.Name)))
 	Expect(c.Get(ctx, client.ObjectKeyFromObject(prometheusRule), prometheusRule)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "prometheusrules"}, prometheusRule.Name)))
 	Expect(c.Get(ctx, client.ObjectKeyFromObject(scrapeConfig), scrapeConfig)).To(MatchError(apierrors.NewNotFound(schema.GroupResource{Group: monitoringv1.SchemeGroupVersion.Group, Resource: "scrapeconfigs"}, scrapeConfig.Name)))
