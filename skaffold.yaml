@@ -11,7 +11,6 @@ build:
             - cmd/gardener-extension-registry-cache
             - cmd/gardener-extension-registry-cache/app
             - imagevector
-            - imagevector/images.yaml
             - pkg/apis/config
             - pkg/apis/config/v1alpha1
             - pkg/apis/config/validation
@@ -24,8 +23,6 @@ build:
             - pkg/apis/registry/v1alpha3
             - pkg/cmd
             - pkg/component/registrycaches
-            - pkg/component/registrycaches/monitoring/dashboard.json
-            - pkg/component/registrycaches/templates/config.yml.tpl
             - pkg/component/registrycacheservices
             - pkg/constants
             - pkg/controller/cache
