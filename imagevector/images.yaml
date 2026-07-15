@@ -13,7 +13,7 @@ images:
   # The images in the Docker's Official Images program are (by design) rebuilt frequently.
   # For more details, refer to: https://github.com/distribution/distribution-library-image/issues/195#issuecomment-3850345955.
   # As a result, digest is used instead of tag to ensure reproducibility.
-  tag: 3.1.1@sha256:85347ed2ecde64161c7a4788a4d7d3dcc9d6f86f7be95834022e3c6a423a945a
+  tag: 3.1.1@sha256:1be55279f18a2fe1a74edf2664cac61c1bea305b7b4642dab412e7affdcb3e33
   resourceId:
     version: 3.1.1
   labels:
