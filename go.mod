@@ -3,23 +3,20 @@ module github.com/gardener/gardener-extension-registry-cache
 go 1.26.0
 
 require (
-	github.com/elastic/crd-ref-docs v0.3.0
-	github.com/gardener/gardener v1.145.1
-	github.com/gardener/gardener/hack/tools/logcheck v0.0.0-20260703124742-188e0c673794
-	github.com/gardener/gardener/pkg/apis v1.145.1
+	github.com/gardener/gardener v1.146.3
+	github.com/gardener/gardener/hack/tools v1.146.3
+	github.com/gardener/gardener/pkg/apis v1.146.3
 	github.com/go-logr/logr v1.4.3
-	github.com/onsi/ginkgo/v2 v2.31.0
+	github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega v1.42.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.91.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	golang.org/x/crypto v0.53.0
-	golang.org/x/tools v0.46.0
 	k8s.io/api v0.35.5
 	k8s.io/apimachinery v0.35.5
 	k8s.io/autoscaler/vertical-pod-autoscaler v1.6.0
 	k8s.io/client-go v0.35.5
-	k8s.io/code-generator v0.35.5
 	k8s.io/component-base v0.35.5
 	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2
 	sigs.k8s.io/controller-runtime v0.23.3
@@ -40,7 +37,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.40.2 // indirect
 	github.com/VictoriaMetrics/metricsql v0.84.8 // indirect
 	github.com/VictoriaMetrics/operator/api v0.66.1 // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.7 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.17 // indirect
@@ -92,10 +89,8 @@ require (
 	github.com/go-openapi/swag/typeutils v0.26.0 // indirect
 	github.com/go-openapi/swag/yamlutils v0.25.5 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
@@ -134,9 +129,9 @@ require (
 	github.com/perses/perses-operator v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/alertmanager v0.29.0 // indirect
-	github.com/prometheus/client_golang v1.23.3-0.20260602051030-3537b20ac86b // indirect
+	github.com/prometheus/client_golang v1.23.3-0.20260624042014-28914d017fba // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
-	github.com/prometheus/common v0.68.1 // indirect
+	github.com/prometheus/common v0.69.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/prometheus/sigv4 v0.3.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
@@ -168,10 +163,10 @@ require (
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260610154732-fb80ec83bdd9 // indirect
 	golang.org/x/term v0.44.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/tools v0.46.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
@@ -181,31 +176,19 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v4 v4.1.4 // indirect
-	istio.io/api v1.29.4 // indirect
+	istio.io/api v1.29.5 // indirect
 	istio.io/client-go v1.29.2 // indirect
 	k8s.io/apiextensions-apiserver v0.35.5 // indirect
 	k8s.io/apiserver v0.35.5 // indirect
-	k8s.io/cluster-bootstrap v0.35.5 // indirect
-	k8s.io/component-helpers v0.35.5 // indirect
-	k8s.io/gengo/v2 v2.0.0-20251215205346-5ee0d033ba5b // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-aggregator v0.35.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
 	k8s.io/kubelet v0.35.5 // indirect
 	k8s.io/metrics v0.35.5 // indirect
 	k8s.io/pod-security-admission v0.35.5 // indirect
-	sigs.k8s.io/controller-tools v0.20.1 // indirect
 	sigs.k8s.io/gateway-api v1.5.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-// Temporarily downgrade the golang.org/x/tools module version for the logcheck build:
-// Error: build linters: unable to load custom analyzer "logcheck": <path>/gardener-extension-registry-cache/hack/tools/bin/linux-amd64/logcheck.so,
-// plugin.Open("<path>/gardener-extension-registry-cache/hack/tools/bin/linux-amd64/logcheck"): plugin was built with a different version of package golang.org/x/tools/go/analysis
-//
-// TODO(dimitar-kostadinov): Remove the replace when the golang.org/x/tools version in the github.com/gardener/gardener/hack/tools/logcheck module
-// is the same with the one in the github.com/gardener/gardener module.
-replace golang.org/x/tools v0.46.0 => golang.org/x/tools v0.44.0
