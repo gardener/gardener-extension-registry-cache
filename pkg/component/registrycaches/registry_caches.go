@@ -78,7 +78,7 @@ type Values struct {
 	Image string
 	// VPAEnabled marks whether VerticalPodAutoscaler is enabled for the shoot.
 	VPAEnabled bool
-	// MonitoringEnabled marks whether the shoot monitoring stack is available and monitoring resources should be deployed.
+	// MonitoringEnabled marks whether monitoring resources (Grafana dashboard, PrometheusRule, ScrapeConfig) should be deployed.
 	MonitoringEnabled bool
 	// Services are the registry cache services used for certificate generation.
 	Services []corev1.Service
