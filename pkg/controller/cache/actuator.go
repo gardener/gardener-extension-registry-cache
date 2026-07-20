@@ -15,6 +15,7 @@ import (
 	"github.com/gardener/gardener/extensions/pkg/util"
 	extensionssecretsmanager "github.com/gardener/gardener/extensions/pkg/util/secret/manager"
 	v1beta1helper "github.com/gardener/gardener/pkg/api/core/v1beta1/helper"
+	gardencorev1beta1 "github.com/gardener/gardener/pkg/apis/core/v1beta1"
 	extensionsv1alpha1 "github.com/gardener/gardener/pkg/apis/extensions/v1alpha1"
 	"github.com/gardener/gardener/pkg/component"
 	"github.com/go-logr/logr"
@@ -105,6 +106,7 @@ func (a *actuator) Reconcile(ctx context.Context, logger logr.Logger, ex *extens
 	registryCaches := registrycaches.New(a.client, namespace, secretsManager, registrycaches.Values{
 		Image:              image.String(),
 		VPAEnabled:         v1beta1helper.ShootWantsVerticalPodAutoscaler(cluster.Shoot),
+		MonitoringEnabled:  v1beta1helper.GetPurpose(cluster.Shoot) != gardencorev1beta1.ShootPurposeTesting,
 		Services:           services,
 		Caches:             registryConfig.Caches,
 		ResourceReferences: cluster.Shoot.Spec.Resources,
