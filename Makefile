@@ -88,7 +88,7 @@ generate: tools-for-generate
 generate-in-docker:
 	docker run --rm -it -v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache golang:1.26.6 \
 		sh -c "cd /go/src/github.com/gardener/gardener-extension-registry-cache \
-				&& make tidy generate \
+				&& make generate MODE=sequential \
 				&& chown -R $(shell id -u):$(shell id -g) ."
 
 .PHONY: format
