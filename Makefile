@@ -86,10 +86,13 @@ generate: tools-for-generate
 
 .PHONY: generate-in-docker
 generate-in-docker:
-	docker run --rm -it -v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache golang:1.26.6 \
+	docker run --rm -it \
+		--user $(shell id -u):$(shell id -g) \
+		-e HOME=/tmp \
+		-v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache \
+		golang:1.26.6 \
 		sh -c "cd /go/src/github.com/gardener/gardener-extension-registry-cache \
-				&& make generate MODE=sequential \
-				&& chown -R $(shell id -u):$(shell id -g) ."
+				&& make generate MODE=sequential"
 
 .PHONY: format
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
