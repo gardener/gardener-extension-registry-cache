@@ -84,7 +84,7 @@ generate: tools-for-generate
 	$(MAKE) format
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) RENOVATE_CONFIG=$(REPO_ROOT)/renovate.json5 bash $(GARDENER_HACK_DIR)/generate-renovate-ignore-deps.sh
 
-.PHONE: generate-in-docker
+.PHONY: generate-in-docker
 generate-in-docker:
 	docker run --rm -it -v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache golang:1.26.6 \
 		sh -c "cd /go/src/github.com/gardener/gardener-extension-registry-cache \
