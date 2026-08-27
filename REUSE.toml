@@ -21,6 +21,7 @@ path = [
     "dev-setup/**",
     "pkg/component/registrycaches/monitoring/dashboard.json",
     "pkg/component/registrycaches/templates/config.yml.tpl",
+    "renovate.json5",
     "skaffold.yaml"
 ]
 precedence = "aggregate"
