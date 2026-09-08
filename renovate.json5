@@ -32,6 +32,10 @@
       matchPackageNames: [
         '/^(github\\.com\\/)?gardener\\/gardener(\\/.*)?$/',
       ],
+      // The gardener submodules' new versions become visible to Renovate at slightly different
+      // times (skew observed up to ~1h). The 6h settling window lets the skew wash out so all
+      // gardener modules are grouped into one PR instead of being split across several.
+      minimumReleaseAge: '6h',
       enabled: true,
       postUpgradeTasks: {
         commands: ['make generate MODE=sequential'],
