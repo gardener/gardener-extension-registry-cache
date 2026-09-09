@@ -89,6 +89,9 @@ generate-in-docker:
 	docker run --rm -it \
 		--user $(shell id -u):$(shell id -g) \
 		-e HOME=/tmp \
+		-e GIT_CONFIG_COUNT=1 \
+		-e GIT_CONFIG_KEY_0=safe.directory \
+		-e GIT_CONFIG_VALUE_0=/go/src/github.com/gardener/gardener-extension-registry-cache \
 		-v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache \
 		golang:1.26.6 \
 		sh -c "cd /go/src/github.com/gardener/gardener-extension-registry-cache \
