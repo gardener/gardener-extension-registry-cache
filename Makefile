@@ -20,7 +20,7 @@ GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
 RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
 VIRTUAL_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 # renovate: datasource=docker depName=golang
-GO_VERSION                  := 1.26.8
+GO_VERSION                  := 1.27.1
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
