@@ -19,6 +19,8 @@ PARALLEL_E2E_TESTS          := 3
 GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
 RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
 VIRTUAL_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
+# renovate: datasource=docker depName=golang
+GO_VERSION                  := 1.26.8
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -84,12 +86,18 @@ generate: tools-for-generate
 	$(MAKE) format
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) RENOVATE_CONFIG=$(REPO_ROOT)/renovate.json5 bash $(GARDENER_HACK_DIR)/generate-renovate-ignore-deps.sh
 
-.PHONE: generate-in-docker
+.PHONY: generate-in-docker
 generate-in-docker:
-	docker run --rm -it -v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache golang:1.26.6 \
+	docker run --rm -it \
+		--user $(shell id -u):$(shell id -g) \
+		-e HOME=/tmp \
+		-e GIT_CONFIG_COUNT=1 \
+		-e GIT_CONFIG_KEY_0=safe.directory \
+		-e GIT_CONFIG_VALUE_0=/go/src/github.com/gardener/gardener-extension-registry-cache \
+		-v $(PWD):/go/src/github.com/gardener/gardener-extension-registry-cache \
+		golang:$(GO_VERSION) \
 		sh -c "cd /go/src/github.com/gardener/gardener-extension-registry-cache \
-				&& make tidy generate \
-				&& chown -R $(shell id -u):$(shell id -g) ."
+				&& make generate MODE=sequential"
 
 .PHONY: format
 format: $(GOIMPORTS) $(GOIMPORTSREVISER)
