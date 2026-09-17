@@ -21,6 +21,8 @@ RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runti
 VIRTUAL_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 # renovate: datasource=docker depName=golang
 GO_VERSION                  := 1.26.8
+# Use a specific Go toolchain version to ensure consistent builds across different environments.
+export GOTOOLCHAIN          := go$(GO_VERSION)
 
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
@@ -71,7 +73,7 @@ check-generate:
 
 .PHONY: check
 check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(LOGCHECK)
-	@sed ./.golangci.yaml.in -e "s#<<LOGCHECK_PLUGIN_PATH>>#$(TOOLS_BIN_DIR)#g" > ./.golangci.yaml
+	@sed ./.golangci.yaml.in -e "s#<<TOOLS_BIN_DIR>>#$(abspath $(TOOLS_BIN_DIR))#g" > ./.golangci.yaml
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
 	@GARDENER_HACK_DIR=$(GARDENER_HACK_DIR) hack/check-skaffold-deps.sh

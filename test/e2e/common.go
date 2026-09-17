@@ -11,6 +11,7 @@ import (
 	v1beta1constants "github.com/gardener/gardener/pkg/apis/core/v1beta1/constants"
 	"github.com/gardener/gardener/test/framework"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -61,6 +62,10 @@ func DefaultShoot(generateName string) *gardencorev1beta1.Shoot {
 				Type: new("calico"),
 				// Must be within 10.0.0.0/16 (subnet of kind pod CIDR 10.0.0.0/15, but disjoint with seed pod CIDR 10.1.0.0/16).
 				Nodes: new("10.0.0.0/16"),
+				// Disable calico-typha: during data plane rolls (e.g. HA zone updates, control plane migration) Typha's
+				// watcher cache can block resync for 30m after a transient kube-apiserver outage, leaving newly rolled pods
+				// with unprogrammed network interfaces. Without Typha, Felix watches the kube-apiserver directly.
+				ProviderConfig: &runtime.RawExtension{Raw: []byte(`{"typha":{"enabled":false}}`)},
 			},
 			Provider: gardencorev1beta1.Provider{
 				Type: "local",
