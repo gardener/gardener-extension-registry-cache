@@ -169,7 +169,7 @@ linters:
         - name: early-return
     custom:
       logcheck:
-        path: <<LOGCHECK_PLUGIN_PATH>>/logcheck.so
+        path: <<TOOLS_BIN_DIR>>/logcheck.so
         description: Check structured logging calls to logr.Logger instances
         original-url: github.com/gardener/gardener/hack/tools/logcheck
   exclusions:
