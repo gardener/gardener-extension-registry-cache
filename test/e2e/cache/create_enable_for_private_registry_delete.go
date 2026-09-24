@@ -32,7 +32,7 @@ import (
 
 const (
 	alpine3188Image           = "alpine:3.18.8"
-	registryImage             = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.1.1@sha256:1be55279f18a2fe1a74edf2664cac61c1bea305b7b4642dab412e7affdcb3e33"
+	registryImage             = "europe-docker.pkg.dev/gardener-project/releases/3rd/registry:3.1.1@sha256:325b4b29b041e82803abeb703e201655e4e23ab83264ec1a7c9ddb0a5b14a6e0"
 	upstreamRegistryNamespace = "test-registry"
 	upstreamConfigYAML        = `version: 0.1
 log:
