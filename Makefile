@@ -20,7 +20,7 @@ GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
 RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
 VIRTUAL_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
 # renovate: datasource=docker depName=golang
-GO_VERSION                  := 1.26.8
+GO_VERSION                  := 1.27.1
 # Use a specific Go toolchain version to ensure consistent builds across different environments.
 export GOTOOLCHAIN          := go$(GO_VERSION)
 
