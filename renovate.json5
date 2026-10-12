@@ -13,6 +13,12 @@
   postUpdateOptions: [
     'gomodTidy',
   ],
+  // Ignore the commits pushed by the `renovate-post-upgrade` GitHub Action (running
+  // `make generate`/`make tidy`) when detecting whether a branch was manually edited.
+  // Otherwise, Renovate would treat the branch as modified and stop updating the PR.
+  gitIgnoredAuthors: [
+    '41898282+github-actions[bot]@users.noreply.github.com',
+  ],
   customManagers: [
     {
       customType: 'regex',
@@ -38,11 +44,6 @@
       // gardener modules are grouped into one PR instead of being split across several.
       minimumReleaseAge: '6h',
       enabled: true,
-      postUpgradeTasks: {
-        commands: ['make generate MODE=sequential'],
-        fileFilters: ['**'],
-        executionMode: 'branch',
-      },
     },
   ],
   // The following list of dependencies to ignore is updated by `make generate`.
