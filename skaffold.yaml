@@ -87,8 +87,6 @@ build:
       requires:
         - image: local-skaffold/gardener-extension-registry-cache
           alias: IMG
-  insecureRegistries:
-    - registry.local.gardener.cloud:5001
 manifests:
   kustomize:
     paths:

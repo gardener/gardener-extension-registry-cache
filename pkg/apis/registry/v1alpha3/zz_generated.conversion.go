@@ -13,7 +13,6 @@ import (
 	unsafe "unsafe"
 
 	registry "github.com/gardener/gardener-extension-registry-cache/pkg/apis/registry"
-	resource "k8s.io/apimachinery/pkg/api/resource"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
@@ -119,7 +118,7 @@ func RegisterConversions(s *runtime.Scheme) error {
 }
 
 func autoConvert_v1alpha3_GarbageCollection_To_registry_GarbageCollection(in *GarbageCollection, out *registry.GarbageCollection, s conversion.Scope) error {
-	out.TTL = in.TTL
+	*out = *(*registry.GarbageCollection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -129,7 +128,7 @@ func Convert_v1alpha3_GarbageCollection_To_registry_GarbageCollection(in *Garbag
 }
 
 func autoConvert_registry_GarbageCollection_To_v1alpha3_GarbageCollection(in *registry.GarbageCollection, out *GarbageCollection, s conversion.Scope) error {
-	out.TTL = in.TTL
+	*out = *(*GarbageCollection)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -139,7 +138,7 @@ func Convert_registry_GarbageCollection_To_v1alpha3_GarbageCollection(in *regist
 }
 
 func autoConvert_v1alpha3_HTTP_To_registry_HTTP(in *HTTP, out *registry.HTTP, s conversion.Scope) error {
-	out.TLS = in.TLS
+	*out = *(*registry.HTTP)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -149,7 +148,7 @@ func Convert_v1alpha3_HTTP_To_registry_HTTP(in *HTTP, out *registry.HTTP, s conv
 }
 
 func autoConvert_registry_HTTP_To_v1alpha3_HTTP(in *registry.HTTP, out *HTTP, s conversion.Scope) error {
-	out.TLS = in.TLS
+	*out = *(*HTTP)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -159,7 +158,7 @@ func Convert_registry_HTTP_To_v1alpha3_HTTP(in *registry.HTTP, out *HTTP, s conv
 }
 
 func autoConvert_v1alpha3_HighAvailability_To_registry_HighAvailability(in *HighAvailability, out *registry.HighAvailability, s conversion.Scope) error {
-	out.Enabled = in.Enabled
+	*out = *(*registry.HighAvailability)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -169,7 +168,7 @@ func Convert_v1alpha3_HighAvailability_To_registry_HighAvailability(in *HighAvai
 }
 
 func autoConvert_registry_HighAvailability_To_v1alpha3_HighAvailability(in *registry.HighAvailability, out *HighAvailability, s conversion.Scope) error {
-	out.Enabled = in.Enabled
+	*out = *(*HighAvailability)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -179,8 +178,7 @@ func Convert_registry_HighAvailability_To_v1alpha3_HighAvailability(in *registry
 }
 
 func autoConvert_v1alpha3_Proxy_To_registry_Proxy(in *Proxy, out *registry.Proxy, s conversion.Scope) error {
-	out.HTTPProxy = (*string)(unsafe.Pointer(in.HTTPProxy))
-	out.HTTPSProxy = (*string)(unsafe.Pointer(in.HTTPSProxy))
+	*out = *(*registry.Proxy)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -190,8 +188,7 @@ func Convert_v1alpha3_Proxy_To_registry_Proxy(in *Proxy, out *registry.Proxy, s 
 }
 
 func autoConvert_registry_Proxy_To_v1alpha3_Proxy(in *registry.Proxy, out *Proxy, s conversion.Scope) error {
-	out.HTTPProxy = (*string)(unsafe.Pointer(in.HTTPProxy))
-	out.HTTPSProxy = (*string)(unsafe.Pointer(in.HTTPSProxy))
+	*out = *(*Proxy)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -201,15 +198,7 @@ func Convert_registry_Proxy_To_v1alpha3_Proxy(in *registry.Proxy, out *Proxy, s 
 }
 
 func autoConvert_v1alpha3_RegistryCache_To_registry_RegistryCache(in *RegistryCache, out *registry.RegistryCache, s conversion.Scope) error {
-	out.Upstream = in.Upstream
-	out.RemoteURL = (*string)(unsafe.Pointer(in.RemoteURL))
-	out.Volume = (*registry.Volume)(unsafe.Pointer(in.Volume))
-	out.GarbageCollection = (*registry.GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
-	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
-	out.Proxy = (*registry.Proxy)(unsafe.Pointer(in.Proxy))
-	out.HTTP = (*registry.HTTP)(unsafe.Pointer(in.HTTP))
-	out.HighAvailability = (*registry.HighAvailability)(unsafe.Pointer(in.HighAvailability))
-	out.ServiceNameSuffix = (*string)(unsafe.Pointer(in.ServiceNameSuffix))
+	*out = *(*registry.RegistryCache)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -219,15 +208,7 @@ func Convert_v1alpha3_RegistryCache_To_registry_RegistryCache(in *RegistryCache,
 }
 
 func autoConvert_registry_RegistryCache_To_v1alpha3_RegistryCache(in *registry.RegistryCache, out *RegistryCache, s conversion.Scope) error {
-	out.Upstream = in.Upstream
-	out.RemoteURL = (*string)(unsafe.Pointer(in.RemoteURL))
-	out.Volume = (*Volume)(unsafe.Pointer(in.Volume))
-	out.GarbageCollection = (*GarbageCollection)(unsafe.Pointer(in.GarbageCollection))
-	out.SecretReferenceName = (*string)(unsafe.Pointer(in.SecretReferenceName))
-	out.Proxy = (*Proxy)(unsafe.Pointer(in.Proxy))
-	out.HTTP = (*HTTP)(unsafe.Pointer(in.HTTP))
-	out.HighAvailability = (*HighAvailability)(unsafe.Pointer(in.HighAvailability))
-	out.ServiceNameSuffix = (*string)(unsafe.Pointer(in.ServiceNameSuffix))
+	*out = *(*RegistryCache)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -237,9 +218,7 @@ func Convert_registry_RegistryCache_To_v1alpha3_RegistryCache(in *registry.Regis
 }
 
 func autoConvert_v1alpha3_RegistryCacheStatus_To_registry_RegistryCacheStatus(in *RegistryCacheStatus, out *registry.RegistryCacheStatus, s conversion.Scope) error {
-	out.Upstream = in.Upstream
-	out.Endpoint = in.Endpoint
-	out.RemoteURL = in.RemoteURL
+	*out = *(*registry.RegistryCacheStatus)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -249,9 +228,7 @@ func Convert_v1alpha3_RegistryCacheStatus_To_registry_RegistryCacheStatus(in *Re
 }
 
 func autoConvert_registry_RegistryCacheStatus_To_v1alpha3_RegistryCacheStatus(in *registry.RegistryCacheStatus, out *RegistryCacheStatus, s conversion.Scope) error {
-	out.Upstream = in.Upstream
-	out.Endpoint = in.Endpoint
-	out.RemoteURL = in.RemoteURL
+	*out = *(*RegistryCacheStatus)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -303,8 +280,7 @@ func Convert_registry_RegistryStatus_To_v1alpha3_RegistryStatus(in *registry.Reg
 }
 
 func autoConvert_v1alpha3_Volume_To_registry_Volume(in *Volume, out *registry.Volume, s conversion.Scope) error {
-	out.Size = (*resource.Quantity)(unsafe.Pointer(in.Size))
-	out.StorageClassName = (*string)(unsafe.Pointer(in.StorageClassName))
+	*out = *(*registry.Volume)(unsafe.Pointer(in))
 	return nil
 }
 
@@ -314,8 +290,7 @@ func Convert_v1alpha3_Volume_To_registry_Volume(in *Volume, out *registry.Volume
 }
 
 func autoConvert_registry_Volume_To_v1alpha3_Volume(in *registry.Volume, out *Volume, s conversion.Scope) error {
-	out.Size = (*resource.Quantity)(unsafe.Pointer(in.Size))
-	out.StorageClassName = (*string)(unsafe.Pointer(in.StorageClassName))
+	*out = *(*Volume)(unsafe.Pointer(in))
 	return nil
 }
 
