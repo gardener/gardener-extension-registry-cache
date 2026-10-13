@@ -8,12 +8,18 @@ spec:
       helm:
         ociRepository:
           ref: local-skaffold/gardener-extension-registry-cache/charts/extension
+          caBundleSecretRef:
+            name: gardener-local-registry-ca
     admission:
       runtimeCluster:
         helm:
           ociRepository:
             ref: local-skaffold/gardener-extension-registry-cache-admission/charts/runtime
+            caBundleSecretRef:
+              name: gardener-local-registry-ca
       virtualCluster:
         helm:
           ociRepository:
             ref: local-skaffold/gardener-extension-registry-cache-admission/charts/application
+            caBundleSecretRef:
+              name: gardener-local-registry-ca
