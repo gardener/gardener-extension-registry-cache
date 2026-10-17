@@ -72,7 +72,7 @@ check-generate:
 	@bash $(GARDENER_HACK_DIR)/check-generate.sh $(REPO_ROOT)
 
 .PHONY: check
-check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(LOGCHECK)
+check: $(GOIMPORTS) $(GOLANGCI_LINT) $(HELM) $(YQ) $(KUBE_API_LINTER) $(LOGCHECK)
 	@sed ./.golangci.yaml.in -e "s#<<TOOLS_BIN_DIR>>#$(abspath $(TOOLS_BIN_DIR))#g" > ./.golangci.yaml
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check.sh --golangci-lint-config=./.golangci.yaml ./cmd/... ./pkg/... ./test/...
 	@REPO_ROOT=$(REPO_ROOT) bash $(GARDENER_HACK_DIR)/check-charts.sh ./charts
