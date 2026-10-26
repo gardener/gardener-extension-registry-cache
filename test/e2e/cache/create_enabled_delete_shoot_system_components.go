@@ -42,7 +42,7 @@ var _ = Describe("Registry Cache Extension Tests", Label("cache"), Ordered, func
 	}, SpecTimeout(3*time.Minute))
 
 	It("[europe-docker.pkg.dev] should verify registry-cache works", func(ctx SpecContext) {
-		common.VerifyRegistryCache(ctx, f.Logger, f.ShootFramework.ShootClient, common.ArtifactRegistryNginx1176Image)
+		common.VerifyRegistryCache(ctx, f.Logger, f.ShootFramework.ShootClient, common.ArtifactRegistryAlpine3243Image, common.AlpinePodMutateFn)
 	}, SpecTimeout(12*time.Minute))
 
 	It("[registry.k8s.io] should verify registry-cache works", func(ctx SpecContext) {

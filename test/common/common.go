@@ -51,8 +51,8 @@ const (
 	// GitlabRegistryJitesoftAlpine31710Image is the registry.gitlab.com/jitesoft/dockerfiles/alpine:3.17.10 image.
 	GitlabRegistryJitesoftAlpine31710Image = "registry.gitlab.com/jitesoft/dockerfiles/alpine:3.17.10"
 
-	// ArtifactRegistryNginx1176Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6 image (copy of docker.io/library/nginx:1.17.6).
-	ArtifactRegistryNginx1176Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/nginx:1.17.6"
+	// ArtifactRegistryAlpine3243Image is the europe-docker.pkg.dev/gardener-project/releases/3rd/alpine:3.24.3 image (copy of docker.io/library/alpine:3.24.3).
+	ArtifactRegistryAlpine3243Image = "europe-docker.pkg.dev/gardener-project/releases/3rd/alpine:3.24.3"
 	// RegistryK8sNginx1154Image is the registry.k8s.io/e2e-test-images/nginx:1.15-4 image.
 	RegistryK8sNginx1154Image = "registry.k8s.io/e2e-test-images/nginx:1.15-4"
 
