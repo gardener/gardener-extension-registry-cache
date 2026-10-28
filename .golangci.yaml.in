@@ -10,6 +10,7 @@ linters:
     - ginkgolinter
     - gocritic
     - importas
+    - kubeapilinter
     - logcheck
     - misspell
     - nilerr
@@ -172,9 +173,30 @@ linters:
         path: <<TOOLS_BIN_DIR>>/logcheck.so
         description: Check structured logging calls to logr.Logger instances
         original-url: github.com/gardener/gardener/hack/tools/logcheck
+      kubeapilinter:
+        path: <<TOOLS_BIN_DIR>>/kube-api-linter.so
+        description: Enforces Kubernetes API conventions on API types
+        original-url: sigs.k8s.io/kube-api-linter
+        settings:
+          linters:
+            disable:
+              - "*"
+            enable:
+              - defaultorrequired
+              - duplicatemarkers
+              - integers
+              - jsontags
+              - nonullable
+              - optionalfields
+              - uniquemarkers
   exclusions:
     generated: lax
     rules:
+      # kubeapilinter only applies to files directly in the versioned API type packages (pkg/apis/<group>/<version>/).
+      # Internal (unversioned) API packages and nested subpackages are excluded.
+      - linters:
+          - kubeapilinter
+        path-except: 'pkg/apis/[^/]+(/[^/]+)?/v[0-9]+((alpha|beta)[0-9]+)?/[^/]+$'
       - linters:
           - staticcheck
         text: 'ST1001:' # should not use dot imports
