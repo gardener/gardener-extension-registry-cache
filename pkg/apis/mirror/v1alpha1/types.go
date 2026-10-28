@@ -36,12 +36,12 @@ type MirrorHost struct {
 	// The supported values are "pull" and "resolve".
 	// Defaults to ["pull"].
 	// +optional
-	Capabilities []MirrorHostCapability `json:"capabilities"`
+	Capabilities []MirrorHostCapability `json:"capabilities,omitempty"`
 	// CABundleSecretReferenceName is the reference name for a Secret containing a PEM-encoded certificate authority bundle.
 	// The CA bundle is used to verify the TLS certificate of the mirror host.
 	// The referenced secret must be immutable and must have a data key `bundle.crt`.
 	// +optional
-	CABundleSecretReferenceName *string `json:"caBundleSecretReferenceName"`
+	CABundleSecretReferenceName *string `json:"caBundleSecretReferenceName,omitempty"`
 	// OverridePath represents the `override_path` field in the hosts.toml file for containerd registry configuration.
 	// See https://github.com/containerd/containerd/blob/v2.2.0/docs/hosts.md#override_path-field
 	// Should be set to `true` only for non-compliant OCI registries which are missing the `/v2` prefix, and the API root endpoint is defined in the host URL path.
