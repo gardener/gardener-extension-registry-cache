@@ -456,7 +456,7 @@ var _ = Describe("Ensurer", func() {
 			expectedNewFiles = append(expectedNewFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/ca-bundle.pem",
-					Permissions: new(uint32(0644)),
+					Permissions: new(int32(0644)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -481,7 +481,7 @@ var _ = Describe("Ensurer", func() {
 			newFiles = append(newFiles,
 				extensionsv1alpha1.File{
 					Path:        "/etc/containerd/certs.d/ca-bundle.pem",
-					Permissions: new(uint32(0642)),
+					Permissions: new(int32(0642)),
 					Content: extensionsv1alpha1.FileContent{
 						Inline: &extensionsv1alpha1.FileContentInline{
 							Encoding: "b64",
@@ -494,7 +494,7 @@ var _ = Describe("Ensurer", func() {
 			copy(expectedNewFiles, newFiles)
 			expectedNewFiles[1] = extensionsv1alpha1.File{
 				Path:        "/etc/containerd/certs.d/ca-bundle.pem",
-				Permissions: new(uint32(0644)),
+				Permissions: new(int32(0644)),
 				Content: extensionsv1alpha1.FileContent{
 					Inline: &extensionsv1alpha1.FileContentInline{
 						Encoding: "b64",
