@@ -623,7 +623,7 @@ var _ = Describe("Validation", func() {
 						"Type":     Equal(field.ErrorTypeInvalid),
 						"Field":    Equal("providerConfig.caches[0].secretReferenceName"),
 						"BadValue": Equal("foo-secret-ref"),
-						"Detail":   Equal(`failed to unmarshal ServiceAccount json from the password data entry in the referenced secret "foo/bar": invalid character '\n' in string literal`),
+						"Detail":   Equal(`failed to unmarshal ServiceAccount json from the password data entry in the referenced secret "foo/bar": invalid character '\n' in string`),
 					})),
 				))
 			})
