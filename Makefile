@@ -2,6 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+# renovate: datasource=docker depName=golang
+GO_VERSION                  := 1.27.3
+# Use a specific Go toolchain version to ensure consistent builds across different environments.
+export GOTOOLCHAIN          := go$(GO_VERSION)
+# $(GOTOOLCHAIN) is exported, but exported make variables are not propagated into the environment of $(shell ...) sub-shells.
+# By exporting it explicitly in the SHELL command, it becomes available also in sub-shells.
+SHELL                       =  /usr/bin/env GOTOOLCHAIN=$(GOTOOLCHAIN) bash -o pipefail
+
 ENSURE_GARDENER_MOD         := $(shell go get github.com/gardener/gardener@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener))
 ENSURE_GARDENER_TOOLS_MOD   := $(shell go get github.com/gardener/gardener/hack/tools@$$(go list -m -f "{{.Version}}" github.com/gardener/gardener/hack/tools))
 GARDENER_HACK_DIR           := $(shell go list -m -f "{{.Dir}}" github.com/gardener/gardener)/hack
@@ -19,11 +27,6 @@ PARALLEL_E2E_TESTS          := 3
 GARDENER_REPO_ROOT          ?= $(REPO_ROOT)/../gardener
 RUNTIME_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/runtime/kubeconfig
 VIRTUAL_KUBECONFIG          := $(GARDENER_REPO_ROOT)/dev-setup/kubeconfigs/virtual-garden/kubeconfig
-# renovate: datasource=docker depName=golang
-GO_VERSION                  := 1.27.3
-# Use a specific Go toolchain version to ensure consistent builds across different environments.
-export GOTOOLCHAIN          := go$(GO_VERSION)
-
 ifneq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	EFFECTIVE_VERSION := $(EFFECTIVE_VERSION)-dirty
 endif
