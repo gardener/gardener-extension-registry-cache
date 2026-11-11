@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # renovate: datasource=docker depName=golang
-GO_VERSION                  := 1.27.3
+GO_VERSION                  := 1.27.4
 # Use a specific Go toolchain version to ensure consistent builds across different environments.
 export GOTOOLCHAIN          := go$(GO_VERSION)
 # $(GOTOOLCHAIN) is exported, but exported make variables are not propagated into the environment of $(shell ...) sub-shells.
