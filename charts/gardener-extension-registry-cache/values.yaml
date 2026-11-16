@@ -45,7 +45,7 @@ imageVectorOverwrite: {}
   #   - name: registry
   #     sourceRepository: github.com/distribution/distribution
   #     repository: europe-docker.pkg.dev/gardener-project/releases/3rd/registry
-  #     tag: 3.1.2@sha256:d4032d4cc323c1731c707931ecada07a53076eac38e3b61ae57533f170f2c6c3
+  #     tag: "3.1.2"
 
 gardener:
   version: ""
