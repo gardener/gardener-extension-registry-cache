@@ -6,10 +6,6 @@
     'github>gardener/ci-infra//config/renovate/automerge-with-tide.json5',
     'github>gardener/ci-infra//config/renovate/group-go-updates.json5',
   ],
-  // The `registry` image is also referenced in `test/e2e`, which `:ignoreModulesAndTests` would skip.
-  ignorePresets: [
-    ':ignoreModulesAndTests',
-  ],
   dependencyDashboard: true,
   labels: [
     'kind/enhancement',
@@ -36,21 +32,18 @@
       customType: 'regex',
       managerFilePatterns: [
         '/^imagevector/images\\.yaml$/',
-        '/^charts/gardener-extension-registry-cache/values\\.yaml$/',
-        '/^test/e2e/cache/create_enable_for_private_registry_delete\\.go$/',
-        '/^docs/usage/registry-cache/observability\\.md$/',
         '/^pkg/component/registrycaches/templates/config\\.yml\\.tpl$/',
         '/^pkg/component/registrycaches/registry_caches_test\\.go$/',
       ],
       matchStrings: [
         // imagevector/images.yaml: tag, digest and `resourceId.version` (replaced together)
+        // Matches:
+        //   repository: .../3rd/registry
+        //   [optional comment lines]
+        //     tag: <currentValue>@<currentDigest>
+        //     resourceId:
+        //       version: <version>
         '3rd/registry\\n(?:\\s*#.*\\n)*\\s+tag: (?<currentValue>[\\d.]+)@(?<currentDigest>sha256:\\w+)\\n\\s+resourceId:\\n\\s+version: [\\d.]+',
-        // charts/.../values.yaml: commented example tag
-        '3rd/registry\\n\\s*#\\s+tag: (?<currentValue>[\\d.]+)@(?<currentDigest>sha256:\\w+)',
-        // test/e2e: image reference with tag and digest
-        '3rd/registry:(?<currentValue>[\\d.]+)@(?<currentDigest>sha256:\\w+)',
-        // docs link to the source of the image
-        'distribution/distribution/blob/v(?<currentValue>[\\d.]+)/',
         // config.yml.tpl and its test: comment with the version
         '3rd/registry:(?<currentValue>[\\d.]+)\\)',
       ],
