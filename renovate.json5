@@ -28,7 +28,8 @@
     },
     {
       // The `registry` image is referenced in several places. All matches share the same dependency, hence a single
-      // Renovate PR updates all of them. Digest-only updates change just the matches that capture `currentDigest`.
+      // Renovate PR updates all of them. All matches capture `currentValue` and `currentDigest`, so both version and
+      // digest-only updates change all three files together.
       customType: 'regex',
       managerFilePatterns: [
         '/^imagevector/images\\.yaml$/',
@@ -44,8 +45,8 @@
         //     resourceId:
         //       version: <version>
         '3rd/registry\\n(?:\\s*#.*\\n)*\\s+tag: (?<currentValue>[\\d.]+)@(?<currentDigest>sha256:\\w+)\\n\\s+resourceId:\\n\\s+version: [\\d.]+',
-        // config.yml.tpl and its test: comment with the version
-        '3rd/registry:(?<currentValue>[\\d.]+)\\)',
+        // config.yml.tpl and its test: comment with the tag and digest
+        '3rd/registry:(?<currentValue>[\\d.]+)@(?<currentDigest>sha256:\\w+)\\)',
       ],
       depNameTemplate: 'europe-docker.pkg.dev/gardener-project/releases/3rd/registry',
       datasourceTemplate: 'docker',
