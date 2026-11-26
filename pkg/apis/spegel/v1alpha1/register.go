@@ -16,7 +16,7 @@ const GroupName = "spegel.extensions.gardener.cloud"
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1alpha1"}
 
 var (
-	localSchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
+	localSchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, RegisterDefaults)
 	// AddToScheme is a pointer to SchemeBuilder.AddToScheme.
 	AddToScheme = localSchemeBuilder.AddToScheme
 )
