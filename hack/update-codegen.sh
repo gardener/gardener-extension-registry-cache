@@ -25,4 +25,8 @@ kube::codegen::gen_helpers \
 
 kube::codegen::gen_helpers \
   --boilerplate "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt" \
+  "${PROJECT_ROOT}/pkg/apis/spegel"
+
+kube::codegen::gen_helpers \
+  --boilerplate "${PROJECT_ROOT}/hack/LICENSE_BOILERPLATE.txt" \
   "${PROJECT_ROOT}/pkg/apis/config"
