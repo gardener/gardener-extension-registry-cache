@@ -9,6 +9,8 @@ const (
 	RegistryCacheExtensionType = "registry-cache"
 	// RegistryMirrorExtensionType is the name of the registry-mirror Extension type.
 	RegistryMirrorExtensionType = "registry-mirror"
+	// RegistrySpegelExtensionType is the name of the registry-spegel Extension type.
+	RegistrySpegelExtensionType = "registry-spegel"
 	// Origin is the origin used for the registry cache ManagedResources.
 	Origin = "registry-cache"
 
