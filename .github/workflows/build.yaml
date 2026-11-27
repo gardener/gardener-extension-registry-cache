@@ -28,7 +28,7 @@ jobs:
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@d478850afa1a7e0f9deb710e4d44eb0a2d8dce07 # 1.2881.0
         with:
           remove-trusted-label: false
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version: '1.27.4'
       - uses: gardener/cc-utils/.github/actions/setup-git-identity@d478850afa1a7e0f9deb710e4d44eb0a2d8dce07 # 1.2881.0
